@@ -674,7 +674,7 @@ static psa_status_t psa_export_rsa_key( psa_key_type_t type,
  * \param[in] data          The buffer containing the import representation
  * \param[in] data_length   The amount of bytes in \p data
  */
-static psa_status_t psa_import_rsa_key( psa_key_slot_t *slot,
+psa_status_t psa_import_rsa_key( psa_key_slot_t *slot,
                                         const uint8_t *data,
                                         size_t data_length )
 {
@@ -1665,7 +1665,7 @@ static psa_status_t psa_internal_export_key_buffer( const psa_key_slot_t *slot,
     return( PSA_SUCCESS );
 }
 
-static psa_status_t psa_internal_export_key( const psa_key_slot_t *slot,
+psa_status_t psa_internal_export_key( const psa_key_slot_t *slot,
                                              uint8_t *data,
                                              size_t data_size,
                                              size_t *data_length,
@@ -2096,7 +2096,7 @@ static psa_status_t psa_start_key_creation(
  * \return If this function fails, the key slot is an invalid state.
  *         You must call psa_fail_key_creation() to wipe and free the slot.
  */
-static psa_status_t psa_finish_key_creation(
+ psa_status_t psa_finish_key_creation(
     psa_key_slot_t *slot,
     psa_se_drv_table_entry_t *driver,
     mbedtls_svc_key_id_t *key)
@@ -2106,7 +2106,7 @@ static psa_status_t psa_finish_key_creation(
     (void) driver;
 
 #if defined(MBEDTLS_PSA_CRYPTO_STORAGE_C)
-    if( ! PSA_KEY_LIFETIME_IS_VOLATILE( slot->attr.lifetime ) )
+    if( PSA_KEY_LIFETIME_IS_PERSISTENT( slot->attr.lifetime ) )
     {
 #if defined(MBEDTLS_PSA_CRYPTO_SE_C)
         if( driver != NULL )
@@ -2125,6 +2125,13 @@ static psa_status_t psa_finish_key_creation(
         }
         else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(slot->attr.lifetime))
+    {
+        status = psa_finish_key_creation_vendor( slot );
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
         {
             /* Key material is saved in export representation in the slot, so
              * just pass the slot buffer for storage. */
@@ -2330,6 +2337,14 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
     }
     else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(slot->attr.lifetime))
+    {
+        status = psa_import_key_into_slot_vendor( slot, data, data_length, true);
+            goto exit;
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
     {
         status = psa_import_key_into_slot( slot, data, data_length );
         if( status != PSA_SUCCESS )
@@ -2965,7 +2980,7 @@ psa_status_t psa_hash_clone( const psa_hash_operation_t *source_operation,
 /* MAC */
 /****************************************************************/
 
-static const mbedtls_cipher_info_t *mbedtls_cipher_info_from_psa(
+ const mbedtls_cipher_info_t *mbedtls_cipher_info_from_psa(
     psa_algorithm_t alg,
     psa_key_type_t key_type,
     size_t key_bits,
@@ -3656,7 +3671,7 @@ static psa_status_t psa_rsa_decode_md_type( psa_algorithm_t alg,
     return( PSA_SUCCESS );
 }
 
-static psa_status_t psa_rsa_sign( mbedtls_rsa_context *rsa,
+ psa_status_t psa_rsa_sign( mbedtls_rsa_context *rsa,
                                   psa_algorithm_t alg,
                                   const uint8_t *hash,
                                   size_t hash_length,
@@ -3715,7 +3730,7 @@ static psa_status_t psa_rsa_sign( mbedtls_rsa_context *rsa,
     return( mbedtls_to_psa_error( ret ) );
 }
 
-static psa_status_t psa_rsa_verify( mbedtls_rsa_context *rsa,
+ psa_status_t psa_rsa_verify( mbedtls_rsa_context *rsa,
                                     psa_algorithm_t alg,
                                     const uint8_t *hash,
                                     size_t hash_length,
@@ -3783,7 +3798,7 @@ static psa_status_t psa_rsa_verify( mbedtls_rsa_context *rsa,
 /* `ecp` cannot be const because `ecp->grp` needs to be non-const
  * for mbedtls_ecdsa_sign() and mbedtls_ecdsa_sign_det()
  * (even though these functions don't modify it). */
-static psa_status_t psa_ecdsa_sign( mbedtls_ecp_keypair *ecp,
+ psa_status_t psa_ecdsa_sign( mbedtls_ecp_keypair *ecp,
                                     psa_algorithm_t alg,
                                     const uint8_t *hash,
                                     size_t hash_length,
@@ -3840,7 +3855,7 @@ cleanup:
     return( mbedtls_to_psa_error( ret ) );
 }
 
-static psa_status_t psa_ecdsa_verify( mbedtls_ecp_keypair *ecp,
+ psa_status_t psa_ecdsa_verify( mbedtls_ecp_keypair *ecp,
                                       const uint8_t *hash,
                                       size_t hash_length,
                                       const uint8_t *signature,
@@ -4402,6 +4417,13 @@ static psa_status_t psa_cipher_setup( psa_cipher_operation_t *operation,
     operation->mbedtls_in_use = 1;
 
     key_bits = psa_get_key_slot_bits( slot );
+    #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(slot->attr.lifetime))
+    {
+        status = psa_cipher_setup_vendor(operation, handle, alg, cipher_operation); 
+        goto exit;
+    }
+    #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
     cipher_info = mbedtls_cipher_info_from_psa( alg, slot->attr.type, key_bits, NULL );
     if( cipher_info == NULL )
     {
@@ -4900,6 +4922,21 @@ static psa_status_t psa_aead_setup( aead_operation_t *operation,
         return( status );
 
     key_bits = psa_get_key_slot_bits( operation->slot );
+
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(operation->slot->attr.lifetime))
+    {
+        /* The mbedcrypto implementation obtains the list of methods based on the keybit size.
+         * Since the wrapped keybit size does not correspond to the raw key size i.e the
+         * AES256 raw bit size is 256 but the wrapped size is 416 bytes, provide the 256 bit value
+         * to mbedcrypto so that the right methods are invoked. */
+        status = vendor_bitlength_to_raw_bitlength(operation->slot->attr.type, operation->slot->attr.bits, &key_bits);
+        if (status != PSA_SUCCESS)
+        {
+            return status;
+        }
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
 
     operation->cipher_info =
         mbedtls_cipher_info_from_psa( alg, operation->slot->attr.type, key_bits,
@@ -6364,7 +6401,7 @@ psa_status_t mbedtls_psa_inject_entropy( const uint8_t *seed,
 #endif /* MBEDTLS_PSA_INJECT_ENTROPY */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_KEY_PAIR)
-static psa_status_t psa_read_rsa_exponent( const uint8_t *domain_parameters,
+ psa_status_t psa_read_rsa_exponent( const uint8_t *domain_parameters,
                                            size_t domain_parameters_size,
                                            int *exponent )
 {
@@ -6554,7 +6591,15 @@ psa_status_t psa_generate_key( const psa_key_attributes_t *attributes,
     if( status != PSA_ERROR_NOT_SUPPORTED ||
         psa_key_lifetime_is_external( attributes->core.lifetime ) )
         goto exit;
-
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(slot->attr.lifetime))
+    {
+        status = psa_generate_key_vendor(slot, attributes->core.bits,
+            attributes->domain_parameters, attributes->domain_parameters_size);
+            goto exit;
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
     status = psa_generate_key_internal(
         slot, attributes->core.bits,
         attributes->domain_parameters, attributes->domain_parameters_size );

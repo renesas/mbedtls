@@ -263,7 +263,7 @@ static psa_status_t psa_load_persistent_key_into_slot( psa_key_slot_t *slot )
     else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(slot->attr.lifetime))
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
         status = psa_import_key_into_slot_vendor( slot, key_data, key_data_length, false);
             goto exit;

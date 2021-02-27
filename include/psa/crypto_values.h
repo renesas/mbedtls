@@ -1590,9 +1590,6 @@
 
 #define PSA_KEY_LIFETIME_VENDOR_FLAG ((psa_key_lifetime_t)0x80000000)
 
-#define PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(lifetime) \
-    (((lifetime) & PSA_KEY_LIFETIME_VENDOR_FLAG) != 0)
-
 /** The persistence level of volatile keys.
  *
  * See ::psa_key_persistence_t for more information.

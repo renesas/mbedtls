@@ -2126,7 +2126,7 @@ static psa_status_t psa_start_key_creation(
         else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(slot->attr.lifetime))
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
         status = psa_finish_key_creation_vendor( slot );
     }
@@ -2338,7 +2338,7 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
     else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(slot->attr.lifetime))
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
         status = psa_import_key_into_slot_vendor( slot, data, data_length, true);
             goto exit;
@@ -4418,9 +4418,9 @@ static psa_status_t psa_cipher_setup( psa_cipher_operation_t *operation,
 
     key_bits = psa_get_key_slot_bits( slot );
     #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(slot->attr.lifetime))
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
-        status = psa_cipher_setup_vendor(operation, handle, alg, cipher_operation); 
+        status = psa_cipher_setup_vendor(operation, slot, alg, cipher_operation); 
         goto exit;
     }
     #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
@@ -4924,7 +4924,7 @@ static psa_status_t psa_aead_setup( aead_operation_t *operation,
     key_bits = psa_get_key_slot_bits( operation->slot );
 
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(operation->slot->attr.lifetime))
+        if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(operation->slot->attr.type))
     {
         /* The mbedcrypto implementation obtains the list of methods based on the keybit size.
          * Since the wrapped keybit size does not correspond to the raw key size i.e the
@@ -6592,7 +6592,7 @@ psa_status_t psa_generate_key( const psa_key_attributes_t *attributes,
         psa_key_lifetime_is_external( attributes->core.lifetime ) )
         goto exit;
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_LIFETIME_IS_VENDOR_DEFINED(slot->attr.lifetime))
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
         status = psa_generate_key_vendor(slot, attributes->core.bits,
             attributes->domain_parameters, attributes->domain_parameters_size);

@@ -2349,7 +2349,7 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
-        status = psa_import_key_into_slot_vendor( slot, data, data_length, true);
+        status = psa_import_key_into_slot_vendor( slot, data, data_length, key, true);
             goto exit;
     }
     else
@@ -3951,7 +3951,7 @@ psa_status_t psa_sign_hash( mbedtls_svc_key_id_t key,
     /* If the operation was not supported by any accelerator, try fallback. */
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_PKCS1V15_SIGN) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_PSS)
-    if( slot->attr.type == PSA_KEY_TYPE_RSA_KEY_PAIR )
+    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR (slot->attr.type) )
     {
         mbedtls_rsa_context *rsa = NULL;
 

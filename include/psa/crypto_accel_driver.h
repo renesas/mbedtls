@@ -63,7 +63,8 @@ extern "C" {
  */
 psa_status_t psa_import_key_into_slot_vendor( psa_key_slot_t *slot,
                                        const uint8_t *data,
-                                       size_t data_length, 
+                                       size_t data_length,
+									   mbedtls_svc_key_id_t *key,
                                        bool write_to_persistent_memory);
 
 /**

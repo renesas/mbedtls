@@ -589,6 +589,15 @@ static psa_status_t psa_load_rsa_representation( psa_key_type_t type,
     *p_rsa = mbedtls_pk_rsa( ctx );
     ctx.pk_info = NULL;
 
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+    {
+        /* Setup the vendor context flag */
+    	(*p_rsa)->vendor_ctx = (bool *) true;
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
 exit:
     mbedtls_pk_free( &ctx );
     return( status );
@@ -612,7 +621,7 @@ exit:
  * \param[in] data_size     The length of the buffer to export to
  * \param[out] data_length  The amount of bytes written to \p data
  */
-static psa_status_t psa_export_rsa_key( psa_key_type_t type,
+psa_status_t psa_export_rsa_key( psa_key_type_t type,
                                         mbedtls_rsa_context *rsa,
                                         uint8_t *data,
                                         size_t data_size,
@@ -987,7 +996,7 @@ static inline size_t psa_get_key_slot_bits( const psa_key_slot_t *slot )
  * \retval #PSA_ERROR_ALREADY_EXISTS
  *         Trying to allocate a buffer to a non-empty key slot.
  */
-static psa_status_t psa_allocate_buffer_to_slot( psa_key_slot_t *slot,
+psa_status_t psa_allocate_buffer_to_slot( psa_key_slot_t *slot,
                                                  size_t buffer_length )
 {
     if( slot->data.key.data != NULL )
@@ -1313,7 +1322,7 @@ static psa_status_t psa_get_and_lock_transparent_key_slot_with_policy(
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
 
 /** Wipe key data from a slot. Preserve metadata such as the policy. */
-static psa_status_t psa_remove_key_data_from_memory( psa_key_slot_t *slot )
+psa_status_t psa_remove_key_data_from_memory( psa_key_slot_t *slot )
 {
 #if defined(MBEDTLS_PSA_CRYPTO_SE_C)
     if( psa_key_slot_is_external( slot ) )
@@ -4268,7 +4277,7 @@ psa_status_t psa_asymmetric_decrypt( mbedtls_svc_key_id_t key,
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_PKCS1V15_CRYPT) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_OAEP)
-    if( slot->attr.type == PSA_KEY_TYPE_RSA_KEY_PAIR )
+    if(PSA_KEY_TYPE_IS_RSA_KEY_PAIR (slot->attr.type))
     {
         mbedtls_rsa_context *rsa = NULL;
         status = psa_load_rsa_representation( slot->attr.type,

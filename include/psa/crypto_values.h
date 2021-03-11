@@ -418,9 +418,23 @@
 #define PSA_KEY_TYPE_RSA_PUBLIC_KEY                 ((psa_key_type_t)0x4001)
 /** RSA key pair (private and public key). */
 #define PSA_KEY_TYPE_RSA_KEY_PAIR                   ((psa_key_type_t)0x7001)
+#if 0
 /** Whether a key type is an RSA key (pair or public-only). */
 #define PSA_KEY_TYPE_IS_RSA(type)                                       \
     (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_RSA_PUBLIC_KEY)
+#endif
+
+/** Whether a key type is an RSA key pair; standard or vendor. */
+#define PSA_KEY_TYPE_IS_RSA_KEY_PAIR(type)  							\
+	((type == PSA_KEY_TYPE_RSA_KEY_PAIR) | \
+	 (type == (PSA_KEY_TYPE_RSA_KEY_PAIR | PSA_KEY_TYPE_VENDOR_FLAG)))
+
+
+/** Whether a key type is an RSA key (pair or public-only) standard or vendor. */
+#define PSA_KEY_TYPE_IS_RSA(type)                                       \
+    ((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_RSA_PUBLIC_KEY) | \
+	 (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == (PSA_KEY_TYPE_RSA_PUBLIC_KEY | PSA_KEY_TYPE_VENDOR_FLAG)))
+
 
 #define PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE            ((psa_key_type_t)0x4100)
 #define PSA_KEY_TYPE_ECC_KEY_PAIR_BASE              ((psa_key_type_t)0x7100)

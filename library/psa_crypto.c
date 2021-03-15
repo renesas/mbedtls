@@ -835,6 +835,15 @@ static psa_status_t psa_load_ecp_representation( psa_key_type_t type,
     }
 
     *p_ecp = ecp;
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+    {
+        /* Setup the vendor context flag */
+    	(*p_ecp)->grp.vendor_ctx = (bool *) true;
+        
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
 exit:
     if( status != PSA_SUCCESS )
     {
@@ -860,7 +869,7 @@ exit:
  * \param[in] data_size     The length of the buffer to export to
  * \param[out] data_length  The amount of bytes written to \p data
  */
-static psa_status_t psa_export_ecp_key( psa_key_type_t type,
+psa_status_t psa_export_ecp_key( psa_key_type_t type,
                                         mbedtls_ecp_keypair *ecp,
                                         uint8_t *data,
                                         size_t data_size,
@@ -916,7 +925,7 @@ static psa_status_t psa_export_ecp_key( psa_key_type_t type,
  * \param[in] data          The buffer containing the import representation
  * \param[in] data_length   The amount of bytes in \p data
  */
-static psa_status_t psa_import_ecp_key( psa_key_slot_t *slot,
+psa_status_t psa_import_ecp_key( psa_key_slot_t *slot,
                                         const uint8_t *data,
                                         size_t data_length )
 {

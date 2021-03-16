@@ -792,8 +792,16 @@ static psa_status_t psa_load_ecp_representation( psa_key_type_t type,
     mbedtls_ecp_keypair_init( ecp );
 
     /* Load the group. */
-    grp_id = mbedtls_ecc_group_of_psa( PSA_KEY_TYPE_ECC_GET_FAMILY( type ),
-                                       curve_size );
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+    {
+    	grp_id = mbedtls_ecc_group_of_psa( PSA_KEY_TYPE_ECC_GET_FAMILY( type ), PSA_ECC_BYTES_VENDOR_RAW(curve_size) );
+    }
+    else
+#endif
+    grp_id = mbedtls_ecc_group_of_psa( PSA_KEY_TYPE_ECC_GET_FAMILY( type ),curve_size );
+
+
     if( grp_id == MBEDTLS_ECP_DP_NONE )
     {
         status = PSA_ERROR_INVALID_ARGUMENT;
@@ -903,15 +911,29 @@ psa_status_t psa_export_ecp_key( psa_key_type_t type,
     }
     else
     {
-        if( data_size < PSA_BITS_TO_BYTES( ecp->grp.nbits ) )
+    	uint32_t private_key_bytes = 0;
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+		if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+		{
+			/* Setup the vendor private key size. The
+			 * mbedtls_ecp_write_key() fn seems to require buffer greater than key size  */
+			private_key_bytes = RM_PSA_CRYPTO_ECC_KEY_WRAPPED_SIZE_BYTES(ecp->grp.nbits);
+		}
+		else
+
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+		{
+			private_key_bytes = PSA_BITS_TO_BYTES( ecp->grp.nbits);
+		}
+        if( data_size < private_key_bytes )
             return( PSA_ERROR_BUFFER_TOO_SMALL );
 
         status = mbedtls_to_psa_error(
                     mbedtls_ecp_write_key( ecp,
                                            data,
-                                           PSA_BITS_TO_BYTES( ecp->grp.nbits ) ) );
+										   private_key_bytes ) );
         if( status == PSA_SUCCESS )
-            *data_length = PSA_BITS_TO_BYTES( ecp->grp.nbits );
+            *data_length = private_key_bytes;
         else
             memset( data, 0, data_size );
 

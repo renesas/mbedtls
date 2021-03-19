@@ -589,7 +589,7 @@ static psa_status_t psa_load_rsa_representation( psa_key_type_t type,
     *p_rsa = mbedtls_pk_rsa( ctx );
     ctx.pk_info = NULL;
 
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_RSA_ALT)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
     {
         /* Setup the vendor context flag */
@@ -792,7 +792,7 @@ static psa_status_t psa_load_ecp_representation( psa_key_type_t type,
     mbedtls_ecp_keypair_init( ecp );
 
     /* Load the group. */
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
     {
     	grp_id = mbedtls_ecc_group_of_psa( PSA_KEY_TYPE_ECC_GET_FAMILY( type ), PSA_ECC_BYTES_VENDOR_RAW(curve_size) );
@@ -843,7 +843,7 @@ static psa_status_t psa_load_ecp_representation( psa_key_type_t type,
     }
 
     *p_ecp = ecp;
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
     {
         /* Setup the vendor context flag */
@@ -912,7 +912,7 @@ psa_status_t psa_export_ecp_key( psa_key_type_t type,
     else
     {
     	uint32_t private_key_bytes = 0;
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
 		if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
 		{
 			/* Setup the vendor private key size. The

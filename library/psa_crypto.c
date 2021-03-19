@@ -3361,7 +3361,7 @@ static psa_status_t psa_mac_setup( psa_mac_operation_t *operation,
     {
         const mbedtls_cipher_info_t *cipher_info =
             mbedtls_cipher_info_from_psa( full_length_alg,
-                                          slot->attr.type, key_bits, NULL );
+                                          (slot->attr.type & ~PSA_KEY_TYPE_VENDOR_FLAG), key_bits, NULL );
         int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
         if( cipher_info == NULL )
         {
@@ -4955,6 +4955,7 @@ static psa_status_t psa_aead_setup( aead_operation_t *operation,
     psa_status_t status;
     size_t key_bits;
     mbedtls_cipher_id_t cipher_id;
+    psa_key_type_t temp_keytype = 0;
 
     status = psa_get_and_lock_transparent_key_slot_with_policy(
                  key, &operation->slot, usage, alg );
@@ -4975,11 +4976,16 @@ static psa_status_t psa_aead_setup( aead_operation_t *operation,
         {
             return status;
         }
+
+        temp_keytype = (psa_key_type_t)(operation->slot->attr.type & ~PSA_KEY_TYPE_VENDOR_FLAG);
     }
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
-
+        else
+        {
+        	temp_keytype = (psa_key_type_t)(operation->slot->attr.type);
+        }
     operation->cipher_info =
-        mbedtls_cipher_info_from_psa( alg, operation->slot->attr.type, key_bits,
+        mbedtls_cipher_info_from_psa( alg,temp_keytype, key_bits,
                                       &cipher_id );
     if( operation->cipher_info == NULL )
     {

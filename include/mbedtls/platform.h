@@ -154,10 +154,8 @@ int mbedtls_platform_set_calloc_free( void * (*calloc_func)( size_t, size_t ),
                               void (*free_func)( void * ) );
 #endif /* MBEDTLS_PLATFORM_FREE_MACRO && MBEDTLS_PLATFORM_CALLOC_MACRO */
 #else /* !MBEDTLS_PLATFORM_MEMORY */
-extern void *my_calloc( size_t n, size_t size );
-extern void my_free( void *ptr );
-#define mbedtls_free       my_free
-#define mbedtls_calloc     my_calloc
+#define mbedtls_free       free
+#define mbedtls_calloc     calloc
 #endif /* MBEDTLS_PLATFORM_MEMORY && !MBEDTLS_PLATFORM_{FREE,CALLOC}_MACRO */
 
 /*

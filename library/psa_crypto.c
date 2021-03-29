@@ -4965,7 +4965,7 @@ static psa_status_t psa_aead_setup( aead_operation_t *operation,
     key_bits = psa_get_key_slot_bits( operation->slot );
 
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-        if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(operation->slot->attr.type))
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(operation->slot->attr.type))
     {
         /* The mbedcrypto implementation obtains the list of methods based on the keybit size.
          * Since the wrapped keybit size does not correspond to the raw key size i.e the
@@ -4979,11 +4979,11 @@ static psa_status_t psa_aead_setup( aead_operation_t *operation,
 
         temp_keytype = (psa_key_type_t)(operation->slot->attr.type & ~PSA_KEY_TYPE_VENDOR_FLAG);
     }
+    else
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
-        else
-        {
-        	temp_keytype = (psa_key_type_t)(operation->slot->attr.type);
-        }
+     {
+        temp_keytype = (psa_key_type_t)(operation->slot->attr.type);
+    }
     operation->cipher_info =
         mbedtls_cipher_info_from_psa( alg,temp_keytype, key_bits,
                                       &cipher_id );

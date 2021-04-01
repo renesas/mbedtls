@@ -382,7 +382,7 @@
 #define PSA_KEY_TYPE_AES                            ((psa_key_type_t)0x2400)
 
 /** Whether a key type is AES; plaintext or wrapped. */
-#define PSA_KEY_TYPE_IS_AES(type) ((((type) == PSA_KEY_TYPE_AES) != 0) | \
+#define PSA_KEY_TYPE_IS_AES(type) ((((type) == PSA_KEY_TYPE_AES) != 0) || \
 		(((type) == (PSA_KEY_TYPE_VENDOR_FLAG | PSA_KEY_TYPE_AES)) != 0))
 
 /** Key for a cipher or MAC algorithm based on DES or 3DES (Triple-DES).
@@ -428,7 +428,7 @@
 
 /** Whether a key type is an RSA key (pair or public-only) standard or vendor. */
 #define PSA_KEY_TYPE_IS_RSA(type)                                       \
-    ((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_RSA_PUBLIC_KEY) | \
+    ((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_RSA_PUBLIC_KEY) || \
 	 (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == (PSA_KEY_TYPE_RSA_PUBLIC_KEY | PSA_KEY_TYPE_VENDOR_FLAG)))
 
 
@@ -1598,8 +1598,6 @@
  */
 
 #define PSA_KEY_LIFETIME_PERSISTENT             ((psa_key_lifetime_t)0x00000001)
-#define PSA_KEY_LIFETIME_PERSISTENT_FLAG        ((psa_key_lifetime_t)PSA_KEY_LIFETIME_PERSISTENT)
-//#define PSA_KEY_LIFETIME_IS_VOLATILE(lifetime)  (((lifetime) & PSA_KEY_LIFETIME_PERSISTENT_FLAG) == 0)
 
 #define PSA_KEY_LIFETIME_IS_PERSISTENT(lifetime) \
     (((lifetime) & PSA_KEY_LIFETIME_PERSISTENT) != 0)

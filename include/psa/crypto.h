@@ -881,7 +881,7 @@ psa_status_t psa_hash_compare(psa_algorithm_t alg,
                               const uint8_t *input,
                               size_t input_length,
                               const uint8_t *hash,
-                              size_t hash_length);
+                              const size_t hash_length);
 
 /** The type of the state data structure for multipart hash operations.
  *
@@ -1251,7 +1251,7 @@ psa_status_t psa_mac_verify(mbedtls_svc_key_id_t key,
                             const uint8_t *input,
                             size_t input_length,
                             const uint8_t *mac,
-                            size_t mac_length);
+                            const size_t mac_length);
 
 /** The type of the state data structure for multipart MAC operations.
  *

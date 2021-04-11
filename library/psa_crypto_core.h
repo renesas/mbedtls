@@ -137,7 +137,7 @@ static inline void psa_key_slot_set_flags( psa_key_slot_t *slot,
                                            uint16_t mask,
                                            uint16_t value )
 {
-    slot->attr.flags = (psa_key_attributes_flag_t) ( ( ~mask & slot->attr.flags ) |
+    slot->attr.flags = ( ( ~mask & slot->attr.flags ) |
                               ( mask & value ) );
 }
 
@@ -160,7 +160,7 @@ static inline void psa_key_slot_set_bits_in_flags( psa_key_slot_t *slot,
 static inline void psa_key_slot_clear_bits( psa_key_slot_t *slot,
                                             uint16_t mask )
 {
-    slot->attr.flags = (psa_key_attributes_flag_t) (slot->attr.flags & (~mask)); 
+    slot->attr.flags &= ~mask;
 }
 
 /** Completely wipe a slot in memory, including its policy.

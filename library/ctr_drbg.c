@@ -24,7 +24,7 @@
 
 #include "common.h"
 
-#if !defined(MBEDTLS_CTR_DRBG_C_ALT)
+#if defined(MBEDTLS_CTR_DRBG_C)
 
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/platform_util.h"

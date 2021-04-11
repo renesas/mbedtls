@@ -34,8 +34,6 @@
 
 #include <string.h>
 
-#if !defined(MBEDTLS_ECDH_ALT)
-
 /* Parameter validation macros based on platform_util.h */
 #define ECDH_VALIDATE_RET( cond )    \
     MBEDTLS_INTERNAL_VALIDATE_RET( cond, MBEDTLS_ERR_ECP_BAD_INPUT_DATA )
@@ -728,5 +726,4 @@ int mbedtls_ecdh_calc_secret( mbedtls_ecdh_context *ctx, size_t *olen,
 #endif
 }
 
-#endif /*!MBEDTLS_ECDH_ALT */
 #endif /* MBEDTLS_ECDH_C */

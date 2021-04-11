@@ -4034,7 +4034,7 @@ psa_status_t psa_asymmetric_decrypt( psa_key_handle_t handle,
         return( PSA_ERROR_INVALID_ARGUMENT );
 
 #if defined(MBEDTLS_RSA_C)
-    if( slot->attr.type == PSA_KEY_TYPE_RSA_KEY_PAIR )
+    if( PSA_KEY_TYPE_IS_RSA( slot->attr.type ) )
     {
         mbedtls_rsa_context *rsa = NULL;
         status = psa_load_rsa_representation( slot->attr.type,

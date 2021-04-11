@@ -381,6 +381,10 @@
  */
 #define PSA_KEY_TYPE_AES                            ((psa_key_type_t)0x2400)
 
+/** Whether a key type is AES; plaintext or wrapped. */
+#define PSA_KEY_TYPE_IS_AES(type) ((((type) == PSA_KEY_TYPE_AES) != 0) || \
+		(((type) == (PSA_KEY_TYPE_VENDOR_FLAG | PSA_KEY_TYPE_AES)) != 0))
+
 /** Key for a cipher or MAC algorithm based on DES or 3DES (Triple-DES).
  *
  * The size of the key can be 8 bytes (single DES), 16 bytes (2-key 3DES) or
@@ -415,9 +419,15 @@
 #define PSA_KEY_TYPE_RSA_PUBLIC_KEY                 ((psa_key_type_t)0x4001)
 /** RSA key pair (private and public key). */
 #define PSA_KEY_TYPE_RSA_KEY_PAIR                   ((psa_key_type_t)0x7001)
-/** Whether a key type is an RSA key (pair or public-only). */
+/** Whether a key type is an RSA key pair; standard or vendor. */
+#define PSA_KEY_TYPE_IS_RSA_KEY_PAIR(type)  							\
+	((type == PSA_KEY_TYPE_RSA_KEY_PAIR) || \
+	 (type == (PSA_KEY_TYPE_RSA_KEY_PAIR | PSA_KEY_TYPE_VENDOR_FLAG)))
+
+/** Whether a key type is an RSA key (pair or public-only) standard or vendor. */
 #define PSA_KEY_TYPE_IS_RSA(type)                                       \
-    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_RSA_PUBLIC_KEY)
+    ((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_RSA_PUBLIC_KEY) || \
+	 (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == (PSA_KEY_TYPE_RSA_PUBLIC_KEY | PSA_KEY_TYPE_VENDOR_FLAG)))
 
 #define PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE            ((psa_key_type_t)0x4100)
 #define PSA_KEY_TYPE_ECC_KEY_PAIR_BASE              ((psa_key_type_t)0x7100)
@@ -438,17 +448,23 @@
     (PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE | (curve))
 
 /** Whether a key type is an elliptic curve key (pair or public-only). */
-#define PSA_KEY_TYPE_IS_ECC(type)                                       \
-    ((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) &                        \
-      ~PSA_KEY_TYPE_ECC_CURVE_MASK) == PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE)
+#define PSA_KEY_TYPE_IS_ECC(type)                                           \
+    (((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) &                          \
+      ~PSA_KEY_TYPE_ECC_CURVE_MASK) == PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE) || \
+	  ((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) &                         \
+      ~PSA_KEY_TYPE_ECC_CURVE_MASK) == (PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE | PSA_KEY_TYPE_VENDOR_FLAG)))
 /** Whether a key type is an elliptic curve key pair. */
 #define PSA_KEY_TYPE_IS_ECC_KEY_PAIR(type)                               \
-    (((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
-     PSA_KEY_TYPE_ECC_KEY_PAIR_BASE)
+    ((((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
+     PSA_KEY_TYPE_ECC_KEY_PAIR_BASE) ||                                  \
+	 (((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
+     (PSA_KEY_TYPE_ECC_KEY_PAIR_BASE | PSA_KEY_TYPE_VENDOR_FLAG)))
 /** Whether a key type is an elliptic curve public key. */
-#define PSA_KEY_TYPE_IS_ECC_PUBLIC_KEY(type)                            \
-    (((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
-     PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE)
+#define PSA_KEY_TYPE_IS_ECC_PUBLIC_KEY(type)                             \
+    ((((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
+     PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE) ||                                \
+	 (((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
+     (PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE | PSA_KEY_TYPE_VENDOR_FLAG)))
 
 /** Extract the curve from an elliptic curve key type. */
 #define PSA_KEY_TYPE_ECC_GET_FAMILY(type)                        \
@@ -1566,6 +1582,11 @@
  * See ::psa_key_lifetime_t for more information.
  */
 #define PSA_KEY_LIFETIME_PERSISTENT             ((psa_key_lifetime_t)0x00000001)
+
+#define PSA_KEY_LIFETIME_IS_PERSISTENT(lifetime) \
+    (((lifetime) & PSA_KEY_LIFETIME_PERSISTENT) != 0)
+
+#define PSA_KEY_LIFETIME_VENDOR_FLAG ((psa_key_lifetime_t)0x80000000)
 
 /** The persistence level of volatile keys.
  *

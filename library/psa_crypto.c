@@ -124,7 +124,7 @@ static psa_global_data_t global_data;
     if( global_data.initialized == 0 )  \
         return( PSA_ERROR_BAD_STATE );
 
-static psa_status_t mbedtls_to_psa_error( int ret )
+psa_status_t mbedtls_to_psa_error( int ret )
 {
     /* If there's both a high-level code and low-level code, dispatch on
      * the high-level code. */
@@ -573,6 +573,15 @@ static psa_status_t psa_load_rsa_representation( psa_key_type_t type,
     *p_rsa = mbedtls_pk_rsa( ctx );
     ctx.pk_info = NULL;
 
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_RSA_ALT)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+    {
+        /* Setup the vendor context flag */
+    	(*p_rsa)->vendor_ctx = (bool *) true;
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
 exit:
     mbedtls_pk_free( &ctx );
     return( status );
@@ -593,7 +602,7 @@ exit:
  * \param[in] data_size     The length of the buffer to export to
  * \param[out] data_length  The amount of bytes written to \p data
  */
-static psa_status_t psa_export_rsa_key( psa_key_type_t type,
+psa_status_t psa_export_rsa_key( psa_key_type_t type,
                                         mbedtls_rsa_context *rsa,
                                         uint8_t *data,
                                         size_t data_size,
@@ -655,7 +664,7 @@ static psa_status_t psa_export_rsa_key( psa_key_type_t type,
  * \param[in] data          The buffer containing the import representation
  * \param[in] data_length   The amount of bytes in \p data
  */
-static psa_status_t psa_import_rsa_key( psa_key_slot_t *slot,
+psa_status_t psa_import_rsa_key( psa_key_slot_t *slot,
                                         const uint8_t *data,
                                         size_t data_length )
 {
@@ -758,8 +767,15 @@ static psa_status_t psa_load_ecp_representation( psa_key_type_t type,
     mbedtls_ecp_keypair_init( ecp );
 
     /* Load the group. */
-    grp_id = mbedtls_ecc_group_of_psa( PSA_KEY_TYPE_ECC_GET_FAMILY( type ),
-                                       curve_size );
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+    {
+    	grp_id = mbedtls_ecc_group_of_psa( PSA_KEY_TYPE_ECC_GET_FAMILY( type ), PSA_ECC_BYTES_VENDOR_RAW(curve_size) );
+    }
+    else
+#endif
+    grp_id = mbedtls_ecc_group_of_psa( PSA_KEY_TYPE_ECC_GET_FAMILY( type ),curve_size );
+
     if( grp_id == MBEDTLS_ECP_DP_NONE )
     {
         status = PSA_ERROR_INVALID_ARGUMENT;
@@ -801,6 +817,16 @@ static psa_status_t psa_load_ecp_representation( psa_key_type_t type,
     }
 
     *p_ecp = ecp;
+
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+    {
+        /* Setup the vendor context flag */
+    	(*p_ecp)->grp.vendor_ctx = (bool *) true;
+
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
 exit:
     if( status != PSA_SUCCESS )
     {
@@ -819,7 +845,7 @@ exit:
  * \param[in] data_size     The length of the buffer to export to
  * \param[out] data_length  The amount of bytes written to \p data
  */
-static psa_status_t psa_export_ecp_key( psa_key_type_t type,
+psa_status_t psa_export_ecp_key( psa_key_type_t type,
                                         mbedtls_ecp_keypair *ecp,
                                         uint8_t *data,
                                         size_t data_size,
@@ -853,15 +879,29 @@ static psa_status_t psa_export_ecp_key( psa_key_type_t type,
     }
     else
     {
-        if( data_size < PSA_BITS_TO_BYTES( ecp->grp.nbits ) )
+        uint32_t private_key_bytes = 0;
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
+		if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+		{
+			/* Setup the vendor private key size. The
+			 * mbedtls_ecp_write_key() fn seems to require buffer greater than key size  */
+			private_key_bytes = RM_PSA_CRYPTO_ECC_KEY_WRAPPED_SIZE_BYTES(ecp->grp.nbits);
+		}
+		else
+
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+		{
+			private_key_bytes = PSA_BITS_TO_BYTES( ecp->grp.nbits);
+		}
+        if( data_size < private_key_bytes )
             return( PSA_ERROR_BUFFER_TOO_SMALL );
 
         status = mbedtls_to_psa_error(
                     mbedtls_ecp_write_key( ecp,
                                            data,
-                                           PSA_BITS_TO_BYTES( ecp->grp.nbits ) ) );
+                                           private_key_bytes ) );
         if( status == PSA_SUCCESS )
-            *data_length = PSA_BITS_TO_BYTES( ecp->grp.nbits );
+            *data_length = private_key_bytes;
         else
             memset( data, 0, data_size );
 
@@ -875,7 +915,7 @@ static psa_status_t psa_export_ecp_key( psa_key_type_t type,
  * \param[in] data          The buffer containing the import representation
  * \param[in] data_length   The amount of bytes in \p data
  */
-static psa_status_t psa_import_ecp_key( psa_key_slot_t *slot,
+psa_status_t psa_import_ecp_key( psa_key_slot_t *slot,
                                         const uint8_t *data,
                                         size_t data_length )
 {
@@ -954,7 +994,7 @@ static inline size_t psa_get_key_slot_bits( const psa_key_slot_t *slot )
  * \retval #PSA_ERROR_ALREADY_EXISTS
  *         Trying to allocate a buffer to a non-empty key slot.
  */
-static psa_status_t psa_allocate_buffer_to_slot( psa_key_slot_t *slot,
+psa_status_t psa_allocate_buffer_to_slot( psa_key_slot_t *slot,
                                                  size_t buffer_length )
 {
     if( slot->data.key.data != NULL )
@@ -1193,7 +1233,7 @@ static psa_status_t psa_get_transparent_key( psa_key_handle_t handle,
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
 
 /** Wipe key data from a slot. Preserve metadata such as the policy. */
-static psa_status_t psa_remove_key_data_from_memory( psa_key_slot_t *slot )
+psa_status_t psa_remove_key_data_from_memory( psa_key_slot_t *slot )
 {
 #if defined(MBEDTLS_PSA_CRYPTO_SE_C)
     if( psa_key_slot_is_external( slot ) )
@@ -1487,7 +1527,7 @@ psa_status_t psa_get_key_slot_number(
 }
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
 
-static psa_status_t psa_internal_export_key_buffer( const psa_key_slot_t *slot,
+psa_status_t psa_internal_export_key_buffer( const psa_key_slot_t *slot,
                                                     uint8_t *data,
                                                     size_t data_size,
                                                     size_t *data_length )
@@ -1501,7 +1541,7 @@ static psa_status_t psa_internal_export_key_buffer( const psa_key_slot_t *slot,
     return( PSA_SUCCESS );
 }
 
-static psa_status_t psa_internal_export_key( const psa_key_slot_t *slot,
+psa_status_t psa_internal_export_key( const psa_key_slot_t *slot,
                                              uint8_t *data,
                                              size_t data_size,
                                              size_t *data_length,
@@ -1877,7 +1917,7 @@ static psa_status_t psa_start_key_creation(
  * \return If this function fails, the key slot is an invalid state.
  *         You must call psa_fail_key_creation() to wipe and free the slot.
  */
-static psa_status_t psa_finish_key_creation(
+psa_status_t psa_finish_key_creation(
     psa_key_slot_t *slot,
     psa_se_drv_table_entry_t *driver )
 {
@@ -1909,6 +1949,13 @@ static psa_status_t psa_finish_key_creation(
         }
         else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+        if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+        {
+            status = psa_finish_key_creation_vendor( slot );
+        }
+        else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
         {
             size_t buffer_size =
                 PSA_KEY_EXPORT_MAX_SIZE( slot->attr.type,
@@ -2115,6 +2162,14 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
     }
     else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_import_key_into_slot_vendor( slot, data, data_length, true);
+            goto exit;
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
     {
         status = psa_import_key_into_slot( slot, data, data_length );
         if( status != PSA_SUCCESS )
@@ -2722,7 +2777,7 @@ psa_status_t psa_hash_clone( const psa_hash_operation_t *source_operation,
 /* MAC */
 /****************************************************************/
 
-static const mbedtls_cipher_info_t *mbedtls_cipher_info_from_psa(
+const mbedtls_cipher_info_t *mbedtls_cipher_info_from_psa(
     psa_algorithm_t alg,
     psa_key_type_t key_type,
     size_t key_bits,
@@ -3059,7 +3114,7 @@ static psa_status_t psa_mac_setup( psa_mac_operation_t *operation,
     {
         const mbedtls_cipher_info_t *cipher_info =
             mbedtls_cipher_info_from_psa( full_length_alg,
-                                          slot->attr.type, key_bits, NULL );
+                                          (slot->attr.type & ~PSA_KEY_TYPE_VENDOR_FLAG), key_bits, NULL );
         int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
         if( cipher_info == NULL )
         {
@@ -3405,7 +3460,7 @@ static psa_status_t psa_rsa_decode_md_type( psa_algorithm_t alg,
     return( PSA_SUCCESS );
 }
 
-static psa_status_t psa_rsa_sign( mbedtls_rsa_context *rsa,
+psa_status_t psa_rsa_sign( mbedtls_rsa_context *rsa,
                                   psa_algorithm_t alg,
                                   const uint8_t *hash,
                                   size_t hash_length,
@@ -3464,7 +3519,7 @@ static psa_status_t psa_rsa_sign( mbedtls_rsa_context *rsa,
     return( mbedtls_to_psa_error( ret ) );
 }
 
-static psa_status_t psa_rsa_verify( mbedtls_rsa_context *rsa,
+psa_status_t psa_rsa_verify( mbedtls_rsa_context *rsa,
                                     psa_algorithm_t alg,
                                     const uint8_t *hash,
                                     size_t hash_length,
@@ -3530,7 +3585,7 @@ static psa_status_t psa_rsa_verify( mbedtls_rsa_context *rsa,
 /* `ecp` cannot be const because `ecp->grp` needs to be non-const
  * for mbedtls_ecdsa_sign() and mbedtls_ecdsa_sign_det()
  * (even though these functions don't modify it). */
-static psa_status_t psa_ecdsa_sign( mbedtls_ecp_keypair *ecp,
+psa_status_t psa_ecdsa_sign( mbedtls_ecp_keypair *ecp,
                                     psa_algorithm_t alg,
                                     const uint8_t *hash,
                                     size_t hash_length,
@@ -3587,7 +3642,7 @@ cleanup:
     return( mbedtls_to_psa_error( ret ) );
 }
 
-static psa_status_t psa_ecdsa_verify( mbedtls_ecp_keypair *ecp,
+psa_status_t psa_ecdsa_verify( mbedtls_ecp_keypair *ecp,
                                       const uint8_t *hash,
                                       size_t hash_length,
                                       const uint8_t *signature,
@@ -3678,7 +3733,7 @@ psa_status_t psa_sign_hash( psa_key_handle_t handle,
     else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
 #if defined(MBEDTLS_RSA_C)
-    if( slot->attr.type == PSA_KEY_TYPE_RSA_KEY_PAIR )
+    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR (slot->attr.type) )
     {
         mbedtls_rsa_context *rsa = NULL;
 
@@ -4099,6 +4154,14 @@ static psa_status_t psa_cipher_setup( psa_cipher_operation_t *operation,
         goto exit;
     key_bits = psa_get_key_slot_bits( slot );
 
+ #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_cipher_setup_vendor(operation, slot, alg, cipher_operation); 
+        goto exit;
+    }
+    #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
     cipher_info = mbedtls_cipher_info_from_psa( alg, slot->attr.type, key_bits, NULL );
     if( cipher_info == NULL )
     {
@@ -4430,15 +4493,34 @@ static psa_status_t psa_aead_setup( aead_operation_t *operation,
     psa_status_t status;
     size_t key_bits;
     mbedtls_cipher_id_t cipher_id;
+    psa_key_type_t temp_keytype = 0;
 
     status = psa_get_transparent_key( handle, &operation->slot, usage, alg );
     if( status != PSA_SUCCESS )
         return( status );
 
     key_bits = psa_get_key_slot_bits( operation->slot );
-
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(operation->slot->attr.type))
+    {
+        /* The mbedcrypto implementation obtains the list of methods based on the keybit size.
+         * Since the wrapped keybit size does not correspond to the raw key size i.e the
+         * AES256 raw bit size is 256 but the wrapped size is 416 bytes, provide the 256 bit value
+         * to mbedcrypto so that the right methods are invoked. */
+        status = vendor_bitlength_to_raw_bitlength(operation->slot->attr.type, operation->slot->attr.bits, &key_bits);
+        if (status != PSA_SUCCESS)
+        {
+            return status;
+        }
+        temp_keytype = (psa_key_type_t)(operation->slot->attr.type & ~PSA_KEY_TYPE_VENDOR_FLAG);
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+    {
+        temp_keytype = (psa_key_type_t)(operation->slot->attr.type);
+    }
     operation->cipher_info =
-        mbedtls_cipher_info_from_psa( alg, operation->slot->attr.type, key_bits,
+        mbedtls_cipher_info_from_psa( alg, temp_keytype, key_bits,
                                       &cipher_id );
     if( operation->cipher_info == NULL )
         return( PSA_ERROR_NOT_SUPPORTED );
@@ -5819,7 +5901,7 @@ psa_status_t mbedtls_psa_inject_entropy( const uint8_t *seed,
 #endif /* MBEDTLS_PSA_INJECT_ENTROPY */
 
 #if defined(MBEDTLS_RSA_C) && defined(MBEDTLS_GENPRIME)
-static psa_status_t psa_read_rsa_exponent( const uint8_t *domain_parameters,
+psa_status_t psa_read_rsa_exponent( const uint8_t *domain_parameters,
                                            size_t domain_parameters_size,
                                            int *exponent )
 {
@@ -6022,6 +6104,15 @@ psa_status_t psa_generate_key( const psa_key_attributes_t *attributes,
     }
     else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_generate_key_vendor(slot, attributes->core.bits,
+            attributes->domain_parameters, attributes->domain_parameters_size);
+            goto exit;
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
     {
         status = psa_generate_key_internal(
             slot, attributes->core.bits,

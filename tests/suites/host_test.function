@@ -1,4 +1,4 @@
-#line 2 "suites/host_test.function"
+//#line 2 "suites/host_test.function"
 
 /**
  * \brief       Verifies that string is in string parameter format i.e. "<str>"

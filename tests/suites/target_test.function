@@ -1,6 +1,6 @@
-#line 2 "suites/target_test.function"
+//#line 2 "suites/target_test.function"
 
-#include "greentea-client/test_env.h"
+#include "test_env.h"
 
 /**
  * \brief       Increments pointer and asserts that it does not overflow.
@@ -72,8 +72,8 @@ uint8_t receive_byte()
     uint8_t c[3];
     size_t len;
 
-    c[0] = greentea_getc();
-    c[1] = greentea_getc();
+    c[0] = greentea_serial_getc();
+    c[1] = greentea_serial_getc();
     c[2] = '\0';
 
     TEST_HELPER_ASSERT( mbedtls_test_unhexify( &byte, sizeof( byte ),
@@ -95,14 +95,14 @@ uint32_t receive_uint32()
 {
     uint32_t value;
     size_t len;
-    const uint8_t c_be[8] = { greentea_getc(),
-                              greentea_getc(),
-                              greentea_getc(),
-                              greentea_getc(),
-                              greentea_getc(),
-                              greentea_getc(),
-                              greentea_getc(),
-                              greentea_getc()
+    const uint8_t c_be[8] = { greentea_serial_getc(),
+                              greentea_serial_getc(),
+                              greentea_serial_getc(),
+                              greentea_serial_getc(),
+                              greentea_serial_getc(),
+                              greentea_serial_getc(),
+                              greentea_serial_getc(),
+                              greentea_serial_getc()
                              };
     const uint8_t c[9] = { c_be[6], c_be[7], c_be[4], c_be[5], c_be[2],
                            c_be[3], c_be[0], c_be[1], '\0' };
@@ -151,7 +151,7 @@ uint8_t * receive_data( uint32_t * data_len )
     i = 0;
     while ( i < 2 )
     {
-        c = greentea_getc();
+        c = greentea_serial_getc();
         /* Ignore any prevous CR LF characters */
         if ( c == '\n' || c == '\r' )
             continue;
@@ -165,7 +165,7 @@ uint8_t * receive_data( uint32_t * data_len )
     data = (uint8_t *)malloc( *data_len );
     TEST_HELPER_ASSERT( data != NULL );
 
-    greentea_getc(); // read ';' received after key i.e. *data_len
+    greentea_serial_getc(); // read ';' received after key i.e. *data_len
 
     for( i = 0; i < *data_len; i++ )
         data[i] = receive_byte();
@@ -173,7 +173,7 @@ uint8_t * receive_data( uint32_t * data_len )
     /* Read closing braces */
     for( i = 0; i < 2; i++ )
     {
-        c = greentea_getc();
+        c = greentea_serial_getc();
         if ( c != '}' )
         {
             errors++;

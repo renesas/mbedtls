@@ -368,7 +368,7 @@ def parse_until_pattern(funcs_f, end_regex):
     :param end_regex: Pattern to stop parsing
     :return: Lines read before the end pattern
     """
-    headers = '#line %d "%s"\n' % (funcs_f.line_no + 1, funcs_f.name)
+    headers = '//#line %d "%s"\n' % (funcs_f.line_no + 1, funcs_f.name)
     for line in funcs_f:
         if re.search(end_regex, line):
             break
@@ -539,7 +539,7 @@ def parse_function_code(funcs_f, dependencies, suite_dependencies):
     :param suite_dependencies: List of test suite dependencies
     :return: Function name, arguments, function code and dispatch code.
     """
-    line_directive = '#line %d "%s"\n' % (funcs_f.line_no + 1, funcs_f.name)
+    line_directive = '//#line %d "%s"\n' % (funcs_f.line_no + 1, funcs_f.name)
     code = ''
     has_exit_label = False
     for line in funcs_f:
@@ -1059,6 +1059,7 @@ def generate_code(**input_info):
             raise IOError("ERROR: %s [%s] not found!" % (name, path))
 
     snippets = {'generator_script': os.path.basename(__file__)}
+    snippets['test_name_macro'] = c_file[c_file.index('test_suite'):-2].replace('.','_').upper()
     read_code_from_input_files(platform_file, helpers_file,
                                out_data_file, snippets)
     add_input_info(funcs_file, data_file, template_file,

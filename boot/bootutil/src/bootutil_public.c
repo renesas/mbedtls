@@ -119,7 +119,7 @@ static const struct boot_swap_table boot_swap_tables[] = {
 #define BOOT_SWAP_TABLES_COUNT \
     (sizeof boot_swap_tables / sizeof boot_swap_tables[0])
 
-static int
+int
 boot_magic_decode(const uint32_t *magic)
 {
     if (memcmp(magic, boot_img_magic, BOOT_MAGIC_SZ) == 0) {

@@ -34,8 +34,7 @@
 #if defined(MCUBOOT_USE_CC310) || defined(MCUBOOT_USE_MBED_TLS)
 #define NUM_ECC_BYTES (256 / 8)
 #endif
-#if defined(MCUBOOT_USE_TINYCRYPT) || defined(MCUBOOT_USE_CC310) || \
-    defined(MCUBOOT_USE_MBED_TLS)
+#if defined(MCUBOOT_USE_TINYCRYPT) || defined(MCUBOOT_USE_CC310) 
 #include "bootutil/sign_key.h"
 
 #include "mbedtls/oid.h"

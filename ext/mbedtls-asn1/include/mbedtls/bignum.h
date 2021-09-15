@@ -28,6 +28,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* By default IAR does not define FILE unless DLIB is used. */
+#if defined(__ICCARM__)
+ #if !_DLIB_FILE_DESCRIPTOR
+typedef void FILE;
+ #endif
+#endif
+
 #if defined(MBEDTLS_FS_IO)
 #include <stdio.h>
 #endif

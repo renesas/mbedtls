@@ -23,6 +23,7 @@
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_DEPRECATE)
 #define _CRT_SECURE_NO_DEPRECATE 1
 #endif
+#define MBEDTLS_ALLOW_PRIVATE_ACCESS
 
 //#define MBEDTLS_PLATFORM_MEMORY
 #define MBEDTLS_FS_IO

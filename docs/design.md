@@ -287,7 +287,11 @@ script must also be used when signing the images. This option set the `RAM_LOAD`
 flag in the image header which indicates that the image should be loaded to the
 RAM and also set the load address in the image header.
 
-The ram-load mode currently does not support the image encryption feature.
+When the encryption option is enabled (`MCUBOOT_ENC_IMAGES`) along with ram-load
+the image is checked for encryption. If the image is not encrypted, RAM loading
+happens as described above. If the image is encrypted, it is copied in RAM at
+the provided address and then decrypted. Finally, the decrypted image is
+authenticated in RAM and executed.
 
 ## [Boot Swap Types](#boot-swap-types)
 
@@ -1020,8 +1024,8 @@ producing signed images, see: [signed_images](signed_images.md).
 If you want to enable and use encrypted images, see:
 [encrypted_images](encrypted_images.md).
 
-Note: Image encryption is not supported when the direct-xip or the ram-load
-upgrade strategy is selected.
+Note: Image encryption is not supported when the direct-xip upgrade strategy
+is selected.
 
 ### [Using Hardware Keys for Verification](#hw-key-support)
 
@@ -1311,6 +1315,7 @@ So, running the test on the host looks like the following (The commands below
 are issued from the MCUboot source directory):
 
 ```sh
+$ mkdir docker
 $ ./ci/fih-tests_install.sh
 $ FIH_LEVEL=MCUBOOT_FIH_PROFILE_MEDIUM BUILD_TYPE=RELEASE SKIP_SIZE=2 \
     DAMAGE_TYPE=SIGNATURE ./ci/fih-tests_run.sh

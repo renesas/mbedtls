@@ -6,19 +6,22 @@
 
 #include <string.h>
 #include <soc/soc.h>
-#include <soc/dport_reg.h>
 #include "soc/soc_memory_layout.h"
 #include <bootloader_flash.h>
 #include <bootloader_flash_priv.h>
 
-#include "esp32/rom/cache.h"
-#include "esp32/rom/efuse.h"
-#include "esp32/rom/ets_sys.h"
-#include "esp32/rom/spi_flash.h"
-#include "esp32/rom/crc.h"
-#include "esp32/rom/rtc.h"
-#include "esp32/rom/gpio.h"
-#include "esp32/rom/uart.h"
+#if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S2)
+#include <soc/dport_reg.h>
+#endif
+
+#include "rom/cache.h"
+#include "rom/efuse.h"
+#include "rom/ets_sys.h"
+#include "rom/spi_flash.h"
+#include "rom/crc.h"
+#include "rom/rtc.h"
+#include "rom/gpio.h"
+#include "rom/uart.h"
 
 #include <esp_loader.h>
 #include <bootutil/fault_injection_hardening.h>
@@ -87,7 +90,7 @@ void esp_app_image_load(int slot, unsigned int hdr_offset)
     }
 
     if (!esp_ptr_in_iram((void *)load_header.entry_addr)) {
-        MCUBOOT_LOG_ERR("Application entry point is not in IRAM. Aborting");
+        MCUBOOT_LOG_ERR("Application entry point (0x%x) is not in IRAM. Aborting", load_header.entry_addr);
         FIH_PANIC;
     }
 

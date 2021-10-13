@@ -24,15 +24,18 @@ use std::{
     mem,
     slice,
 };
-use aes_ctr::{
+use aes::{
+    Aes128,
     Aes128Ctr,
+    Aes256,
     Aes256Ctr,
-    stream_cipher::{
-        generic_array::GenericArray,
-        NewStreamCipher,
-        SyncStreamCipher,
-    },
+    NewBlockCipher,
 };
+use cipher::{
+    FromBlockCipher,
+    generic_array::GenericArray,
+    StreamCipher,
+    };
 
 use simflash::{Flash, SimFlash, SimMultiFlash};
 use mcuboot_sys::{c, AreaDesc, FlashId, RamBlock};
@@ -91,6 +94,7 @@ struct OneImage {
 /// is just the unencrypted payload.  For encrypted images, we store both
 /// the encrypted and the plaintext.
 struct ImageData {
+    size: usize,
     plain: Vec<u8>,
     cipher: Option<Vec<u8>>,
 }
@@ -1064,13 +1068,13 @@ impl Images {
             let place = self.ram.lookup(&image.slots[0]);
             let ram_image = ram.borrow_part(place.offset as usize - RAM_LOAD_ADDR as usize,
                 place.size as usize);
-            let src_image = &image.upgrades.plain;
-            if src_image.len() > ram_image.len() {
+            let src_sz = image.upgrades.size();
+            if src_sz > ram_image.len() {
                 error!("Image ended up too large, nonsensical");
                 return true;
             }
-
-            let ram_image = &ram_image[0..src_image.len()];
+            let src_image = &image.upgrades.plain[0..src_sz];
+            let ram_image = &ram_image[0..src_sz];
             if ram_image != src_image {
                 error!("Image not loaded correctly");
                 return true;
@@ -1264,7 +1268,7 @@ impl Images {
         let mut resets = vec![0i32; count];
         let mut remaining_ops = total_ops;
         for reset in &mut resets {
-            let reset_counter = rng.gen_range(1, remaining_ops / 2);
+            let reset_counter = rng.gen_range(1 ..= remaining_ops / 2);
             let mut counter = reset_counter;
             match c::boot_go(&mut flash, &self.areadesc, Some(&mut counter), false) {
                 x if x.interrupted() => (),
@@ -1481,11 +1485,13 @@ fn install_image(flash: &mut SimMultiFlash, slot: &SlotInfo, len: usize,
         b_encimg = b_img.clone();
         if aes256 {
             let key: &GenericArray<u8, U32> = GenericArray::from_slice(enc_key.as_slice());
-            let mut cipher = Aes256Ctr::new(&key, &nonce);
+            let block = Aes256::new(&key);
+            let mut cipher = Aes256Ctr::from_block_cipher(block, &nonce);
             cipher.apply_keystream(&mut b_encimg);
         } else {
             let key: &GenericArray<u8, U16> = GenericArray::from_slice(enc_key.as_slice());
-            let mut cipher = Aes128Ctr::new(&key, &nonce);
+            let block = Aes128::new(&key);
+            let mut cipher = Aes128Ctr::from_block_cipher(block, &nonce);
             cipher.apply_keystream(&mut b_encimg);
         }
     }
@@ -1505,6 +1511,7 @@ fn install_image(flash: &mut SimMultiFlash, slot: &SlotInfo, len: usize,
 
     // Pad the buffer to a multiple of the flash alignment.
     let align = dev.align();
+    let image_sz = buf.len();
     while buf.len() % align != 0 {
         buf.push(dev.erased_val());
     }
@@ -1547,6 +1554,7 @@ fn install_image(flash: &mut SimMultiFlash, slot: &SlotInfo, len: usize,
         dev.read(offset, &mut copy).unwrap();
 
         ImageData {
+            size: image_sz,
             plain: copy,
             cipher: enc_copy,
         }
@@ -1573,6 +1581,7 @@ fn install_image(flash: &mut SimMultiFlash, slot: &SlotInfo, len: usize,
         }
 
         ImageData {
+            size: image_sz,
             plain: copy,
             cipher: enc_copy,
         }
@@ -1582,6 +1591,7 @@ fn install_image(flash: &mut SimMultiFlash, slot: &SlotInfo, len: usize,
 /// Install no image.  This is used when no upgrade happens.
 fn install_no_image() -> ImageData {
     ImageData {
+        size: 0,
         plain: vec![],
         cipher: None,
     }
@@ -1650,6 +1660,10 @@ impl ImageData {
             (true, 1) => self.cipher.as_ref().expect("Invalid image"),
             _ => panic!("Invalid slot requested"),
         }
+    }
+
+    fn size(&self) -> usize {
+        self.size
     }
 }
 
@@ -1879,7 +1893,7 @@ fn mark_permanent_upgrade(flash: &mut SimMultiFlash, slot: &SlotInfo) {
 
 // Drop some pseudo-random gibberish onto the data.
 fn splat(data: &mut [u8], seed: usize) {
-    let mut seed_block = [0u8; 16];
+    let mut seed_block = [0u8; 32];
     let mut buf = Cursor::new(&mut seed_block[..]);
     buf.write_u32::<LittleEndian>(0x135782ea).unwrap();
     buf.write_u32::<LittleEndian>(0x92184728).unwrap();

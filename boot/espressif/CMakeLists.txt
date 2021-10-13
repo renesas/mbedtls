@@ -1,3 +1,7 @@
+# Copyright (c) 2021 Espressif Systems (Shanghai) Co., Ltd.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 cmake_minimum_required(VERSION 3.13)
 
 if (NOT DEFINED MCUBOOT_TARGET)
@@ -7,6 +11,13 @@ endif()
 project(mcuboot_${MCUBOOT_TARGET})
 
 add_definitions(-DMCUBOOT_TARGET=${MCUBOOT_TARGET})
+
+if ("${MCUBOOT_TARGET}" STREQUAL "esp32" OR
+    "${MCUBOOT_TARGET}" STREQUAL "esp32s2")
+    set(MCUBOOT_ARCH "xtensa")
+elseif("${MCUBOOT_TARGET}" STREQUAL "esp32c3")
+    set(MCUBOOT_ARCH "riscv")
+endif()
 
 if (NOT DEFINED IDF_PATH)
     if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/hal/esp-idf")
@@ -53,7 +64,11 @@ foreach(config ${BOOTLOADER_CONF})
         string(REGEX REPLACE "^[ ]+" "" config ${config})
         string(REGEX MATCH "^[^=]+" CONFIG_NAME ${config})
         string(REPLACE "${CONFIG_NAME}=" "" CONFIG_VALUE ${config})
-        add_definitions(-D${CONFIG_NAME}=${CONFIG_VALUE})
+        if (NOT ("${CONFIG_VALUE}" STREQUAL "n"
+            OR "${CONFIG_VALUE}" STREQUAL "N"))
+            add_definitions(-D${CONFIG_NAME}=${CONFIG_VALUE})
+            set(${CONFIG_NAME} ${CONFIG_VALUE})
+        endif()
     endif()
 endforeach()
 
@@ -62,7 +77,55 @@ set(APP_EXECUTABLE ${APP_NAME}.elf)
 
 set(MCUBOOT_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 set(BOOTUTIL_DIR ${MCUBOOT_ROOT_DIR}/boot/bootutil)
-set(MBEDTLS_DIR ${MCUBOOT_ROOT_DIR}/ext/mbedtls)
+set(ESPRESSIF_PORT_DIR ${CMAKE_CURRENT_LIST_DIR})
+
+if (DEFINED CONFIG_ESP_SIGN_RSA)
+    if ("${MCUBOOT_TARGET}" STREQUAL "esp32s2" OR
+        "${MCUBOOT_TARGET}" STREQUAL "esp32c3")
+        message(FATAL_ERROR "RSA signature verification is currently not supported on the target")
+    endif()
+    include(${CMAKE_CURRENT_LIST_DIR}/include/crypto_config/rsa.cmake)
+elseif (DEFINED CONFIG_ESP_SIGN_EC256)
+    include(${CMAKE_CURRENT_LIST_DIR}/include/crypto_config/ec256.cmake)
+elseif (DEFINED CONFIG_ESP_SIGN_ED25519)
+    if ("${MCUBOOT_TARGET}" STREQUAL "esp32c3")
+        message(FATAL_ERROR "ED25519 signature verification is currently not supported on the target")
+    endif()
+    include(${CMAKE_CURRENT_LIST_DIR}/include/crypto_config/ed25519.cmake)
+else()
+    # No signature verification
+    set(TINYCRYPT_DIR ${MCUBOOT_ROOT_DIR}/ext/tinycrypt/lib)
+    set(CRYPTO_INC
+        ${TINYCRYPT_DIR}/include
+        )
+    set(crypto_srcs
+        ${TINYCRYPT_DIR}/source/sha256.c
+        ${TINYCRYPT_DIR}/source/utils.c
+        )
+endif()
+
+if(DEFINED CONFIG_ESP_SIGN_KEY_FILE)
+    if(IS_ABSOLUTE ${CONFIG_ESP_SIGN_KEY_FILE})
+        set(KEY_FILE ${CONFIG_ESP_SIGN_KEY_FILE})
+    else()
+        set(KEY_FILE ${MCUBOOT_ROOT_DIR}/${CONFIG_ESP_SIGN_KEY_FILE})
+    endif()
+    message("MCUBoot bootloader key file: ${KEY_FILE}")
+
+    set(GENERATED_PUBKEY ${CMAKE_CURRENT_BINARY_DIR}/autogen-pubkey.c)
+        add_custom_command(
+            OUTPUT ${GENERATED_PUBKEY}
+            COMMAND
+            ${PYTHON_EXECUTABLE}
+            ${MCUBOOT_ROOT_DIR}/scripts/imgtool.py
+            getpub
+            -k
+            ${KEY_FILE}
+            > ${GENERATED_PUBKEY}
+            DEPENDS ${KEY_FILE}
+        )
+    list(APPEND crypto_srcs ${GENERATED_PUBKEY})
+endif()
 
 set(bootutil_srcs
     ${BOOTUTIL_DIR}/src/boot_record.c
@@ -84,13 +147,7 @@ set(bootutil_srcs
     ${BOOTUTIL_DIR}/src/tlv.c
     )
 
-set(mbedtls_srcs
-    ${MBEDTLS_DIR}/library/sha256.c
-    ${MBEDTLS_DIR}/library/platform_util.c
-    )
-
 set(CFLAGS
-    "-mlongcalls"
     "-Wno-frame-address"
     "-Wall"
     "-Wextra"
@@ -120,7 +177,6 @@ set(CFLAGS
 
 set(LDFLAGS
     "-nostdlib"
-    "-mlongcalls"
     "-Wno-frame-address"
     "-Wl,--cref"
     "-Wl,--Map=${APP_NAME}.map"
@@ -132,6 +188,15 @@ set(LDFLAGS
     "-lgcc"
     "-lgcov"
     )
+
+if ("${MCUBOOT_ARCH}" STREQUAL "xtensa")
+    list(APPEND CFLAGS
+        "-mlongcalls"
+        )
+    list(APPEND LDFLAGS
+        "-mlongcalls"
+        )
+endif()
 
 add_subdirectory(hal)
 add_executable(
@@ -149,16 +214,17 @@ target_sources(
     ${APP_EXECUTABLE}
     PUBLIC
     ${bootutil_srcs}
-    ${mbedtls_srcs}
+    ${crypto_srcs}
     ${CMAKE_CURRENT_LIST_DIR}/port/esp_mcuboot.c
     ${CMAKE_CURRENT_LIST_DIR}/port/esp_loader.c
+    ${CMAKE_CURRENT_LIST_DIR}/os.c
     )
 
 target_include_directories(
     ${APP_EXECUTABLE}
     PUBLIC
     ${BOOTUTIL_DIR}/include
-    ${MBEDTLS_DIR}/include
+    ${CRYPTO_INC}
     ${CMAKE_CURRENT_LIST_DIR}/include
     )
 

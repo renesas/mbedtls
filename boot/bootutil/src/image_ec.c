@@ -28,7 +28,7 @@
 
 #include "mcuboot_config/mcuboot_config.h"
 
-#ifdef MCUBOOT_SIGN_EC
+#if (defined(MCUBOOT_SIGN_EC) || defined(MCUBOOT_SIGN_EC256)) && (defined(MCUBOOT_USE_MBED_TLS))
 #include "bootutil/sign_key.h"
 
 #include "mbedtls/ecdsa.h"
@@ -38,11 +38,20 @@
 #include "bootutil/crypto/common.h"
 #include "bootutil_priv.h"
 
+#ifdef MCUBOOT_SIGN_EC256
+#define BOOT_MBEDTLS_ECP        MBEDTLS_ECP_DP_SECP256R1
+#define BOOT_MBEDTLS_ECP_OID    MBEDTLS_OID_EC_GRP_SECP256R1
+#else
+#define BOOT_MBEDTLS_ECP        MBEDTLS_ECP_DP_SECP224R1
+#define BOOT_MBEDTLS_ECP_OID    MBEDTLS_OID_EC_GRP_SECP224R1
+#endif
+
+
 /*
  * Declaring these like this adds NULL termination.
  */
 static const uint8_t ec_pubkey_oid[] = MBEDTLS_OID_EC_ALG_UNRESTRICTED;
-static const uint8_t ec_secp224r1_oid[] = MBEDTLS_OID_EC_GRP_SECP224R1;
+static const uint8_t ec_oid[] = BOOT_MBEDTLS_ECP_OID;
 
 /*
  * Parse the public key used for signing.
@@ -67,12 +76,12 @@ bootutil_parse_eckey(mbedtls_ecdsa_context *ctx, uint8_t **p, uint8_t *end)
       memcmp(alg.p, ec_pubkey_oid, sizeof(ec_pubkey_oid) - 1)) {
         return -3;
     }
-    if (param.len != sizeof(ec_secp224r1_oid) - 1||
-      memcmp(param.p, ec_secp224r1_oid, sizeof(ec_secp224r1_oid) - 1)) {
+    if (param.len != sizeof(ec_oid) - 1||
+      memcmp(param.p, ec_oid, sizeof(ec_oid) - 1)) {
         return -4;
     }
 
-    if (mbedtls_ecp_group_load(&ctx->MBEDTLS_CONTEXT_MEMBER(grp), MBEDTLS_ECP_DP_SECP224R1)) {
+    if (mbedtls_ecp_group_load(&ctx->grp, BOOT_MBEDTLS_ECP)) {
         return -5;
     }
 
@@ -127,4 +136,4 @@ bootutil_verify_sig(uint8_t *hash, uint32_t hlen, uint8_t *sig, size_t slen,
 
     return rc;
 }
-#endif /* MCUBOOT_SIGN_EC */
+#endif /* MCUBOOT_SIGN_EC || MCUBOOT_SIGN_EC256 */

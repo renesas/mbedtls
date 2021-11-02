@@ -2,14 +2,6 @@ set(libs
     ${mbedtls_target}
 )
 
-if(USE_PKCS11_HELPER_LIBRARY)
-    set(libs ${libs} pkcs11-helper)
-endif(USE_PKCS11_HELPER_LIBRARY)
-
-if(ENABLE_ZLIB_SUPPORT)
-    set(libs ${libs} ${ZLIB_LIBRARIES})
-endif(ENABLE_ZLIB_SUPPORT)
-
 set(executables_libs
     selftest
     udp_proxy
@@ -26,7 +18,14 @@ if(TEST_CPP)
 endif()
 
 foreach(exe IN LISTS executables_libs executables_mbedcrypto)
-    add_executable(${exe} ${exe}.c $<TARGET_OBJECTS:mbedtls_test>)
+    set(extra_sources "")
+    if(exe STREQUAL "query_compile_time_config")
+        list(APPEND extra_sources
+            ${CMAKE_CURRENT_SOURCE_DIR}/query_config.c)
+    endif()
+    add_executable(${exe} ${exe}.c $<TARGET_OBJECTS:mbedtls_test>
+        ${extra_sources})
+    target_include_directories(${exe} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../tests/include)
 
     # This emulates "if ( ... IN_LIST ... )" which becomes available in CMake 3.3
     list(FIND executables_libs ${exe} exe_index)
@@ -36,9 +35,6 @@ foreach(exe IN LISTS executables_libs executables_mbedcrypto)
         target_link_libraries(${exe} ${mbedcrypto_target})
     endif()
 endforeach()
-
-set_property(TARGET query_compile_time_config APPEND PROPERTY SOURCES
-             ${CMAKE_CURRENT_SOURCE_DIR}/query_config.c)
 
 install(TARGETS ${executables_libs} ${executables_mbedcrypto}
         DESTINATION "bin"

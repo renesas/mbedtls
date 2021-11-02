@@ -17,11 +17,7 @@
  *  limitations under the License.
  */
 
-#if !defined(MBEDTLS_CONFIG_FILE)
-#include "mbedtls/config.h"
-#else
-#include MBEDTLS_CONFIG_FILE
-#endif
+#include "mbedtls/build_info.h"
 
 #if defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
@@ -40,7 +36,7 @@
     "Mbed TLS build and the macro expansion of that configuration will be\n" \
     "printed (if any). Otherwise, 1 will be returned.\n"
 
-int query_config( const char *config );
+#include "query_config.h"
 
 int main( int argc, char *argv[] )
 {

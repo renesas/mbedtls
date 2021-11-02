@@ -1,10 +1,11 @@
 
 # To compile on SunOS: add "-lsocket -lnsl" to LDFLAGS
-# To compile with PKCS11: add "-lpkcs11-helper" to LDFLAGS
 
 CFLAGS	?= -O2
-WARNING_CFLAGS ?= -Wall -Wextra
+WARNING_CFLAGS ?= -Wall -Wextra -Wformat=2 -Wno-format-nonliteral
 LDFLAGS ?=
+
+default: all
 
 # Include public header files from ../include, test-specific header files
 # from ./include, and private header files (used by some invasive tests)
@@ -54,19 +55,36 @@ else
 DLEXT ?= so
 EXEXT=
 SHARED_SUFFIX=
-# python2 for POSIX since FreeBSD has only python2 as default.
-PYTHON ?= python2
+PYTHON ?= $(shell if type python3 >/dev/null 2>/dev/null; then echo python3; else echo python; fi)
 endif
 
-# Zlib shared library extensions:
-ifdef ZLIB
-LOCAL_LDFLAGS += -lz
-endif
+.PHONY: generated_files
+GENERATED_DATA_FILES := $(patsubst tests/%,%,$(shell $(PYTHON) scripts/generate_psa_tests.py --list))
+GENERATED_FILES := $(GENERATED_DATA_FILES)
+generated_files: $(GENERATED_FILES)
+
+$(GENERATED_DATA_FILES): scripts/generate_psa_tests.py
+## The generated file only depends on the options that are present in
+## crypto_config.h, not on which options are set. To avoid regenerating this
+## file all the time when switching between configurations, don't declare
+## crypto_config.h as a dependency. Remove this file from your working tree
+## if you've just added or removed an option in crypto_config.h.
+#$(GENERATED_DATA_FILES): ../include/psa/crypto_config.h
+$(GENERATED_DATA_FILES): ../include/psa/crypto_values.h
+$(GENERATED_DATA_FILES): ../include/psa/crypto_extra.h
+$(GENERATED_DATA_FILES): suites/test_suite_psa_crypto_metadata.data
+$(GENERATED_DATA_FILES):
+	echo "  Gen   $@ ..."
+	$(PYTHON) scripts/generate_psa_tests.py
 
 # A test application is built for each suites/test_suite_*.data file.
 # Application name is same as .data file's base name and can be
 # constructed by stripping path 'suites/' and extension .data.
-APPS = $(basename $(subst suites/,,$(wildcard suites/test_suite_*.data)))
+DATA_FILES := $(wildcard suites/test_suite_*.data)
+# Make sure that generated data files are included even if they don't
+# exist yet when the makefile is parsed.
+DATA_FILES += $(filter-out $(DATA_FILES),$(GENERATED_DATA_FILES))
+APPS = $(basename $(subst suites/,,$(DATA_FILES)))
 
 # Construct executable name by adding OS specific suffix $(EXEXT).
 BINARIES := $(addsuffix $(EXEXT),$(APPS))
@@ -84,8 +102,16 @@ MBEDTLS_TEST_OBJS=$(patsubst %.c,%.o,$(wildcard src/*.c src/drivers/*.c))
 
 mbedtls_test: $(MBEDTLS_TEST_OBJS)
 
+TEST_OBJS_DEPS = $(wildcard include/test/*.h include/test/*/*.h)
+ifdef RECORD_PSA_STATUS_COVERAGE_LOG
+# Explicitly depend on this header because on a clean copy of the source tree,
+# it doesn't exist yet and must be generated as part of the build, and
+# therefore the wildcard enumeration above doesn't include it.
+TEST_OBJS_DEPS += include/test/instrument_record_status.h
+endif
+
 # Rule to compile common test C files in src folder
-src/%.o : src/%.c
+src/%.o : src/%.c $(TEST_OBJS_DEPS)
 	echo "  CC    $<"
 	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) -o $@ -c $<
 
@@ -121,20 +147,15 @@ C_FILES := $(addsuffix .c,$(APPS))
 		-o .
 
 
-$(BINARIES): %$(EXEXT): %.c $(MBEDLIBS) $(MBEDTLS_TEST_OBJS)
+$(BINARIES): %$(EXEXT): %.c $(MBEDLIBS) $(TEST_OBJS_DEPS) $(MBEDTLS_TEST_OBJS)
 	echo "  CC    $<"
 	$(CC) $(LOCAL_CFLAGS) $(CFLAGS) $< $(MBEDTLS_TEST_OBJS) $(LOCAL_LDFLAGS) $(LDFLAGS) -o $@
-
-# Some test suites require additional header files.
-$(filter test_suite_psa_crypto%, $(BINARIES)): include/test/psa_crypto_helpers.h
-$(addprefix embedded_,$(filter test_suite_psa_crypto%, $(APPS))): embedded_%: TESTS/mbedtls/%/psa_crypto_helpers.h
-$(filter test_suite_psa_%, $(BINARIES)): include/test/psa_helpers.h
-$(addprefix embedded_,$(filter test_suite_psa_%, $(APPS))): embedded_%: TESTS/mbedtls/%/psa_helpers.h
 
 clean:
 ifndef WINDOWS
 	rm -rf $(BINARIES) *.c *.datax TESTS
 	rm -f src/*.o src/drivers/*.o src/libmbed*
+	rm -f include/test/instrument_record_status.h
 else
 	if exist *.c del /Q /F *.c
 	if exist *.exe del /Q /F *.exe
@@ -142,9 +163,17 @@ else
 	if exist src/*.o del /Q /F src/*.o
 	if exist src/drivers/*.o del /Q /F src/drivers/*.o
 	if exist src/libmbed* del /Q /F src/libmed*
+	if exist include/test/instrument_record_status.h del /Q /F include/test/instrument_record_status.h
 ifneq ($(wildcard TESTS/.*),)
 	rmdir /Q /S TESTS
 endif
+endif
+
+neat: clean
+ifndef WINDOWS
+	rm -f $(GENERATED_FILES)
+else
+	for %f in ($(subst /,\,$(GENERATED_FILES))) if exist %f del /Q /F %f
 endif
 
 # Test suites caught by SKIP_TEST_SUITES are built but not executed.
@@ -185,9 +214,10 @@ endif
 endef
 $(foreach app, $(APPS), $(foreach file, $(notdir $(wildcard include/test/*.h)), \
 	$(eval $(call copy_header_to_target,$(app),$(file)))))
+$(addprefix embedded_,$(filter test_suite_psa_%, $(APPS))): embedded_%: $(patsubst TESTS/mbedtls/%, include/test/%, $(wildcard include/test/*. include/test/*/*.h))
 
 ifdef RECORD_PSA_STATUS_COVERAGE_LOG
-$(BINARIES): include/test/instrument_record_status.h
 include/test/instrument_record_status.h: ../include/psa/crypto.h Makefile
+	echo "  Gen  $@"
 	sed <../include/psa/crypto.h >$@ -n 's/^psa_status_t \([A-Za-z0-9_]*\)(.*/#define \1(...) RECORD_STATUS("\1", \1(__VA_ARGS__))/p'
 endif

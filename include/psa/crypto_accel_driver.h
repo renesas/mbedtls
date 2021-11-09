@@ -38,6 +38,7 @@
 extern "C" {
 #endif
 
+
 /** Import vendor defined key data into a slot.
  *
  * `slot->type` must have been set previously.
@@ -63,6 +64,7 @@ extern "C" {
 psa_status_t psa_import_key_into_slot_vendor( psa_key_slot_t *slot,
                                        const uint8_t *data,
                                        size_t data_length,
+									   mbedtls_svc_key_id_t *key,
                                        bool write_to_persistent_memory);
 
 /**
@@ -192,7 +194,7 @@ typedef struct psa_drv_hash_context_s psa_drv_hash_context_t;
  * \param[in,out] p_context     A structure that will contain the
  * hardware-specific hash context
  *
- * \retval  PSA_SUCCESS     Success.
+ * \retval #PSA_SUCCESS     Success.
  */
 typedef psa_status_t (*psa_drv_hash_setup_t)(psa_drv_hash_context_t *p_context);
 
@@ -237,7 +239,7 @@ typedef psa_status_t (*psa_drv_hash_update_t)(psa_drv_hash_context_t *p_context,
  * \param[out] p_output_length  The number of bytes placed in `p_output` after
  *                              success
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  *          Success.
  */
 typedef psa_status_t (*psa_drv_hash_finish_t)(psa_drv_hash_context_t *p_context,
@@ -305,7 +307,7 @@ typedef struct psa_drv_accel_mac_context_s psa_drv_accel_mac_context_t;
  *                              to be used in the operation
  * \param[in] key_length        The size in bytes of the key material
  *
- * \retval  PSA_SUCCESS
+ * \retval  #PSA_SUCCESS
  *          Success.
  */
 typedef psa_status_t (*psa_drv_accel_mac_setup_t)(psa_drv_accel_mac_context_t *p_context,
@@ -352,7 +354,7 @@ typedef psa_status_t (*psa_drv_accel_mac_update_t)(psa_drv_accel_mac_context_t *
  * \param[in] mac_length        The size in bytes of the buffer that has been
  *                              allocated for the `p_mac` buffer
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  *          Success.
  */
 typedef psa_status_t (*psa_drv_accel_mac_finish_t)(psa_drv_accel_mac_context_t *p_context,
@@ -378,7 +380,7 @@ typedef psa_status_t (*psa_drv_accel_mac_finish_t)(psa_drv_accel_mac_context_t *
  * \param[in] mac_length        The size in bytes of the data in the `p_mac`
  *                              buffer
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  *          The operation completed successfully and the comparison matched
  */
 typedef psa_status_t (*psa_drv_accel_mac_finish_verify_t)(psa_drv_accel_mac_context_t *p_context,
@@ -452,7 +454,7 @@ typedef psa_status_t (*psa_drv_accel_mac_t)(const uint8_t *p_input,
  * \param[in] p_mac          The MAC data to be compared
  * \param[in] mac_length     The length in bytes of the `p_mac` buffer
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  *  The operation completed successfully and the comparison matched
  */
 typedef psa_status_t (*psa_drv_accel_mac_verify_t)(const uint8_t *p_input,
@@ -513,7 +515,7 @@ typedef struct psa_drv_accel_cipher_context_s psa_drv_accel_cipher_context_t;
  *                              to be used in the operation
  * \param[in] key_data_size     The size in bytes of the key material
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  */
 typedef psa_status_t (*psa_drv_accel_cipher_setup_t)(psa_drv_accel_cipher_context_t *p_context,
                                                      psa_encrypt_or_decrypt_t direction,
@@ -536,7 +538,7 @@ typedef psa_status_t (*psa_drv_accel_cipher_setup_t)(psa_drv_accel_cipher_contex
  * \param[in] p_iv              A buffer containing the initialization vecotr
  * \param[in] iv_length         The size in bytes of the contents of `p_iv`
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  */
 typedef psa_status_t (*psa_drv_accel_cipher_set_iv_t)(psa_drv_accel_cipher_context_t *p_context,
                                                       const uint8_t *p_iv,
@@ -565,7 +567,7 @@ typedef psa_status_t (*psa_drv_accel_cipher_set_iv_t)(psa_drv_accel_cipher_conte
  * \param[out] p_output_length      After completion, will contain the number
  *                                  of bytes placed in the `p_output` buffer
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  */
 typedef psa_status_t (*psa_drv_accel_cipher_update_t)(psa_drv_accel_cipher_context_t *p_context,
                                                       const uint8_t *p_input,
@@ -594,7 +596,7 @@ typedef psa_status_t (*psa_drv_accel_cipher_update_t)(psa_drv_accel_cipher_conte
  * \param[out] p_output_length  After completion, will contain the number of
  *                              bytes placed in the `p_output` buffer
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  */
 typedef psa_status_t (*psa_drv_accel_cipher_finish_t)(psa_drv_accel_cipher_context_t *p_context,
                                                       uint8_t *p_output,
@@ -616,7 +618,7 @@ typedef psa_status_t (*psa_drv_accel_cipher_finish_t)(psa_drv_accel_cipher_conte
  * \param[in,out] p_context     A hardware-specific structure for the
  *                              previously started cipher operation
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  */
 typedef psa_status_t (*psa_drv_accel_cipher_abort_t)(psa_drv_accel_cipher_context_t *p_context);
 
@@ -776,7 +778,7 @@ typedef psa_status_t (*psa_drv_accel_aead_decrypt_t)(const uint8_t *p_key,
  * \param[out] p_signature_length   On success, the number of bytes
  *                                  that make up the returned signature value
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  */
 typedef psa_status_t (*psa_drv_accel_asymmetric_sign_t)(const uint8_t *p_key,
                                                         size_t key_size,
@@ -814,7 +816,7 @@ typedef psa_status_t (*psa_drv_accel_asymmetric_sign_t)(const uint8_t *p_key,
  * \param[in] p_signature       Buffer containing the signature to verify
  * \param[in] signature_length  Size of the `p_signature` buffer in bytes
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  *         The signature is valid.
  */
 typedef psa_status_t (*psa_drv_accel_asymmetric_verify_t)(const uint8_t *p_key,
@@ -865,7 +867,7 @@ typedef psa_status_t (*psa_drv_accel_asymmetric_verify_t)(const uint8_t *p_key,
  * \param[out] p_output_length  On success, the number of bytes
  *                              that make up the returned output
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  */
 typedef psa_status_t (*psa_drv_accel_asymmetric_encrypt_t)(const uint8_t *p_key,
                                                            size_t key_size,
@@ -917,7 +919,7 @@ typedef psa_status_t (*psa_drv_accel_asymmetric_encrypt_t)(const uint8_t *p_key,
  * \param[out] p_output_length  On success, the number of bytes
  *                              that make up the returned output
  *
- * \retval PSA_SUCCESS
+ * \retval #PSA_SUCCESS
  */
 typedef psa_status_t (*psa_drv_accel_asymmetric_decrypt_t)(const uint8_t *p_key,
                                                            size_t key_size,

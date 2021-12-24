@@ -1768,7 +1768,7 @@ static psa_status_t psa_start_key_creation(
  * \return If this function fails, the key slot is an invalid state.
  *         You must call psa_fail_key_creation() to wipe and free the slot.
  */
-static psa_status_t psa_finish_key_creation(
+psa_status_t psa_finish_key_creation(
     psa_key_slot_t *slot,
     psa_se_drv_table_entry_t *driver,
     mbedtls_svc_key_id_t *key)
@@ -1799,6 +1799,14 @@ static psa_status_t psa_finish_key_creation(
         }
         else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_finish_key_creation_vendor( slot );
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
         {
             /* Key material is saved in export representation in the slot, so
              * just pass the slot buffer for storage. */

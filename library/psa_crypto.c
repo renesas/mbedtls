@@ -1985,6 +1985,19 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
     if( status != PSA_SUCCESS )
         goto exit;
 
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_import_key_into_slot_vendor( slot, data, data_length, key, true);
+        /*if( status != PSA_SUCCESS )*/
+                    goto exit;
+    }
+    else
+    {
+
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
     /* In the case of a transparent key or an opaque key stored in local
      * storage (thus not in the case of generating a key in a secure element
      * or cryptoprocessor with storage), we have to allocate a buffer to
@@ -2004,6 +2017,7 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
                                             &slot->key.bytes, &bits );
     if( status != PSA_SUCCESS )
         goto exit;
+
 
     if( slot->attr.bits == 0 )
         slot->attr.bits = (psa_key_bits_t) bits;
@@ -3374,6 +3388,13 @@ static psa_status_t psa_cipher_setup( psa_cipher_operation_t *operation,
                                                           slot->key.data,
                                                           slot->key.bytes,
                                                           alg );
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+{
+    status = psa_cipher_setup_vendor(operation, slot, alg, cipher_operation);
+    goto exit;
+}
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
 
 exit:
     if( status != PSA_SUCCESS )
@@ -5321,7 +5342,15 @@ psa_status_t psa_generate_key( const psa_key_attributes_t *attributes,
         if( status != PSA_SUCCESS )
             goto exit;
     }
-
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_generate_key_vendor(slot, attributes->core.bits,
+            attributes->domain_parameters, attributes->domain_parameters_size);
+            goto exit;
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
     status = psa_driver_wrapper_generate_key( attributes,
         slot->key.data, slot->key.bytes, &slot->key.bytes );
 

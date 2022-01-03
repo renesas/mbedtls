@@ -84,11 +84,32 @@ static psa_status_t psa_aead_setup(
     const mbedtls_cipher_info_t *cipher_info;
     mbedtls_cipher_id_t cipher_id;
     size_t full_tag_length = 0;
+    psa_key_type_t temp_keytype = 0;
 
     key_bits = attributes->core.bits;
 
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type))
+    {
+        /* The mbedcrypto implementation obtains the list of methods based on the keybit size.
+         * Since the wrapped keybit size does not correspond to the raw key size i.e the
+         * AES256 raw bit size is 256 but the wrapped size is 416 bytes, provide the 256 bit value
+         * to mbedcrypto so that the right methods are invoked. */
+        status = vendor_bitlength_to_raw_bitlength(attributes->core.type, attributes->core.bits, &key_bits);
+        if (status != PSA_SUCCESS)
+        {
+            return status;
+        }
+
+        temp_keytype = (psa_key_type_t)(attributes->core.type & ~PSA_KEY_TYPE_VENDOR_FLAG);
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+     {
+        temp_keytype = (psa_key_type_t)(attributes->core.type);
+    }
     cipher_info = mbedtls_cipher_info_from_psa( alg,
-                                                attributes->core.type, key_bits,
+    		                                    temp_keytype, key_bits,
                                                 &cipher_id );
     if( cipher_info == NULL )
         return( PSA_ERROR_NOT_SUPPORTED );

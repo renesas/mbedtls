@@ -212,4 +212,8 @@ psa_status_t mbedtls_psa_rsa_verify_hash(
     psa_algorithm_t alg, const uint8_t *hash, size_t hash_length,
     const uint8_t *signature, size_t signature_length );
 
+psa_status_t psa_rsa_read_exponent( const uint8_t *domain_parameters,
+                                           size_t domain_parameters_size,
+                                           int *exponent );
+
 #endif /* PSA_CRYPTO_RSA_H */

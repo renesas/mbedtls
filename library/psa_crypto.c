@@ -2954,7 +2954,7 @@ psa_status_t psa_sign_hash_builtin(
     psa_algorithm_t alg, const uint8_t *hash, size_t hash_length,
     uint8_t *signature, size_t signature_size, size_t *signature_length )
 {
-    if( attributes->core.type == PSA_KEY_TYPE_RSA_KEY_PAIR )
+    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR(attributes->core.type) )
     {
         if( PSA_ALG_IS_RSA_PKCS1V15_SIGN( alg ) ||
             PSA_ALG_IS_RSA_PSS( alg) )
@@ -3246,7 +3246,7 @@ psa_status_t psa_asymmetric_decrypt( mbedtls_svc_key_id_t key,
         goto exit;
     }
 
-    if( slot->attr.type == PSA_KEY_TYPE_RSA_KEY_PAIR )
+    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR(slot->attr.type) )
     {
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_PKCS1V15_CRYPT) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_OAEP)
@@ -3392,6 +3392,8 @@ static psa_status_t psa_cipher_setup( psa_cipher_operation_t *operation,
 if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
 {
     status = psa_cipher_setup_vendor(operation, slot, alg, cipher_operation);
+    if( status == PSA_SUCCESS )
+        operation->id = 1;
     goto exit;
 }
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */

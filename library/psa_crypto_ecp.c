@@ -79,8 +79,8 @@ psa_status_t mbedtls_psa_ecp_load_representation(
     if( explicit_bits )
     {
         /* With an explicit bit-size, the data must have the matching length. */
-        if( curve_bytes != PSA_BITS_TO_BYTES( curve_bits ) )
-            return( PSA_ERROR_INVALID_ARGUMENT );
+//        if( curve_bytes != PSA_BITS_TO_BYTES( curve_bits ) )
+//            return( PSA_ERROR_INVALID_ARGUMENT );
     }
     else
     {
@@ -100,7 +100,7 @@ psa_status_t mbedtls_psa_ecp_load_representation(
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
     {
-    	grp_id = mbedtls_ecc_group_of_psa( PSA_KEY_TYPE_ECC_GET_FAMILY( type ), PSA_ECC_BYTES_VENDOR_RAW(curve_bits), !explicit_bits );
+    	grp_id = mbedtls_ecc_group_of_psa( PSA_KEY_TYPE_ECC_GET_FAMILY( type ), (PSA_ECC_BYTES_VENDOR_RAW(data_length))*8, !explicit_bits );
     }
     else
 #endif

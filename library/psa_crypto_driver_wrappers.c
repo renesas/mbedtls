@@ -598,17 +598,11 @@ psa_status_t psa_driver_wrapper_import_key(
                 return( status );
 #endif /* PSA_CRYPTO_DRIVER_TEST */
 #endif /* PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT */
-
-//#if !defined(MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-//    {
-        /* Fell through, meaning no accelerator supports this operation */
-        status = psa_import_key_into_slot( attributes,
-                                          data, data_length,
-                                          key_buffer, key_buffer_size,
-                                          key_buffer_length, bits );
-        return status;
-//    }
-//#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+            /* Fell through, meaning no accelerator supports this operation */
+            return( psa_import_key_into_slot( attributes,
+                                              data, data_length,
+                                              key_buffer, key_buffer_size,
+                                              key_buffer_length, bits ) );
 
         default:
             /* Importing a key with external storage in not yet supported.

@@ -146,7 +146,6 @@ static psa_status_t psa_cipher_setup(
 
     operation->alg = alg;
     key_bits = attributes->core.bits;
-//#if !defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
     cipher_info = mbedtls_cipher_info_from_psa( alg, key_type,
                                                 key_bits, NULL );
     if( cipher_info == NULL )
@@ -201,7 +200,6 @@ static psa_status_t psa_cipher_setup(
     operation->block_length = ( PSA_ALG_IS_STREAM_CIPHER( alg ) ? 1 :
                                 PSA_BLOCK_CIPHER_BLOCK_LENGTH( key_type ) );
     operation->iv_length = PSA_CIPHER_IV_LENGTH( key_type, alg );
-//#endif
 
 exit:
     return( mbedtls_to_psa_error( ret ) );

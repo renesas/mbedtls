@@ -55,6 +55,7 @@ typedef union {
 #if defined(PSA_CRYPTO_DRIVER_TEST)
     mbedtls_transparent_test_driver_mac_operation_t transparent_test_driver_ctx;
     mbedtls_opaque_test_driver_mac_operation_t opaque_test_driver_ctx;
+    si_mac_operation_t si_mac_ctx;
 #endif
 } psa_driver_mac_context_t;
 
@@ -63,6 +64,7 @@ typedef union {
     mbedtls_psa_aead_operation_t mbedtls_ctx;
 #if defined(PSA_CRYPTO_DRIVER_TEST)
     mbedtls_transparent_test_driver_aead_operation_t transparent_test_driver_ctx;
+    si_aead_operation_t si_aead_ctx;
 #endif
 } psa_driver_aead_context_t;
 

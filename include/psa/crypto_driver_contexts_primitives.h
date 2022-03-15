@@ -53,6 +53,7 @@ typedef union {
     mbedtls_psa_hash_operation_t mbedtls_ctx;
 #if defined(PSA_CRYPTO_DRIVER_TEST)
     mbedtls_transparent_test_driver_hash_operation_t test_driver_ctx;
+    si_hash_operation_t si_hash_ctx;
 #endif
 } psa_driver_hash_context_t;
 
@@ -60,6 +61,7 @@ typedef union {
     unsigned dummy; /* Make sure this union is always non-empty */
     mbedtls_psa_cipher_operation_t mbedtls_ctx;
 #if defined(PSA_CRYPTO_DRIVER_TEST)
+    si_cipher_operation_t si_cipher_ctx;
     mbedtls_transparent_test_driver_cipher_operation_t transparent_test_driver_ctx;
     mbedtls_opaque_test_driver_cipher_operation_t opaque_test_driver_ctx;
 #endif

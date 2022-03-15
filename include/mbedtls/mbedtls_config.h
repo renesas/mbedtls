@@ -1159,7 +1159,7 @@
  * \warning This interface is experimental and may change or be removed
  * without notice.
  */
-//#define MBEDTLS_PSA_CRYPTO_DRIVERS
+#define MBEDTLS_PSA_CRYPTO_DRIVERS
 
 /** \def MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG
  *

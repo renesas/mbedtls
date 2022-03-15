@@ -414,24 +414,46 @@ static int aead_multipart_internal_func( int key_type_arg, data_t *key_data,
      * encryption involves a common limitation of cryptography hardwares and
      * an alternative implementation. */
     if( status == PSA_ERROR_NOT_SUPPORTED )
-    {
         MBEDTLS_TEST_PSA_SKIP_IF_ALT_AES_192( key_type, key_data->len * 8 );
-        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
-    }
 
     PSA_ASSERT( status );
 
     if( set_lengths_method ==  DO_NOT_SET_LENGTHS )
-        PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    {
+        status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+        /* If the operation is not supported, just skip and not fail in case the
+         * operation involves a common limitation of cryptography hardwares and
+         * an alternative implementation. */
+        if( status == PSA_ERROR_NOT_SUPPORTED )
+            MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+        PSA_ASSERT( status );
+    }
     else if( set_lengths_method == SET_LENGTHS_BEFORE_NONCE )
     {
         PSA_ASSERT( psa_aead_set_lengths( &operation, additional_data->len,
                                           data_true_size ) );
-        PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+
+        status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+        /* If the operation is not supported, just skip and not fail in case the
+         * operation involves a common limitation of cryptography hardwares and
+         * an alternative implementation. */
+        if( status == PSA_ERROR_NOT_SUPPORTED )
+            MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+        PSA_ASSERT( status );
     }
     else if( set_lengths_method ==  SET_LENGTHS_AFTER_NONCE )
     {
-        PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+        status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+        /* If the operation is not supported, just skip and not fail in case the
+         * operation involves a common limitation of cryptography hardwares and
+         * an alternative implementation. */
+        if( status == PSA_ERROR_NOT_SUPPORTED )
+            MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+        PSA_ASSERT( status );
 
         PSA_ASSERT( psa_aead_set_lengths( &operation, additional_data->len,
                                           data_true_size ) );
@@ -506,7 +528,7 @@ static int aead_multipart_internal_func( int key_type_arg, data_t *key_data,
 
             if( output_data && output_part_length )
             {
-                memcpy( ( output_data + part_offset ), part_data,
+                memcpy( ( output_data + output_length ), part_data,
                         output_part_length );
             }
 
@@ -3368,6 +3390,7 @@ void cipher_verify_output( int alg_arg,
 
     PSA_ASSERT( psa_import_key( &attributes, key_data->x, key_data->len,
                                 &key ) );
+
     output1_size = PSA_CIPHER_ENCRYPT_OUTPUT_SIZE( key_type, alg, input->len );
     ASSERT_ALLOC( output1, output1_size );
 
@@ -3662,7 +3685,7 @@ void aead_encrypt( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_crypto_init( ) );
 
-    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_ENCRYPT  );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_ENCRYPT );
     psa_set_key_algorithm( &attributes, alg );
     psa_set_key_type( &attributes, key_type );
 
@@ -3730,7 +3753,7 @@ void aead_decrypt( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_crypto_init( ) );
 
-    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_DECRYPT  );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_DECRYPT );
     psa_set_key_algorithm( &attributes, alg );
     psa_set_key_type( &attributes, key_type );
 
@@ -4020,16 +4043,19 @@ void aead_multipart_generate_nonce( int key_type_arg, data_t *key_data,
      * encryption involves a common limitation of cryptography hardwares and
      * an alternative implementation. */
     if( status == PSA_ERROR_NOT_SUPPORTED )
-    {
         MBEDTLS_TEST_PSA_SKIP_IF_ALT_AES_192( key_type, key_data->len * 8 );
-        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce_length );
-    }
 
     PSA_ASSERT( status );
 
     status = psa_aead_generate_nonce( &operation, nonce_buffer,
                                       nonce_length,
                                       &actual_nonce_length );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce_length );
 
     TEST_EQUAL( status, expected_status );
 
@@ -4121,10 +4147,7 @@ void aead_multipart_set_nonce( int key_type_arg, data_t *key_data,
      * encryption involves a common limitation of cryptography hardwares and
      * an alternative implementation. */
     if( status == PSA_ERROR_NOT_SUPPORTED )
-    {
         MBEDTLS_TEST_PSA_SKIP_IF_ALT_AES_192( key_type, key_data->len * 8 );
-        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce_length_arg );
-    }
 
     PSA_ASSERT( status );
 
@@ -4151,6 +4174,12 @@ void aead_multipart_set_nonce( int key_type_arg, data_t *key_data,
     }
 
     status = psa_aead_set_nonce( &operation, nonce_buffer, nonce_length );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce_length );
 
     TEST_EQUAL( status, expected_status );
 
@@ -4223,19 +4252,24 @@ void aead_multipart_update_buffer_test( int key_type_arg, data_t *key_data,
     ASSERT_ALLOC( ciphertext, ciphertext_size );
 
     status = psa_aead_encrypt_setup( &operation, key, alg );
+    
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_AES_192( key_type, key_data->len * 8 );
+
+    PSA_ASSERT( status );
+
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
 
     /* If the operation is not supported, just skip and not fail in case the
      * encryption involves a common limitation of cryptography hardwares and
      * an alternative implementation. */
     if( status == PSA_ERROR_NOT_SUPPORTED )
-    {
-        MBEDTLS_TEST_PSA_SKIP_IF_ALT_AES_192( key_type, key_data->len * 8 );
         MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
-    }
 
     PSA_ASSERT( status );
-
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
 
     PSA_ASSERT( psa_aead_update_ad( &operation, additional_data->x,
                                     additional_data->len ) );
@@ -4314,14 +4348,19 @@ void aead_multipart_finish_buffer_test( int key_type_arg, data_t *key_data,
      * encryption involves a common limitation of cryptography hardwares and
      * an alternative implementation. */
     if( status == PSA_ERROR_NOT_SUPPORTED )
-    {
         MBEDTLS_TEST_PSA_SKIP_IF_ALT_AES_192( key_type, key_data->len * 8 );
-        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
-    }
 
     PSA_ASSERT( status );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_update_ad( &operation, additional_data->x,
                                     additional_data->len ) );
@@ -4394,19 +4433,24 @@ void aead_multipart_verify( int key_type_arg, data_t *key_data,
     ASSERT_ALLOC( finish_plaintext, verify_plaintext_size );
 
     status = psa_aead_decrypt_setup( &operation, key, alg );
-
+    
     /* If the operation is not supported, just skip and not fail in case the
-     * encryption involves a common limitation of cryptography hardwares and
+     * decryption involves a common limitation of cryptography hardwares and
      * an alternative implementation. */
     if( status == PSA_ERROR_NOT_SUPPORTED )
-    {
         MBEDTLS_TEST_PSA_SKIP_IF_ALT_AES_192( key_type, key_data->len * 8 );
-        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
-    }
 
     PSA_ASSERT( status );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * decryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_update_ad( &operation, additional_data->x,
                                     additional_data->len ) );
@@ -4677,7 +4721,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    int status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     TEST_EQUAL( psa_aead_set_nonce( &operation, nonce->x, nonce->len ),
                 PSA_ERROR_BAD_STATE );
@@ -4717,7 +4769,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE(alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     TEST_EQUAL( psa_aead_generate_nonce( &operation, nonce_buffer,
                                          PSA_AEAD_NONCE_MAX_SIZE,
@@ -4741,7 +4801,14 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_set_lengths( &operation, additional_data->len,
                                       input_data->len ) );
@@ -4756,7 +4823,14 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_update_ad( &operation, additional_data->x,
                                     additional_data->len ) );
@@ -4771,7 +4845,14 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_update( &operation, input_data->x,
                                  input_data->len, output_data,
@@ -4788,7 +4869,14 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_set_lengths( &operation, additional_data->len,
                                       input_data->len ) );
@@ -4807,7 +4895,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_decrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+    
+    /* If the operation is not supported, just skip and not fail in case the
+     * decryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_set_lengths( &operation, additional_data->len,
                                       input_data->len ) );
@@ -4826,7 +4922,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+   
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_set_lengths( &operation, additional_data->len,
                                       input_data->len ) );
@@ -4842,7 +4946,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_set_lengths( &operation, additional_data->len,
                                       input_data->len ) );
@@ -4863,7 +4975,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_set_lengths( &operation, 0, 0 ) );
 
@@ -4878,7 +4998,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_set_lengths( &operation, additional_data->len,
                                       input_data->len ) );
@@ -4896,7 +5024,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_set_lengths( &operation, 0, 0 ) );
 
@@ -4911,7 +5047,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_set_lengths( &operation, additional_data->len,
                                       input_data->len ) );
@@ -4934,7 +5078,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     PSA_ASSERT( psa_aead_update( &operation, input_data->x,
                                  input_data->len, output_data,
@@ -4950,7 +5102,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_decrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * decryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     TEST_EQUAL( psa_aead_finish( &operation, final_data,
                                  finish_output_size,
@@ -4965,7 +5125,15 @@ void aead_multipart_state_test( int key_type_arg, data_t *key_data,
 
     PSA_ASSERT( psa_aead_encrypt_setup( &operation, key, alg ) );
 
-    PSA_ASSERT( psa_aead_set_nonce( &operation, nonce->x, nonce->len ) );
+    status = psa_aead_set_nonce( &operation, nonce->x, nonce->len );
+
+    /* If the operation is not supported, just skip and not fail in case the
+     * encryption involves a common limitation of cryptography hardwares and
+     * an alternative implementation. */
+    if( status == PSA_ERROR_NOT_SUPPORTED )
+        MBEDTLS_TEST_PSA_SKIP_IF_ALT_GCM_NOT_12BYTES_NONCE( alg, nonce->len );
+
+    PSA_ASSERT( status );
 
     TEST_EQUAL( psa_aead_verify( &operation, final_data,
                                  finish_output_size,

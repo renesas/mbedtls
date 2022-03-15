@@ -116,6 +116,8 @@ typedef struct {
  * BEYOND THIS POINT, TEST DRIVER DECLARATIONS ONLY.
  */
 #if defined(PSA_CRYPTO_DRIVER_TEST)
+#include <sxsymcrypt/internal.h>
+#include "silex_driver_internal.h"
 
 typedef mbedtls_psa_hash_operation_t mbedtls_transparent_test_driver_hash_operation_t;
 

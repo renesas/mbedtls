@@ -36,6 +36,8 @@
 
 #include <string.h>
 
+#if !defined(MBEDTLS_ECDH_ALT)
+
 /* Parameter validation macros based on platform_util.h */
 #define ECDH_VALIDATE_RET( cond )    \
     MBEDTLS_INTERNAL_VALIDATE_RET( cond, MBEDTLS_ERR_ECP_BAD_INPUT_DATA )
@@ -863,4 +865,5 @@ int mbedtls_ecdh_tls13_read_public( mbedtls_ecdh_context *ctx,
 
 #endif /* MBEDTLS_SSL_PROTO_TLS1_3 */
 
+#endif /* !MBEDTLS_ECDH_ALT */
 #endif /* MBEDTLS_ECDH_C */

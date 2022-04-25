@@ -37,6 +37,7 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.exceptions import InvalidSignature
+import sys
 
 IMAGE_MAGIC = 0x96f3b83d
 IMAGE_HEADER_SIZE = 32
@@ -271,14 +272,17 @@ class Image():
         else:
             newpk = X25519PrivateKey.generate()
             shared = newpk.exchange(enckey._get_public())
+        plainkey_len = sys.getsizeof(plainkey)-1
+        print("plainkey_len::")
+        print(plainkey_len)
         derived_key = HKDF(
-            algorithm=hashes.SHA256(), length=48, salt=None,
+            algorithm=hashes.SHA256(), length=plainkey_len, salt=None,
             info=b'MCUBoot_ECIES_v1', backend=default_backend()).derive(shared)
-        encryptor = Cipher(algorithms.AES(derived_key[:16]),
+        encryptor = Cipher(algorithms.AES(derived_key[:(plainkey_len-32)]),
                            modes.CTR(bytes([0] * 16)),
                            backend=default_backend()).encryptor()
         cipherkey = encryptor.update(plainkey) + encryptor.finalize()
-        mac = hmac.HMAC(derived_key[16:], hashes.SHA256(),
+        mac = hmac.HMAC(derived_key[(plainkey_len-32):], hashes.SHA256(),
                         backend=default_backend())
         mac.update(cipherkey)
         ciphermac = mac.finalize()

@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Espressif Systems (Shanghai) Co., Ltd.
+# SPDX-FileCopyrightText: 2021 Espressif Systems (Shanghai) CO LTD
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -13,7 +13,8 @@ project(mcuboot_${MCUBOOT_TARGET})
 add_definitions(-DMCUBOOT_TARGET=${MCUBOOT_TARGET})
 
 if ("${MCUBOOT_TARGET}" STREQUAL "esp32" OR
-    "${MCUBOOT_TARGET}" STREQUAL "esp32s2")
+    "${MCUBOOT_TARGET}" STREQUAL "esp32s2" OR
+    "${MCUBOOT_TARGET}" STREQUAL "esp32s3")
     set(MCUBOOT_ARCH "xtensa")
 elseif("${MCUBOOT_TARGET}" STREQUAL "esp32c3")
     set(MCUBOOT_ARCH "riscv")
@@ -36,16 +37,6 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 add_definitions(-DMCUBOOT_VER=\"${MCUBOOT_VER}\")
-
-execute_process(
-    COMMAND git describe --tags
-    WORKING_DIRECTORY ${IDF_PATH}
-    OUTPUT_VARIABLE IDF_VER
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-if (NOT "${IDF_VER}" MATCHES "v4.3")
-    message(FATAL_ERROR "Unsupported ESP-IDF version found in IDF_PATH, please checkout to v4.3")
-endif()
 
 if (DEFINED MCUBOOT_CONFIG_FILE)
     set(mcuboot_config_file ${MCUBOOT_CONFIG_FILE})
@@ -79,18 +70,23 @@ set(MCUBOOT_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../..)
 set(BOOTUTIL_DIR ${MCUBOOT_ROOT_DIR}/boot/bootutil)
 set(ESPRESSIF_PORT_DIR ${CMAKE_CURRENT_LIST_DIR})
 
+# Find imgtool.
+# Go with an explicitly installed imgtool first, falling
+# back to mcuboot/scripts/imgtool.py.
+find_program(IMGTOOL_COMMAND
+    NAMES imgtool imgtool.py
+    )
+if ("${IMGTOOL_COMMAND}" MATCHES "IMGTOOL_COMMAND-NOTFOUND")
+    set(imgtool_path "${MCUBOOT_ROOT_DIR}/scripts/imgtool.py")
+else()
+    set(imgtool_path "${IMGTOOL_COMMAND}")
+endif()
+
 if (DEFINED CONFIG_ESP_SIGN_RSA)
-    if ("${MCUBOOT_TARGET}" STREQUAL "esp32s2" OR
-        "${MCUBOOT_TARGET}" STREQUAL "esp32c3")
-        message(FATAL_ERROR "RSA signature verification is currently not supported on the target")
-    endif()
     include(${CMAKE_CURRENT_LIST_DIR}/include/crypto_config/rsa.cmake)
 elseif (DEFINED CONFIG_ESP_SIGN_EC256)
     include(${CMAKE_CURRENT_LIST_DIR}/include/crypto_config/ec256.cmake)
 elseif (DEFINED CONFIG_ESP_SIGN_ED25519)
-    if ("${MCUBOOT_TARGET}" STREQUAL "esp32c3")
-        message(FATAL_ERROR "ED25519 signature verification is currently not supported on the target")
-    endif()
     include(${CMAKE_CURRENT_LIST_DIR}/include/crypto_config/ed25519.cmake)
 else()
     # No signature verification
@@ -116,8 +112,7 @@ if(DEFINED CONFIG_ESP_SIGN_KEY_FILE)
         add_custom_command(
             OUTPUT ${GENERATED_PUBKEY}
             COMMAND
-            ${PYTHON_EXECUTABLE}
-            ${MCUBOOT_ROOT_DIR}/scripts/imgtool.py
+            ${imgtool_path}
             getpub
             -k
             ${KEY_FILE}

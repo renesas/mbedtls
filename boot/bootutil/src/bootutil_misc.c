@@ -46,11 +46,6 @@ BOOT_LOG_MODULE_DECLARE(mcuboot);
 /* Currently only used by imgmgr */
 int boot_current_slot;
 
-extern const uint32_t boot_img_magic[];
-
-#define BOOT_MAGIC_ARR_SZ \
-    (sizeof boot_img_magic / sizeof boot_img_magic[0])
-
 /**
  * @brief Determine if the data at two memory addresses is equal
  *
@@ -94,30 +89,64 @@ out:
 }
 #endif
 
-uint32_t
-boot_status_sz(uint32_t min_write_sz)
+/*
+ * Amount of space used to save information required when doing a swap,
+ * or while a swap is under progress, but not the status of sector swap
+ * progress itself.
+ */
+static inline uint32_t
+boot_trailer_info_sz(void)
 {
-    return /* state for all sectors */
-           BOOT_STATUS_MAX_ENTRIES * BOOT_STATUS_STATE_COUNT * min_write_sz;
-}
-
-uint32_t
-boot_trailer_sz(uint32_t min_write_sz)
-{
-    return /* state for all sectors */
-           boot_status_sz(min_write_sz)           +
+    return (
 #ifdef MCUBOOT_ENC_IMAGES
            /* encryption keys */
 #  if MCUBOOT_SWAP_SAVE_ENCTLV
            BOOT_ENC_TLV_ALIGN_SIZE * 2            +
 #  else
-           BOOT_ENC_KEY_ALIGN_SIZE  * 2                  +
+           BOOT_ENC_KEY_ALIGN_SIZE * 2            +
 #  endif
 #endif
            /* swap_type + copy_done + image_ok + swap_size */
            BOOT_MAX_ALIGN * 4                     +
-           BOOT_MAGIC_ALIGN_SIZE;
+           BOOT_MAGIC_ALIGN_SIZE
+           );
 }
+
+/*
+ * Amount of space used to maintain progress information for a single swap
+ * operation.
+ */
+static inline uint32_t
+boot_status_entry_sz(uint32_t min_write_sz)
+{
+    return BOOT_STATUS_STATE_COUNT * min_write_sz;
+}
+
+uint32_t
+boot_status_sz(uint32_t min_write_sz)
+{
+    return BOOT_STATUS_MAX_ENTRIES * boot_status_entry_sz(min_write_sz);
+}
+
+uint32_t
+boot_trailer_sz(uint32_t min_write_sz)
+{
+    return boot_status_sz(min_write_sz) + boot_trailer_info_sz();
+}
+
+#if MCUBOOT_SWAP_USING_SCRATCH
+/*
+ * Similar to `boot_trailer_sz` but this function returns the space used to
+ * store status in the scratch partition. The scratch partition only stores
+ * status during the swap of the last sector from primary/secondary (which
+ * is the first swap operation) and thus only requires space for one swap.
+ */
+static uint32_t
+boot_scratch_trailer_sz(uint32_t min_write_sz)
+{
+    return boot_status_entry_sz(min_write_sz) + boot_trailer_info_sz();
+}
+#endif
 
 int
 boot_status_entries(int image_index, const struct flash_area *fap)
@@ -138,14 +167,31 @@ uint32_t
 boot_status_off(const struct flash_area *fap)
 {
     uint32_t off_from_end;
-    uint8_t elem_sz;
+    uint32_t elem_sz;
 
     elem_sz = flash_area_align(fap);
 
-    off_from_end = boot_trailer_sz(elem_sz);
+#if MCUBOOT_SWAP_USING_SCRATCH
+    if (fap->fa_id == FLASH_AREA_IMAGE_SCRATCH) {
+        off_from_end = boot_scratch_trailer_sz(elem_sz);
+    } else {
+#endif
+        off_from_end = boot_trailer_sz(elem_sz);
+#if MCUBOOT_SWAP_USING_SCRATCH
+    }
+#endif
 
     assert(off_from_end <= flash_area_get_size(fap));
     return flash_area_get_size(fap) - off_from_end;
+}
+
+static int
+boot_magic_decode(const uint8_t *magic)
+{
+    if (memcmp(magic, BOOT_IMG_MAGIC, BOOT_MAGIC_SZ) == 0) {
+        return BOOT_MAGIC_GOOD;
+    }
+    return BOOT_MAGIC_BAD;
 }
 
 static inline uint32_t
@@ -157,7 +203,7 @@ boot_magic_off(const struct flash_area *fap)
 static inline uint32_t
 boot_image_ok_off(const struct flash_area *fap)
 {
-    return (boot_magic_off(fap) - BOOT_MAX_ALIGN) & ~(BOOT_MAX_ALIGN - 1);
+    return ALIGN_DOWN(boot_magic_off(fap) - BOOT_MAX_ALIGN, BOOT_MAX_ALIGN);
 }
 
 static inline uint32_t
@@ -196,7 +242,7 @@ boot_enc_key_off(const struct flash_area *fap, uint8_t slot)
 static int
 boot_find_status(int image_index, const struct flash_area **fap)
 {
-    uint32_t magic[BOOT_MAGIC_ARR_SZ];
+    uint8_t magic[BOOT_MAGIC_SZ];
     uint32_t off;
     uint8_t areas[2] = {
 #if MCUBOOT_SWAP_USING_SCRATCH
@@ -223,8 +269,9 @@ boot_find_status(int image_index, const struct flash_area **fap)
 
         off = boot_magic_off(*fap);
         rc = flash_area_read(*fap, off, magic, BOOT_MAGIC_SZ);
+        flash_area_close(*fap);
+
         if (rc != 0) {
-            flash_area_close(*fap);
             return rc;
         }
 
@@ -232,7 +279,6 @@ boot_find_status(int image_index, const struct flash_area **fap)
             return 0;
         }
 
-        flash_area_close(*fap);
     }
 
     /* If we got here, no magic was found */
@@ -284,7 +330,7 @@ boot_read_enc_key(int image_index, uint8_t slot, struct boot_status *bs)
             }
         }
 #else
-        rc = flash_area_read(fap, off, bs->enckey[slot], BOOT_ENC_KEY_SIZE);
+        rc = flash_area_read(fap, off, bs->enckey[slot], BOOT_ENC_KEY_ALIGN_SIZE);
 #endif
         flash_area_close(fap);
     }
@@ -332,7 +378,7 @@ boot_write_enc_key(const struct flash_area *fap, uint8_t slot,
 #if MCUBOOT_SWAP_SAVE_ENCTLV
     rc = flash_area_write(fap, off, bs->enctlv[slot], BOOT_ENC_TLV_ALIGN_SIZE);
 #else
-    rc = flash_area_write(fap, off, bs->enckey[slot], BOOT_ENC_KEY_SIZE);
+    rc = flash_area_write(fap, off, bs->enckey[slot], BOOT_ENC_KEY_ALIGN_SIZE);
 #endif
     if (rc != 0) {
         return BOOT_EFLASH;

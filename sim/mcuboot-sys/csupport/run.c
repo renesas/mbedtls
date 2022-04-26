@@ -43,7 +43,7 @@ extern int sim_flash_read(uint8_t flash_id, uint32_t offset, uint8_t *dest,
         uint32_t size);
 extern int sim_flash_write(uint8_t flash_id, uint32_t offset, const uint8_t *src,
         uint32_t size);
-extern uint16_t sim_flash_align(uint8_t flash_id);
+extern uint32_t sim_flash_align(uint8_t flash_id);
 extern uint8_t sim_flash_erased_val(uint8_t flash_id);
 
 struct sim_context {
@@ -222,7 +222,7 @@ done:
 #endif
 }
 
-uint16_t flash_area_align(const struct flash_area *area)
+uint32_t flash_area_align(const struct flash_area *area)
 {
     return sim_flash_align(area->fa_device_id);
 }
@@ -245,7 +245,7 @@ struct area_desc {
 };
 
 int invoke_boot_go(struct sim_context *ctx, struct area_desc *adesc,
-                   struct boot_rsp *rsp)
+                   struct boot_rsp *rsp, int image_id)
 {
     int res;
     struct boot_loader_state *state;
@@ -257,13 +257,23 @@ int invoke_boot_go(struct sim_context *ctx, struct area_desc *adesc,
     mbedtls_platform_set_calloc_free(calloc, free);
 #endif
 
-    // NOTE: cleared internally by context_boot_go
     state = malloc(sizeof(struct boot_loader_state));
 
     sim_set_flash_areas(adesc);
     sim_set_context(ctx);
 
     if (setjmp(ctx->boot_jmpbuf) == 0) {
+        boot_state_clear(state);
+
+#if BOOT_IMAGE_NUMBER > 1
+        if (image_id >= 0) {
+            memset(state->img_mask, 1, sizeof(state->img_mask));
+            state->img_mask[image_id] = 0;
+        }
+#else
+        (void) image_id;
+#endif /* BOOT_IMAGE_NUMBER > 1 */
+
         res = context_boot_go(state, rsp);
         sim_reset_flash_areas();
         sim_reset_context();
@@ -467,5 +477,5 @@ uint32_t boot_max_align(void)
 
 uint32_t boot_magic_sz(void)
 {
-    return BOOT_MAGIC_SZ;
+    return BOOT_MAGIC_ALIGN_SIZE;
 }

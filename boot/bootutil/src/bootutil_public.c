@@ -333,18 +333,6 @@ boot_write_magic(const struct flash_area *fap)
     uint8_t erased_val;
 
     off = boot_magic_off(fap);
-    /* image_trailer structure was modified with additional padding such that 
-     * the pad+magic ends up in a flash minimum write region. The address 
-     * returned by boot_magic_off() is the start of magic which is not the 
-     * start of the flash write boundary and thus writes to the magic will fail. 
-     * To account for this change, write to magic is first padded with 0xFF 
-     * before writing to the trailer. */
-    pad_off = off & ~(BOOT_MAX_ALIGN - 1);
-    
-    erased_val = flash_area_erased_val(fap);
-
-    memset(&magic[0], erased_val, sizeof(magic));
-    memcpy(&magic[BOOT_MAGIC_ALIGN_SIZE - BOOT_MAGIC_SZ], boot_img_magic, BOOT_MAGIC_SZ);
 
     /* image_trailer structure was modified with additional padding such that
      * the pad+magic ends up in a flash minimum write region. The address

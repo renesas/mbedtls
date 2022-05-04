@@ -26,6 +26,8 @@
 
 #include <string.h>
 
+#include "bootutil/crypto/common.h"
+#include "mbedtls/private_access.h"
 #include "mcuboot_config/mcuboot_config.h"
 
 #if (defined(MCUBOOT_SIGN_EC) || defined(MCUBOOT_SIGN_EC256)) && (defined(MCUBOOT_USE_MBED_TLS))

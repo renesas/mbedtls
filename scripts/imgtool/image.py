@@ -538,7 +538,7 @@ class Image():
         if overwrite_only:
             return self.max_align * 2 + magic_align_size
         else:
-            if write_size not in set([1, 2, 4, 8, 16, 32]):
+            if write_size not in set([1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096]):
                 raise click.BadParameter("Invalid alignment: {}".format(
                     write_size))
             m = DEFAULT_MAX_SECTORS if max_sectors is None else max_sectors

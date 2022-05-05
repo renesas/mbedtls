@@ -273,8 +273,6 @@ class Image():
             newpk = X25519PrivateKey.generate()
             shared = newpk.exchange(enckey._get_public())
         plainkey_len = sys.getsizeof(plainkey)-1
-        print("plainkey_len::")
-        print(plainkey_len)
         derived_key = HKDF(
             algorithm=hashes.SHA256(), length=plainkey_len, salt=None,
             info=b'MCUBoot_ECIES_v1', backend=default_backend()).derive(shared)

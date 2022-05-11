@@ -76,7 +76,12 @@ psa_status_t mbedtls_psa_ecp_load_representation(
          * format, meaning their curve_bytes is equal to the amount of input. */
     }
 
-#if !defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && !defined(MBEDTLS_ECP_ALT)
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
+    curve_bytes = ( 0U != PSA_ECC_BYTES_VENDOR_RAW(curve_bytes) ) ?
+                    PSA_ECC_BYTES_VENDOR_RAW(curve_bytes) : curve_bytes ;
+
+    curve_bits = PSA_BYTES_TO_BITS(curve_bytes);
+#else
     if( explicit_bits )
     {
         /* With an explicit bit-size, the data must have the matching length. */
@@ -89,15 +94,6 @@ psa_status_t mbedtls_psa_ecp_load_representation(
          * information we have is the length in bytes, the value of curve_bits
          * at this stage is rounded up to the nearest multiple of 8. */
         curve_bits = PSA_BYTES_TO_BITS( curve_bytes );
-    }
-#else
-    if(!explicit_bits)
-    {
-        curve_bits = PSA_ECC_BYTES_VENDOR_RAW(curve_bytes);
-        if(curve_bits == 0)
-        {
-            return( PSA_ERROR_INVALID_ARGUMENT );
-        }
     }
 #endif
 

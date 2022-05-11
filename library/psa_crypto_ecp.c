@@ -76,6 +76,7 @@ psa_status_t mbedtls_psa_ecp_load_representation(
          * format, meaning their curve_bytes is equal to the amount of input. */
     }
 
+#if !defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && !defined(MBEDTLS_ECP_ALT)
     if( explicit_bits )
     {
         /* With an explicit bit-size, the data must have the matching length. */
@@ -89,6 +90,16 @@ psa_status_t mbedtls_psa_ecp_load_representation(
          * at this stage is rounded up to the nearest multiple of 8. */
         curve_bits = PSA_BYTES_TO_BITS( curve_bytes );
     }
+#else
+    if(!explicit_bits)
+    {
+        curve_bits = PSA_ECC_BYTES_VENDOR_RAW(curve_bytes);
+        if(curve_bits == 0)
+        {
+            return( PSA_ERROR_INVALID_ARGUMENT );
+        }
+    }
+#endif
 
     /* Allocate and initialize a key representation. */
     ecp = mbedtls_calloc( 1, sizeof( mbedtls_ecp_keypair ) );
@@ -146,6 +157,15 @@ psa_status_t mbedtls_psa_ecp_load_representation(
     }
 
     *p_ecp = ecp;
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+    {
+        /* Setup the vendor context flag */
+    	(*p_ecp)->grp.vendor_ctx = (bool *) true;
+
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
 exit:
     if( status != PSA_SUCCESS )
     {
@@ -239,15 +259,30 @@ psa_status_t mbedtls_psa_ecp_export_key( psa_key_type_t type,
     }
     else
     {
-        if( data_size < PSA_BITS_TO_BYTES( ecp->grp.nbits ) )
+        uint32_t private_key_bytes = 0;
+
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
+        if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+        {
+            /* Setup the vendor private key size. The
+             * mbedtls_ecp_write_key() fn seems to require buffer greater than key size  */
+            private_key_bytes = RM_PSA_CRYPTO_ECC_KEY_WRAPPED_SIZE_BYTES(ecp->grp.nbits);
+        }
+        else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+        {
+            private_key_bytes = PSA_BITS_TO_BYTES( ecp->grp.nbits);
+        }
+
+        if( data_size < private_key_bytes )
             return( PSA_ERROR_BUFFER_TOO_SMALL );
 
         status = mbedtls_to_psa_error(
                     mbedtls_ecp_write_key( ecp,
                                            data,
-                                           PSA_BITS_TO_BYTES( ecp->grp.nbits ) ) );
+                                           private_key_bytes ) );
         if( status == PSA_SUCCESS )
-            *data_length = PSA_BITS_TO_BYTES( ecp->grp.nbits );
+            *data_length = private_key_bytes;
         else
             memset( data, 0, data_size );
 

@@ -5826,6 +5826,7 @@ psa_status_t psa_generate_key( const psa_key_attributes_t *attributes,
     if( status != PSA_SUCCESS )
         goto exit;
 
+#if !defined(MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
     /* In the case of a transparent key or an opaque key stored in local
      * storage ( thus not in the case of generating a key in a secure element
      * with storage ( MBEDTLS_PSA_CRYPTO_SE_C ) ),we have to allocate a
@@ -5856,7 +5857,7 @@ psa_status_t psa_generate_key( const psa_key_attributes_t *attributes,
         if( status != PSA_SUCCESS )
             goto exit;
     }
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+#else
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
         status = psa_generate_key_vendor(slot, attributes->core.bits,

@@ -3188,7 +3188,7 @@ psa_status_t psa_asymmetric_decrypt( mbedtls_svc_key_id_t key,
         goto exit;
     }
 
-    if( slot->attr.type == PSA_KEY_TYPE_RSA_KEY_PAIR )
+    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR (slot->attr.type) )
     {
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_PKCS1V15_CRYPT) || \
     defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_OAEP)

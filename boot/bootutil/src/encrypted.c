@@ -670,11 +670,6 @@ boot_enc_decrypt(const uint8_t *buf, uint8_t *enckey)
         return -1;
     }
 
-    rc = bootutil_aes_ctr_finish(&aes_ctr);
-    if (rc != 0) {
-        bootutil_aes_ctr_drop(&aes_ctr);
-        return -1;
-    }
     bootutil_aes_ctr_drop(&aes_ctr);
 
     rc = 0;

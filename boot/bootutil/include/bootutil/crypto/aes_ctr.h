@@ -74,11 +74,6 @@ static inline int bootutil_aes_ctr_decrypt(bootutil_aes_ctr_context *ctx, uint8_
     uint8_t stream_block[BOOTUTIL_CRYPTO_AES_CTR_BLOCK_SIZE];
     return mbedtls_aes_crypt_ctr(ctx, clen, &blk_off, counter, stream_block, c, m);
 }
-
-static inline int bootutil_aes_ctr_finish(bootutil_aes_ctr_context *ctx)
-{
-    return mbedtls_internal_aes_crypt_ctr_finish(ctx);
-}
 #endif /* MCUBOOT_USE_MBED_TLS */
 
 #if defined(MCUBOOT_USE_TINYCRYPT)
@@ -121,12 +116,6 @@ static inline int bootutil_aes_ctr_encrypt(bootutil_aes_ctr_context *ctx, uint8_
 static inline int bootutil_aes_ctr_decrypt(bootutil_aes_ctr_context *ctx, uint8_t *counter, const uint8_t *c, uint32_t clen, uint32_t blk_off, uint8_t *m)
 {
     return _bootutil_aes_ctr_crypt(ctx, counter, c, clen, blk_off, m);
-}
-
-static inline int bootutil_aes_ctr_finish(bootutil_aes_ctr_context *ctx)
-{
-        (void)ctx;
-        return 0;
 }
 #endif /* MCUBOOT_USE_TINYCRYPT */
 

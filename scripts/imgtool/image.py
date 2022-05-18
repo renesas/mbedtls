@@ -27,6 +27,7 @@ from enum import Enum
 from intelhex import IntelHex
 import hashlib
 import struct
+import binascii
 import os.path
 from .keys import rsa, ecdsa, x25519
 from cryptography.hazmat.primitives.asymmetric import ec, padding
@@ -268,6 +269,7 @@ class Image():
         if isinstance(enckey, ecdsa.ECDSA256P1Public):
             newpk = ec.generate_private_key(ec.SECP256R1(), default_backend())
             shared = newpk.exchange(ec.ECDH(), enckey._get_public())
+            public_temp = enckey._get_public()
         else:
             newpk = X25519PrivateKey.generate()
             shared = newpk.exchange(enckey._get_public())
@@ -278,6 +280,21 @@ class Image():
                            modes.CTR(bytes([0] * 16)),
                            backend=default_backend()).encryptor()
         cipherkey = encryptor.update(plainkey) + encryptor.finalize()
+        print("enckey::")
+        print( enckey)
+        print("\n")
+        print("shared::")
+        print(shared)
+        print("shared converted to hexadecimal value:",shared.hex())
+        print("\n")
+        print("derived_key[:16]::")
+        print(derived_key[:16])
+        print("derived_key converted to hexadecimal value:",derived_key[:16].hex())
+        print("\n")
+        print("plainkey::")
+        print(plainkey)
+        print("plainkey converted to hexadecimal value:",plainkey.hex())
+        print("\n")
         mac = hmac.HMAC(derived_key[16:], hashes.SHA256(),
                         backend=default_backend())
         mac.update(cipherkey)

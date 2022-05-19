@@ -791,6 +791,7 @@ boot_encrypt(struct enc_key_data *enc_state, int image_index,
     enc = &enc_state[rc];
     assert(enc->valid == 1);
     bootutil_aes_ctr_encrypt(&enc->aes_ctr, nonce, buf, sz, blk_off, buf);
+    bootutil_aes_ctr_finish(&enc->aes_ctr);
 }
 
 /**

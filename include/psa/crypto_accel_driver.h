@@ -61,11 +61,12 @@ extern "C" {
  * \retval PSA_ERROR_INSUFFICIENT_MEMORY
  * \retval Implementation dependent
  */
-psa_status_t psa_import_key_into_slot_vendor( psa_key_slot_t *slot,
-                                       const uint8_t *data,
-                                       size_t data_length,
-									   mbedtls_svc_key_id_t *key,
-                                       bool write_to_persistent_memory);
+psa_status_t psa_import_key_into_slot_vendor(const psa_key_attributes_t * attributes,
+                                             psa_key_slot_t             * slot,
+                                             const uint8_t              * data,
+                                             size_t                       data_length,
+                                             mbedtls_svc_key_id_t       * key,
+                                             bool                         write_to_persistent_memory);
 
 /**
  * \brief Generate a vendor defined key or key pair.

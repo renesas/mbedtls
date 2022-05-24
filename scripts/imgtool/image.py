@@ -268,7 +268,6 @@ class Image():
         if isinstance(enckey, ecdsa.ECDSA256P1Public):
             newpk = ec.generate_private_key(ec.SECP256R1(), default_backend())
             shared = newpk.exchange(ec.ECDH(), enckey._get_public())
-            public_temp = enckey._get_public()
         else:
             newpk = X25519PrivateKey.generate()
             shared = newpk.exchange(enckey._get_public())

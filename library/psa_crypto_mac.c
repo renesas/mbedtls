@@ -33,11 +33,11 @@
 /* Use builtin defines specific to this compilation unit, since the test driver
  * relies on the software driver. */
 #if( defined(MBEDTLS_PSA_BUILTIN_ALG_CMAC) || \
-    ( defined(PSA_CRYPTO_DRIVER_TEST) && defined(MBEDTLS_PSA_ACCEL_ALG_CMAC) ) )
+    ( defined(PSA_CRYPTO_DRIVER_TEST) && !defined(MBEDTLS_PSA_ACCEL_ALG_CMAC) ) )
 #define BUILTIN_ALG_CMAC        1
 #endif
 #if( defined(MBEDTLS_PSA_BUILTIN_ALG_HMAC) || \
-    ( defined(PSA_CRYPTO_DRIVER_TEST) && defined(MBEDTLS_PSA_ACCEL_ALG_HMAC) ) )
+    ( defined(PSA_CRYPTO_DRIVER_TEST) && !defined(MBEDTLS_PSA_ACCEL_ALG_HMAC) ) )
 #define BUILTIN_ALG_HMAC        1
 #endif
 

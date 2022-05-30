@@ -31,8 +31,18 @@
 #define MBEDTLS_CONFIG_PSA_H
 
 #if defined(MBEDTLS_PSA_CRYPTO_CONFIG)
+#if !defined(PSA_CRYPTO_CONFIG_FILE)
 #include "psa/crypto_config.h"
+#else
+#include PSA_CRYPTO_CONFIG_FILE
+#endif
 #endif /* defined(MBEDTLS_PSA_CRYPTO_CONFIG) */
+
+#if !defined(PSA_CRYPTO_DRIVERS_FILE)
+#include "mbedtls/crypto_drivers.h"
+#else
+#include PSA_CRYPTO_DRIVERS_FILE
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -55,7 +65,6 @@ extern "C" {
 #elif !defined(PSA_WANT_ALG_RSA_PKCS1V15_SIGN_RAW) && defined(PSA_WANT_ALG_RSA_PKCS1V15_SIGN)
 #define PSA_WANT_ALG_RSA_PKCS1V15_SIGN_RAW PSA_WANT_ALG_RSA_PKCS1V15_SIGN
 #endif
-
 
 
 /****************************************************************/
@@ -397,7 +406,8 @@ extern "C" {
 #endif /* PSA_WANT_ALG_GCM */
 
 #if defined(PSA_WANT_ALG_CHACHA20_POLY1305)
-#if defined(PSA_WANT_KEY_TYPE_CHACHA20)
+#if !defined(MBEDTLS_PSA_ACCEL_ALG_CHACHA20_POLY1305) || \
+    defined(PSA_WANT_KEY_TYPE_CHACHA20)
 #define MBEDTLS_CHACHAPOLY_C
 #define MBEDTLS_PSA_BUILTIN_ALG_CHACHA20_POLY1305 1
 #endif /* PSA_WANT_KEY_TYPE_CHACHA20 */

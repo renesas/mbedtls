@@ -1914,6 +1914,13 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
     if( status != PSA_SUCCESS )
         goto exit;
 
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_import_key_into_slot_vendor( attributes, slot, data, data_length, key, true );
+            goto exit;
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
     /* In the case of a transparent key or an opaque key stored in local
      * storage ( thus not in the case of importing a key in a secure element
      * with storage ( MBEDTLS_PSA_CRYPTO_SE_C ) ),we have to allocate a
@@ -1934,23 +1941,14 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
 
     bits = slot->attr.bits;
 
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
-    {
-        status = psa_import_key_into_slot_vendor( attributes, slot, data, data_length, key, true );
-            goto exit;
-    }
-    else
-#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
-    {
-        status = psa_driver_wrapper_import_key( attributes,
-                                                data, data_length,
-                                                slot->key.data,
-                                                slot->key.bytes,
-                                                &slot->key.bytes, &bits );
-        if( status != PSA_SUCCESS )
-            goto exit;
-    }
+    status = psa_driver_wrapper_import_key( attributes,
+                                            data, data_length,
+                                            slot->key.data,
+                                            slot->key.bytes,
+                                            &slot->key.bytes, &bits );
+    if( status != PSA_SUCCESS )
+        goto exit;
+
 
     if( slot->attr.bits == 0 )
         slot->attr.bits = (psa_key_bits_t) bits;
@@ -3336,6 +3334,14 @@ static psa_status_t psa_cipher_setup( psa_cipher_operation_t *operation,
     psa_key_attributes_t attributes = {
       .core = slot->attr
     };
+
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_cipher_setup_vendor(operation, slot, alg, cipher_operation);
+        goto exit;
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
 
     /* Try doing the operation through a driver before using software fallback. */
     if( cipher_operation == MBEDTLS_ENCRYPT )
@@ -5826,7 +5832,15 @@ psa_status_t psa_generate_key( const psa_key_attributes_t *attributes,
     if( status != PSA_SUCCESS )
         goto exit;
 
-#if !defined(MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+#if defined(MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_generate_key_vendor(slot, attributes->core.bits,
+            attributes->domain_parameters, attributes->domain_parameters_size);
+            goto exit;
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
     /* In the case of a transparent key or an opaque key stored in local
      * storage ( thus not in the case of generating a key in a secure element
      * with storage ( MBEDTLS_PSA_CRYPTO_SE_C ) ),we have to allocate a
@@ -5857,15 +5871,7 @@ psa_status_t psa_generate_key( const psa_key_attributes_t *attributes,
         if( status != PSA_SUCCESS )
             goto exit;
     }
-#else
-    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
-    {
-        status = psa_generate_key_vendor(slot, attributes->core.bits,
-            attributes->domain_parameters, attributes->domain_parameters_size);
-            goto exit;
-    }
-    else
-#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
     status = psa_driver_wrapper_generate_key( attributes,
         slot->key.data, slot->key.bytes, &slot->key.bytes );
 

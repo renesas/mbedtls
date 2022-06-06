@@ -1921,6 +1921,7 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
             goto exit;
     }
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
     /* In the case of a transparent key or an opaque key stored in local
      * storage ( thus not in the case of importing a key in a secure element
      * with storage ( MBEDTLS_PSA_CRYPTO_SE_C ) ),we have to allocate a
@@ -1948,7 +1949,6 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
                                             &slot->key.bytes, &bits );
     if( status != PSA_SUCCESS )
         goto exit;
-
 
     if( slot->attr.bits == 0 )
         slot->attr.bits = (psa_key_bits_t) bits;

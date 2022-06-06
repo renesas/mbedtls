@@ -271,12 +271,6 @@ static psa_status_t psa_load_persistent_key_into_slot( psa_key_slot_t *slot )
 
     attributes.core = slot->attr;
 
-    /* Allocate a buffer of the required size and load the builtin key directly
-     * into the (now properly sized) slot buffer. */
-    status = psa_allocate_buffer_to_slot( slot, key_data_length );
-    if( status != PSA_SUCCESS )
-        return( status );
-
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
         status = psa_import_key_into_slot_vendor( &attributes, slot, key_data, key_data_length, NULL, false);

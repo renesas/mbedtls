@@ -200,7 +200,7 @@ unsigned mbedtls_ct_size_bool_eq( size_t x,
     return( 1 ^ diff1 );
 }
 
-#if defined(MBEDTLS_PKCS1_V15) && defined(MBEDTLS_RSA_C) && !defined(MBEDTLS_RSA_ALT)
+#if defined(MBEDTLS_PKCS1_V15) && defined(MBEDTLS_RSA_C)
 
 /** Constant-flow "greater than" comparison:
  * return x > y
@@ -360,7 +360,7 @@ signed char mbedtls_ct_base64_dec_value( unsigned char c )
 
 #endif /* MBEDTLS_BASE64_C */
 
-#if defined(MBEDTLS_PKCS1_V15) && defined(MBEDTLS_RSA_C) && !defined(MBEDTLS_RSA_ALT)
+#if defined(MBEDTLS_PKCS1_V15) && defined(MBEDTLS_RSA_C)
 
 /** Shift some data towards the left inside a buffer.
  *
@@ -670,7 +670,7 @@ int mbedtls_mpi_lt_mpi_ct( const mbedtls_mpi *X,
 
 #endif /* MBEDTLS_BIGNUM_C */
 
-#if defined(MBEDTLS_PKCS1_V15) && defined(MBEDTLS_RSA_C) && !defined(MBEDTLS_RSA_ALT)
+#if defined(MBEDTLS_PKCS1_V15) && defined(MBEDTLS_RSA_C)
 
 int mbedtls_ct_rsaes_pkcs1_v15_unpadding( unsigned char *input,
                                           size_t ilen,

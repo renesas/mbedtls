@@ -300,7 +300,7 @@ int mbedtls_platform_set_vsnprintf( int (*vsnprintf_func)( char * s, size_t n,
  *                         The library always calls this function with
  *                         `buf` equal to `NULL`.
  */
-extern void (*mbedtls_setbuf)( void *stream, char *buf );
+extern void (*mbedtls_setbuf)( FILE *stream, char *buf );
 
 /**
  * \brief                  Dynamically configure the function that is called
@@ -312,7 +312,7 @@ extern void (*mbedtls_setbuf)( void *stream, char *buf );
  * \return                 \c 0
  */
 int mbedtls_platform_set_setbuf( void (*setbuf_func)(
-                                     void *stream, char *buf ) );
+                                     FILE *stream, char *buf ) );
 #elif defined(MBEDTLS_PLATFORM_SETBUF_MACRO)
 /**
  * \brief                  Macro defining the function for the library to

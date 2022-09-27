@@ -227,21 +227,21 @@ int mbedtls_platform_set_fprintf( int (*fprintf_func)( FILE *, const char *, ...
 #endif /* MBEDTLS_PLATFORM_FPRINTF_ALT */
 
 #if defined(MBEDTLS_PLATFORM_SETBUF_ALT)
-//#if !defined(MBEDTLS_PLATFORM_STD_SETBUF)
+#if !defined(MBEDTLS_PLATFORM_STD_SETBUF)
 /*
  * Make dummy function to prevent NULL pointer dereferences
  */
-static void platform_setbuf_uninit( void *stream, char *buf )
+static void platform_setbuf_uninit( FILE *stream, char *buf )
 {
    ((void) stream);
    ((void) buf);
 }
 
 #define MBEDTLS_PLATFORM_STD_SETBUF   platform_setbuf_uninit
-//#endif /* !MBEDTLS_PLATFORM_STD_SETBUF */
-void (*mbedtls_setbuf)( void *stream, char *buf ) = MBEDTLS_PLATFORM_STD_SETBUF;
+#endif /* !MBEDTLS_PLATFORM_STD_SETBUF */
+void (*mbedtls_setbuf)( FILE *stream, char *buf ) = MBEDTLS_PLATFORM_STD_SETBUF;
 
-int mbedtls_platform_set_setbuf( void (*setbuf_func)( void *stream, char *buf ) )
+int mbedtls_platform_set_setbuf( void (*setbuf_func)( FILE *stream, char *buf ) )
 {
    mbedtls_setbuf = setbuf_func;
    return( 0 );

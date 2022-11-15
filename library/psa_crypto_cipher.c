@@ -102,6 +102,11 @@ const mbedtls_cipher_info_t *mbedtls_cipher_info_from_psa(
                 mode = MBEDTLS_MODE_CHACHAPOLY;
                 break;
 #endif
+
+            case PSA_ALG_XTS:
+                mode = MBEDTLS_MODE_XTS;
+                break;
+
             default:
                 return( NULL );
         }

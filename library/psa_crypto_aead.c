@@ -52,7 +52,7 @@ static psa_status_t psa_aead_setup(
 
     key_bits = attributes->core.bits;
 
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && (defined(MBEDTLS_GCM_ALT) || defined(MBEDTLS_CCM_ALT))
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type))
     {
         /* The mbedcrypto implementation obtains the list of methods based on the keybit size.

@@ -106,7 +106,7 @@ void psa_driver_wrapper_free( void )
 #endif
 }
 
-extern psa_status_t si_signature_sign_message(
+extern psa_status_t enginei_signature_sign_message(
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer,
     size_t key_buffer_size,
@@ -140,7 +140,7 @@ psa_status_t psa_driver_wrapper_sign_message(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_signature_sign_message(
+            status = enginei_signature_sign_message(
                         attributes,
                         key_buffer,
                         key_buffer_size,
@@ -214,7 +214,7 @@ psa_status_t psa_driver_wrapper_verify_message(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_signature_verify_message(
+            status = enginei_signature_verify_message(
                         attributes,
                         key_buffer,
                         key_buffer_size,
@@ -301,7 +301,7 @@ psa_status_t psa_driver_wrapper_sign_hash(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_signature_sign_hash( attributes,
+            status = enginei_signature_sign_hash( attributes,
                                                            key_buffer,
                                                            key_buffer_size,
                                                            alg,
@@ -385,7 +385,7 @@ psa_status_t psa_driver_wrapper_verify_hash(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_signature_verify_hash(
+            status = enginei_signature_verify_hash(
                          attributes,
                          key_buffer,
                          key_buffer_size,
@@ -560,7 +560,7 @@ psa_status_t psa_driver_wrapper_generate_key(
             {
             /* Cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-                status = si_generate_key(
+                status = enginei_generate_key(
                     attributes, key_buffer, key_buffer_size,
                     key_buffer_length );
                 /* Declared with fallback == true */
@@ -904,7 +904,7 @@ psa_status_t psa_driver_wrapper_cipher_encrypt(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_cipher_encrypt( attributes,
+            status = enginei_cipher_encrypt( attributes,
                                                               key_buffer,
                                                               key_buffer_size,
                                                               alg,
@@ -994,7 +994,7 @@ psa_status_t psa_driver_wrapper_cipher_decrypt(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_cipher_decrypt( attributes,
+            status = enginei_cipher_decrypt( attributes,
                                                               key_buffer,
                                                               key_buffer_size,
                                                               alg,
@@ -1071,8 +1071,8 @@ psa_status_t psa_driver_wrapper_cipher_encrypt_setup(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_cipher_encrypt_setup(
-                &operation->ctx.si_cipher_ctx,
+            status = enginei_cipher_encrypt_setup(
+                &operation->ctx.enginei_cipher_ctx,
                 attributes,
                 key_buffer,
                 key_buffer_size,
@@ -1144,8 +1144,8 @@ psa_status_t psa_driver_wrapper_cipher_decrypt_setup(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_cipher_decrypt_setup(
-                &operation->ctx.si_cipher_ctx,
+            status = enginei_cipher_decrypt_setup(
+                &operation->ctx.enginei_cipher_ctx,
                 attributes,
                 key_buffer,
                 key_buffer_size,
@@ -1216,8 +1216,8 @@ psa_status_t psa_driver_wrapper_cipher_set_iv(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_cipher_set_iv(
-                        &operation->ctx.si_cipher_ctx,
+            return(enginei_cipher_set_iv(
+                        &operation->ctx.enginei_cipher_ctx,
                         iv, iv_length ) );
 
         case PSA_CRYPTO_OPAQUE_TEST_DRIVER_ID:
@@ -1257,8 +1257,8 @@ psa_status_t psa_driver_wrapper_cipher_update(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_cipher_update(
-                        &operation->ctx.si_cipher_ctx,
+            return(enginei_cipher_update(
+                        &operation->ctx.enginei_cipher_ctx,
                         input, input_length,
                         output, output_size, output_length ) );
 
@@ -1299,8 +1299,8 @@ psa_status_t psa_driver_wrapper_cipher_finish(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_cipher_finish(
-                        &operation->ctx.si_cipher_ctx,
+            return(enginei_cipher_finish(
+                        &operation->ctx.enginei_cipher_ctx,
                         output, output_size, output_length ) );
 
         case PSA_CRYPTO_OPAQUE_TEST_DRIVER_ID:
@@ -1333,8 +1333,8 @@ psa_status_t psa_driver_wrapper_cipher_abort(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            status = si_cipher_abort(
-                        &operation->ctx.si_cipher_ctx );
+            status = enginei_cipher_abort(
+                        &operation->ctx.enginei_cipher_ctx );
             mbedtls_platform_zeroize(
                 &operation->ctx.transparent_test_driver_ctx,
                 sizeof( operation->ctx.transparent_test_driver_ctx ) );
@@ -1370,7 +1370,7 @@ psa_status_t psa_driver_wrapper_hash_compute(
 
     /* Try accelerators first */
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-    status = si_hash_compute(
+    status = enginei_hash_compute(
                 alg, input, input_length, hash, hash_size, hash_length );
     if( status != PSA_ERROR_NOT_SUPPORTED )
         return( status );
@@ -1394,8 +1394,8 @@ psa_status_t psa_driver_wrapper_hash_compute(
     return( PSA_ERROR_NOT_SUPPORTED );
 }
 
-extern psa_status_t si_hash_setup(
-        si_hash_operation_t *operation,
+extern psa_status_tenginei_hash_setup(
+       enginei_hash_operation_t *operation,
         psa_algorithm_t alg );
 
 psa_status_t psa_driver_wrapper_hash_setup(
@@ -1406,8 +1406,8 @@ psa_status_t psa_driver_wrapper_hash_setup(
 
     /* Try setup on accelerators first */
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-    status = si_hash_setup(
-                &operation->ctx.si_hash_ctx, alg );
+    status = enginei_hash_setup(
+                &operation->ctx.enginei_hash_ctx, alg );
     if( status == PSA_SUCCESS )
         operation->id = PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID;
 
@@ -1431,9 +1431,9 @@ psa_status_t psa_driver_wrapper_hash_setup(
     return( PSA_ERROR_NOT_SUPPORTED );
 }
 
-extern psa_status_t si_hash_clone(
-        const si_hash_operation_t *src,
-        si_hash_operation_t *dst );
+extern psa_status_tenginei_hash_clone(
+        const enginei_hash_operation_t *src,
+       enginei_hash_operation_t *dst );
 psa_status_t psa_driver_wrapper_hash_clone(
     const psa_hash_operation_t *source_operation,
     psa_hash_operation_t *target_operation )
@@ -1449,9 +1449,9 @@ psa_status_t psa_driver_wrapper_hash_clone(
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
             target_operation->id = PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID;
-            return( si_hash_clone(
-                        &source_operation->ctx.si_hash_ctx,
-                        &target_operation->ctx.si_hash_ctx ) );
+            return(enginei_hash_clone(
+                        &source_operation->ctx.enginei_hash_ctx,
+                        &target_operation->ctx.enginei_hash_ctx ) );
 #endif
         default:
             (void) target_operation;
@@ -1459,8 +1459,8 @@ psa_status_t psa_driver_wrapper_hash_clone(
     }
 }
 
-extern psa_status_t si_hash_update(
-    si_hash_operation_t *operation,
+extern psa_status_tenginei_hash_update(
+   enginei_hash_operation_t *operation,
     const uint8_t *input,
     size_t input_length );
 psa_status_t psa_driver_wrapper_hash_update(
@@ -1477,8 +1477,8 @@ psa_status_t psa_driver_wrapper_hash_update(
 #endif
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_hash_update(
-                        &operation->ctx.si_hash_ctx,
+            return(enginei_hash_update(
+                        &operation->ctx.enginei_hash_ctx,
                         input, input_length ) );
 #endif
         default:
@@ -1488,8 +1488,8 @@ psa_status_t psa_driver_wrapper_hash_update(
     }
 }
 
-extern psa_status_t si_hash_finish(
-    si_hash_operation_t *operation,
+extern psa_status_tenginei_hash_finish(
+   enginei_hash_operation_t *operation,
     uint8_t *hash,
     size_t hash_size,
     size_t *hash_length );
@@ -1509,8 +1509,8 @@ psa_status_t psa_driver_wrapper_hash_finish(
 #endif
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_hash_finish(
-                        &operation->ctx.si_hash_ctx,
+            return(enginei_hash_finish(
+                        &operation->ctx.enginei_hash_ctx,
                         hash, hash_size, hash_length ) );
 #endif
         default:
@@ -1521,8 +1521,8 @@ psa_status_t psa_driver_wrapper_hash_finish(
     }
 }
 
-extern psa_status_t si_hash_abort(
-    si_hash_operation_t *operation);
+extern psa_status_tenginei_hash_abort(
+   enginei_hash_operation_t *operation);
 
 psa_status_t psa_driver_wrapper_hash_abort(
     psa_hash_operation_t *operation )
@@ -1535,8 +1535,8 @@ psa_status_t psa_driver_wrapper_hash_abort(
 #endif
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_hash_abort(
-                        &operation->ctx.si_hash_ctx ) );
+            return(enginei_hash_abort(
+                        &operation->ctx.enginei_hash_ctx ) );
 #endif
         default:
             return( PSA_ERROR_BAD_STATE );
@@ -1544,7 +1544,7 @@ psa_status_t psa_driver_wrapper_hash_abort(
 }
 
 
-extern psa_status_t si_aead_encrypt(
+extern psa_status_tenginei_aead_encrypt(
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg,
@@ -1575,7 +1575,7 @@ psa_status_t psa_driver_wrapper_aead_encrypt(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_aead_encrypt(
+            status = enginei_aead_encrypt(
                          attributes, key_buffer, key_buffer_size,
                          alg,
                          nonce, nonce_length,
@@ -1606,7 +1606,7 @@ psa_status_t psa_driver_wrapper_aead_encrypt(
     }
 }
 
-extern psa_status_t si_aead_decrypt(
+extern psa_status_t enginei_aead_decrypt(
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg,
@@ -1636,7 +1636,7 @@ psa_status_t psa_driver_wrapper_aead_decrypt(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_aead_decrypt(
+            status = enginei_aead_decrypt(
                         attributes, key_buffer, key_buffer_size,
                         alg,
                         nonce, nonce_length,
@@ -1667,8 +1667,8 @@ psa_status_t psa_driver_wrapper_aead_decrypt(
     }
 }
 
-extern psa_status_t si_aead_encrypt_setup(
-    si_aead_operation_t *operation,
+extern psa_status_t enginei_aead_encrypt_setup(
+    enginei_aead_operation_t *operation,
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg );
@@ -1708,8 +1708,8 @@ psa_status_t psa_driver_wrapper_aead_encrypt_setup(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
             operation->id = PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID;
-            status = si_aead_encrypt_setup(
-                        &operation->ctx.si_aead_ctx,
+            status = enginei_aead_encrypt_setup(
+                        &operation->ctx.enginei_aead_ctx,
                         attributes, key_buffer, key_buffer_size,
                         alg );
 
@@ -1737,8 +1737,8 @@ psa_status_t psa_driver_wrapper_aead_encrypt_setup(
     }
 }
 
-extern psa_status_t si_aead_decrypt_setup(
-    si_aead_operation_t *operation,
+extern psa_status_t enginei_aead_decrypt_setup(
+    enginei_aead_operation_t *operation,
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg );
@@ -1762,8 +1762,8 @@ psa_status_t psa_driver_wrapper_aead_decrypt_setup(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
             operation->id = PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID;
-            status = si_aead_decrypt_setup(
-                        &operation->ctx.si_aead_ctx,
+            status = enginei_aead_decrypt_setup(
+                        &operation->ctx.enginei_aead_ctx,
                         attributes,
                         key_buffer, key_buffer_size,
                         alg );
@@ -1792,8 +1792,8 @@ psa_status_t psa_driver_wrapper_aead_decrypt_setup(
             return( PSA_ERROR_INVALID_ARGUMENT );
     }
 }
-extern psa_status_t si_aead_set_nonce(
-        si_aead_operation_t *operation,
+extern psa_status_t enginei_aead_set_nonce(
+        enginei_aead_operation_t *operation,
         const uint8_t *nonce,
         size_t nonce_length );
 
@@ -1815,8 +1815,8 @@ psa_status_t psa_driver_wrapper_aead_set_nonce(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_aead_set_nonce(
-                         &operation->ctx.si_aead_ctx,
+            return(enginei_aead_set_nonce(
+                         &operation->ctx.enginei_aead_ctx,
                          nonce, nonce_length ) );
 
         /* Add cases for opaque driver here */
@@ -1831,8 +1831,8 @@ psa_status_t psa_driver_wrapper_aead_set_nonce(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
-extern psa_status_t si_aead_set_lengths(
-    si_aead_operation_t *operation,
+extern psa_status_t enginei_aead_set_lengths(
+    enginei_aead_operation_t *operation,
     size_t ad_length,
     size_t plaintext_length );
 
@@ -1854,8 +1854,8 @@ psa_status_t psa_driver_wrapper_aead_set_lengths(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_aead_set_lengths(
-                        &operation->ctx.si_aead_ctx,
+            return(enginei_aead_set_lengths(
+                        &operation->ctx.enginei_aead_ctx,
                         ad_length, plaintext_length ) );
 
         /* Add cases for opaque driver here */
@@ -1870,8 +1870,8 @@ psa_status_t psa_driver_wrapper_aead_set_lengths(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
-extern psa_status_t si_aead_update_ad(
-    si_aead_operation_t *operation,
+extern psa_status_t enginei_aead_update_ad(
+    enginei_aead_operation_t *operation,
     const uint8_t *input,
     size_t input_length );
 
@@ -1893,8 +1893,8 @@ psa_status_t psa_driver_wrapper_aead_update_ad(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_aead_update_ad(
-                        &operation->ctx.si_aead_ctx,
+            return(enginei_aead_update_ad(
+                        &operation->ctx.enginei_aead_ctx,
                         input, input_length ) );
 
         /* Add cases for opaque driver here */
@@ -1909,8 +1909,8 @@ psa_status_t psa_driver_wrapper_aead_update_ad(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
-extern psa_status_t si_aead_update(
-        si_aead_operation_t *operation,
+extern psa_status_t enginei_aead_update(
+        enginei_aead_operation_t *operation,
         const uint8_t *input,
         size_t input_length,
         uint8_t *output,
@@ -1939,8 +1939,8 @@ psa_status_t psa_driver_wrapper_aead_update(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_aead_update(
-                        &operation->ctx.si_aead_ctx,
+            return(enginei_aead_update(
+                        &operation->ctx.enginei_aead_ctx,
                         input, input_length, output, output_size,
                         output_length ) );
 
@@ -1959,8 +1959,8 @@ psa_status_t psa_driver_wrapper_aead_update(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
-extern psa_status_t si_aead_finish(
-   si_aead_operation_t *operation,
+extern psa_status_t enginei_aead_finish(
+   enginei_aead_operation_t *operation,
    uint8_t *ciphertext,
    size_t ciphertext_size,
    size_t *ciphertext_length,
@@ -1992,8 +1992,8 @@ psa_status_t psa_driver_wrapper_aead_finish(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_aead_finish(
-                        &operation->ctx.si_aead_ctx,
+            return(enginei_aead_finish(
+                        &operation->ctx.enginei_aead_ctx,
                         ciphertext, ciphertext_size,
                         ciphertext_length, tag, tag_size, tag_length ) );
 
@@ -2013,8 +2013,8 @@ psa_status_t psa_driver_wrapper_aead_finish(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
-extern psa_status_t si_aead_verify(
-   si_aead_operation_t *operation,
+extern psa_status_t enginei_aead_verify(
+   enginei_aead_operation_t *operation,
    uint8_t *plaintext,
    size_t plaintext_size,
    size_t *plaintext_length,
@@ -2064,8 +2064,8 @@ psa_status_t psa_driver_wrapper_aead_verify(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_aead_verify(
-                        &operation->ctx.si_aead_ctx,
+            return(enginei_aead_verify(
+                        &operation->ctx.enginei_aead_ctx,
                         plaintext, plaintext_size,
                         plaintext_length, tag, tag_length ) );
 
@@ -2084,8 +2084,8 @@ psa_status_t psa_driver_wrapper_aead_verify(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
-extern psa_status_t si_aead_abort(
-   si_aead_operation_t *operation );
+extern psa_status_t enginei_aead_abort(
+   enginei_aead_operation_t *operation );
 
 psa_status_t psa_driver_wrapper_aead_abort(
    psa_aead_operation_t *operation )
@@ -2101,8 +2101,8 @@ psa_status_t psa_driver_wrapper_aead_abort(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_aead_abort(
-               &operation->ctx.si_aead_ctx ) );
+            return(enginei_aead_abort(
+               &operation->ctx.enginei_aead_ctx ) );
 
         /* Add cases for opaque driver here */
 
@@ -2116,7 +2116,7 @@ psa_status_t psa_driver_wrapper_aead_abort(
 /*
  * MAC functions
  */
-extern psa_status_t si_mac_compute(
+extern psa_status_t enginei_mac_compute(
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg,
@@ -2145,7 +2145,7 @@ psa_status_t psa_driver_wrapper_mac_compute(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_mac_compute(
+            status = enginei_mac_compute(
                 attributes,
                 key_buffer, key_buffer_size, alg,
                 input, input_length,
@@ -2192,8 +2192,8 @@ psa_status_t psa_driver_wrapper_mac_compute(
     }
 }
 
-extern psa_status_t si_mac_sign_setup(
-    si_mac_operation_t *operation, const psa_key_attributes_t *attributes,
+extern psa_status_t enginei_mac_sign_setup(
+    enginei_mac_operation_t *operation, const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg);
 
@@ -2215,8 +2215,8 @@ psa_status_t psa_driver_wrapper_mac_sign_setup(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_mac_sign_setup(
-                &operation->ctx.si_mac_ctx,
+            status = enginei_mac_sign_setup(
+                &operation->ctx.enginei_mac_ctx,
                 attributes,
                 key_buffer, key_buffer_size,
                 alg );
@@ -2269,8 +2269,8 @@ psa_status_t psa_driver_wrapper_mac_sign_setup(
     }
 }
 
-extern psa_status_t si_mac_verify_setup(
-    si_mac_operation_t *operation, const psa_key_attributes_t *attributes,
+extern psa_status_t enginei_mac_verify_setup(
+    enginei_mac_operation_t *operation, const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg);
 
@@ -2292,8 +2292,8 @@ psa_status_t psa_driver_wrapper_mac_verify_setup(
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            status = si_mac_verify_setup(
-                &operation->ctx.si_mac_ctx,
+            status = enginei_mac_verify_setup(
+                &operation->ctx.enginei_mac_ctx,
                 attributes,
                 key_buffer, key_buffer_size,
                 alg );
@@ -2345,8 +2345,8 @@ psa_status_t psa_driver_wrapper_mac_verify_setup(
             return( PSA_ERROR_INVALID_ARGUMENT );
     }
 }
-extern psa_status_t si_mac_update(
-    si_mac_operation_t *operation,
+extern psa_status_t enginei_mac_update(
+    enginei_mac_operation_t *operation,
     const uint8_t *input, size_t input_length );
 
 psa_status_t psa_driver_wrapper_mac_update(
@@ -2365,8 +2365,8 @@ psa_status_t psa_driver_wrapper_mac_update(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_mac_update(
-                        &operation->ctx.si_mac_ctx,
+            return(enginei_mac_update(
+                        &operation->ctx.enginei_mac_ctx,
                         input, input_length ) );
 
         case PSA_CRYPTO_OPAQUE_TEST_DRIVER_ID:
@@ -2382,8 +2382,8 @@ psa_status_t psa_driver_wrapper_mac_update(
     }
 }
 
-extern psa_status_t si_mac_sign_finish(
-    si_mac_operation_t *operation,
+extern psa_status_t enginei_mac_sign_finish(
+    enginei_mac_operation_t *operation,
     uint8_t *mac, size_t mac_size, size_t *mac_length);
 
 psa_status_t psa_driver_wrapper_mac_sign_finish(
@@ -2403,8 +2403,8 @@ psa_status_t psa_driver_wrapper_mac_sign_finish(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_mac_sign_finish(
-                        &operation->ctx.si_mac_ctx,
+            return(enginei_mac_sign_finish(
+                        &operation->ctx.enginei_mac_ctx,
                         mac, mac_size, mac_length ) );
 
         case PSA_CRYPTO_OPAQUE_TEST_DRIVER_ID:
@@ -2421,8 +2421,8 @@ psa_status_t psa_driver_wrapper_mac_sign_finish(
     }
 }
 
-extern psa_status_t si_mac_verify_finish(
-            si_mac_operation_t  *ctxt,
+extern psa_status_t enginei_mac_verify_finish(
+            enginei_mac_operation_t  *ctxt,
             const uint8_t *mac, size_t mac_length);
 
 psa_status_t psa_driver_wrapper_mac_verify_finish(
@@ -2441,8 +2441,8 @@ psa_status_t psa_driver_wrapper_mac_verify_finish(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_mac_verify_finish(
-                        &operation->ctx.si_mac_ctx,
+            return(enginei_mac_verify_finish(
+                        &operation->ctx.enginei_mac_ctx,
                         mac, mac_length ) );
 
         case PSA_CRYPTO_OPAQUE_TEST_DRIVER_ID:
@@ -2458,8 +2458,8 @@ psa_status_t psa_driver_wrapper_mac_verify_finish(
     }
 }
 
-extern psa_status_t si_mac_abort(
-    si_mac_operation_t *ctxt );
+extern psa_status_t enginei_mac_abort(
+    enginei_mac_operation_t *ctxt );
 
 psa_status_t psa_driver_wrapper_mac_abort(
     psa_mac_operation_t *operation )
@@ -2474,8 +2474,8 @@ psa_status_t psa_driver_wrapper_mac_abort(
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
         case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
-            return( si_mac_abort(
-                        &operation->ctx.si_mac_ctx ) );
+            return(enginei_mac_abort(
+                        &operation->ctx.enginei_mac_ctx ) );
         case PSA_CRYPTO_OPAQUE_TEST_DRIVER_ID:
             return( mbedtls_test_opaque_mac_abort(
                         &operation->ctx.opaque_test_driver_ctx ) );

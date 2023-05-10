@@ -82,6 +82,11 @@
 #include "mbedtls/sha512.h"
 #include "hash_info.h"
 
+#if defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER)
+#include "tfm_crypto_defs.h"
+#include "tfm_builtin_key_loader.h"
+#endif /* PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER */
+
 #define ARRAY_LENGTH(array) (sizeof(array) / sizeof(*(array)))
 
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_HKDF) ||          \
@@ -1011,7 +1016,13 @@ static psa_status_t psa_get_and_lock_transparent_key_slot_with_policy(
         return status;
     }
 
-    if (psa_key_lifetime_is_external((*p_slot)->attr.lifetime)) {
+    
+    if( psa_key_lifetime_is_external( (*p_slot)->attr.lifetime )
+#if defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER)
+        && PSA_KEY_LIFETIME_GET_LOCATION((*p_slot)->attr.lifetime) != TFM_BUILTIN_KEY_LOADER_KEY_LOCATION
+#endif /* defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER) */
+        )
+    {
         psa_unlock_key_slot(*p_slot);
         *p_slot = NULL;
         return PSA_ERROR_NOT_SUPPORTED;
@@ -1312,7 +1323,7 @@ psa_status_t psa_get_key_slot_number(
 }
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
 
-static psa_status_t psa_export_key_buffer_internal(const uint8_t *key_buffer,
+psa_status_t psa_export_key_buffer_internal(const uint8_t *key_buffer,
                                                    size_t key_buffer_size,
                                                    uint8_t *data,
                                                    size_t data_size,
@@ -1749,7 +1760,7 @@ static psa_status_t psa_start_key_creation(
  * \return If this function fails, the key slot is an invalid state.
  *         You must call psa_fail_key_creation() to wipe and free the slot.
  */
-static psa_status_t psa_finish_key_creation(
+psa_status_t psa_finish_key_creation(
     psa_key_slot_t *slot,
     psa_se_drv_table_entry_t *driver,
     mbedtls_svc_key_id_t *key)
@@ -1776,6 +1787,13 @@ static psa_status_t psa_finish_key_creation(
                                              sizeof(data));
         } else
 #endif /* MBEDTLS_PSA_CRYPTO_SE_C */
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_finish_key_creation_vendor( slot );
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
         {
             /* Key material is saved in export representation in the slot, so
              * just pass the slot buffer for storage. */
@@ -1962,6 +1980,15 @@ psa_status_t psa_import_key(const psa_key_attributes_t *attributes,
     if (status != PSA_SUCCESS) {
         goto exit;
     }
+
+
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_import_key_into_slot_vendor( attributes, slot, data, data_length, key, true );
+            goto exit;
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
 
     /* In the case of a transparent key or an opaque key stored in local
      * storage ( thus not in the case of importing a key in a secure element
@@ -2959,7 +2986,7 @@ psa_status_t psa_sign_hash_builtin(
     psa_algorithm_t alg, const uint8_t *hash, size_t hash_length,
     uint8_t *signature, size_t signature_size, size_t *signature_length)
 {
-    if (attributes->core.type == PSA_KEY_TYPE_RSA_KEY_PAIR) {
+    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR(attributes->core.type) ) {
         if (PSA_ALG_IS_RSA_PKCS1V15_SIGN(alg) ||
             PSA_ALG_IS_RSA_PSS(alg)) {
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_PKCS1V15_SIGN) || \
@@ -3973,6 +4000,15 @@ static psa_status_t psa_cipher_setup(psa_cipher_operation_t *operation,
     psa_key_attributes_t attributes = {
         .core = slot->attr
     };
+
+
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_cipher_setup_vendor(operation, slot, alg, cipher_operation);
+        goto exit;
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
 
     /* Try doing the operation through a driver before using software fallback. */
     if (cipher_operation == MBEDTLS_ENCRYPT) {
@@ -7023,6 +7059,15 @@ psa_status_t psa_generate_key(const psa_key_attributes_t *attributes,
     if (status != PSA_SUCCESS) {
         goto exit;
     }
+
+#if defined(MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_generate_key_vendor(slot, attributes->core.bits,
+            attributes->domain_parameters, attributes->domain_parameters_size);
+            goto exit;
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
 
     /* In the case of a transparent key or an opaque key stored in local
      * storage ( thus not in the case of generating a key in a secure element

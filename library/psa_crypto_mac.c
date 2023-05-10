@@ -184,8 +184,8 @@ static psa_status_t cmac_setup(mbedtls_psa_mac_operation_t *operation,
     const mbedtls_cipher_info_t *cipher_info =
         mbedtls_cipher_info_from_psa(
             PSA_ALG_CMAC,
-            psa_get_key_type(attributes),
-            psa_get_key_bits(attributes),
+           (psa_get_key_type( attributes ) & ~PSA_KEY_TYPE_VENDOR_FLAG),
+            psa_get_key_bits( attributes ),
             NULL);
 
     if (cipher_info == NULL) {

@@ -115,6 +115,16 @@ psa_status_t mbedtls_psa_rsa_load_representation(
     *p_rsa = mbedtls_pk_rsa(ctx);
     ctx.pk_info = NULL;
 
+
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_RSA_ALT)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+    {
+        /* Setup the vendor context flag */
+        (*p_rsa)->vendor_ctx = (bool *) true;
+    }
+    else
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
 exit:
     mbedtls_pk_free(&ctx);
     return status;
@@ -240,7 +250,7 @@ psa_status_t mbedtls_psa_rsa_export_public_key(
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_KEY_PAIR) && \
     defined(MBEDTLS_GENPRIME)
-static psa_status_t psa_rsa_read_exponent(const uint8_t *domain_parameters,
+psa_status_t psa_rsa_read_exponent(const uint8_t *domain_parameters,
                                           size_t domain_parameters_size,
                                           int *exponent)
 {
@@ -652,7 +662,7 @@ psa_status_t mbedtls_psa_asymmetric_decrypt(const psa_key_attributes_t *attribut
 
     *output_length = 0;
 
-    if (attributes->core.type == PSA_KEY_TYPE_RSA_KEY_PAIR) {
+    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR (attributes->core.type) ) {
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_PKCS1V15_CRYPT) || \
         defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_OAEP)
         mbedtls_rsa_context *rsa = NULL;

@@ -32,10 +32,14 @@
 #include <stdio.h>
 #endif
 
+#if defined(MBEDTLS_ENTROPY_NV_SEED) || defined(MBEDTLS_PLATFORM_C)
 #include "mbedtls/platform.h"
+#endif
 
-#include "mbedtls/platform.h"
-
+#if defined(MBEDTLS_SELF_TEST) && !defined(MBEDTLS_PLATFORM_C)
+#include <stdio.h>
+#define mbedtls_printf     printf
+#endif /* MBEDTLS_SELF_TEST */
 
 #define ENTROPY_MAX_LOOP    256     /**< Maximum amount to loop before error */
 

@@ -67,6 +67,29 @@ psa_status_t psa_import_key_into_slot_vendor(const psa_key_attributes_t * attrib
                                              mbedtls_svc_key_id_t       * key,
                                              bool                         write_to_persistent_memory);
 
+/** Import vendor defined key, unwrap it to psa format
+ *
+ *
+ * \param[in,out] slot  The key slot to import data into.
+ *                      Its `type` field must have previously been set to
+ *                      the desired key type.
+ *                      It must not contain any key material yet.
+ * \param[in] input     Buffer containing the key material to parse and import.
+ * \param input_length  Size of \p data in bytes.
+ *
+ * \retval PSA_SUCCESS
+ * \retval PSA_ERROR_INVALID_ARGUMENT
+ * \retval PSA_ERROR_NOT_SUPPORTED
+ * \retval PSA_ERROR_INSUFFICIENT_MEMORY
+ * \retval Implementation dependent
+ */
+psa_status_t psa_import_key_unwarp_vendor(psa_key_attributes_t * attributes,
+                                             psa_key_slot_t    * slot,
+                                             uint8_t           * input,
+                                             size_t              input_length,
+                                             uint8_t           ** output,
+                                             size_t            * output_length);
+
 /**
  * \brief Generate a vendor defined key or key pair.
  *

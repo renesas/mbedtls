@@ -1903,6 +1903,8 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
     psa_se_drv_table_entry_t *driver = NULL;
     size_t bits;
     size_t storage_size = data_length;
+    size_t psa_key_length;
+    uint8_t *psa_key = NULL;
 
     *key = MBEDTLS_SVC_KEY_ID_INIT;
 
@@ -1921,13 +1923,14 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
     if( status != PSA_SUCCESS )
         goto exit;
 
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
-        status = psa_import_key_into_slot_vendor( attributes, slot, data, data_length, key, true );
+        status = psa_import_key_unwarp_vendor(attributes, slot, data, data_length, &psa_key, &psa_key_length);
+        if( status != PSA_SUCCESS )
             goto exit;
+        storage_size = psa_key_length;
+
     }
-#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
 
     /* In the case of a transparent key or an opaque key stored in local
      * storage ( thus not in the case of importing a key in a secure element
@@ -1949,7 +1952,8 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
 
     bits = slot->attr.bits;
     status = psa_driver_wrapper_import_key( attributes,
-                                            data, data_length,
+                                            psa_key ? psa_key : data,
+                                            psa_key ? psa_key_length : data_length,
                                             slot->key.data,
                                             slot->key.bytes,
                                             &slot->key.bytes, &bits );
@@ -1977,6 +1981,9 @@ psa_status_t psa_import_key( const psa_key_attributes_t *attributes,
 
     status = psa_finish_key_creation( slot, driver, key );
 exit:
+    if (psa_key != NULL)
+        mbedtls_free( psa_key );
+
     if( status != PSA_SUCCESS )
         psa_fail_key_creation( slot, driver );
 

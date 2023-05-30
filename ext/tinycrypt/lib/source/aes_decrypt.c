@@ -64,6 +64,16 @@ int tc_aes128_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k)
 	return tc_aes128_set_encrypt_key(s, k);
 }
 
+int tc_aes192_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k)
+{
+	return tc_aes192_set_encrypt_key(s, k);
+}
+
+int tc_aes256_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k)
+{
+	return tc_aes256_set_encrypt_key(s, k);
+}
+
 #define mult8(a)(_double_byte(_double_byte(_double_byte(a))))
 #define mult9(a)(mult8(a)^(a))
 #define multb(a)(mult8(a)^_double_byte(a)^(a))

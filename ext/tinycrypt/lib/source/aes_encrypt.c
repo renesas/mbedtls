@@ -98,6 +98,22 @@ int tc_aes128_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
 	return TC_CRYPTO_SUCCESS;
 }
 
+int tc_aes192_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
+{
+	/* Only supporting the hardware accelerated mode */
+	(void) (s);
+	(void) (*k);
+	return TC_CRYPTO_FAIL;
+}
+
+int tc_aes256_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
+{
+	/* Only supporting the hardware accelerated mode */
+	(void) (s);
+	(void) (*k);
+	return TC_CRYPTO_FAIL;
+}
+
 static inline void add_round_key(uint8_t *s, const unsigned int *k)
 {
 	s[0] ^= (uint8_t)(k[0] >> 24); s[1] ^= (uint8_t)(k[0] >> 16);

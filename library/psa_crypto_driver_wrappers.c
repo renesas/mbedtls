@@ -1714,7 +1714,7 @@ psa_status_t psa_driver_wrapper_cipher_set_iv(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_cipher_set_iv(
                         &operation->ctx.si_cipher_ctx,
                         iv, iv_length ) );
@@ -1761,7 +1761,7 @@ psa_status_t psa_driver_wrapper_cipher_update(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_cipher_update(
                         &operation->ctx.si_cipher_ctx,
                         input, input_length,
@@ -1810,7 +1810,7 @@ psa_status_t psa_driver_wrapper_cipher_finish(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_cipher_finish(
                         &operation->ctx.si_cipher_ctx,
                         output, output_size, output_length ) );
@@ -1850,7 +1850,7 @@ psa_status_t psa_driver_wrapper_cipher_abort(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             status = si_cipher_abort(
                         &operation->ctx.si_cipher_ctx );
             mbedtls_platform_zeroize(
@@ -2022,7 +2022,7 @@ psa_status_t psa_driver_wrapper_hash_update(
     {
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_hash_update(
                         &operation->ctx.si_hash_ctx,
                         input, input_length ) );
@@ -2062,7 +2062,7 @@ psa_status_t psa_driver_wrapper_hash_finish(
     {
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_hash_finish(
                         &operation->ctx.si_hash_ctx,
                         hash, hash_size, hash_length ) );
@@ -2311,7 +2311,7 @@ psa_status_t psa_driver_wrapper_aead_encrypt_setup(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            operation->id = PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID;
+            operation->id = MBEDTLS_TEST_TRANSPARENT_DRIVER_ID;
             status = si_aead_encrypt_setup(
                         &operation->ctx.si_aead_ctx,
                         attributes, key_buffer, key_buffer_size,
@@ -2377,7 +2377,7 @@ psa_status_t psa_driver_wrapper_aead_decrypt_setup(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-            operation->id = PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID;
+            operation->id = MBEDTLS_TEST_TRANSPARENT_DRIVER_ID;
             status = si_aead_decrypt_setup(
                         &operation->ctx.si_aead_ctx,
                         attributes,
@@ -2440,7 +2440,7 @@ psa_status_t psa_driver_wrapper_aead_set_nonce(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_aead_set_nonce(
                          &operation->ctx.si_aead_ctx,
                          nonce, nonce_length ) );
@@ -2486,7 +2486,7 @@ psa_status_t psa_driver_wrapper_aead_set_lengths(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_aead_set_lengths(
                         &operation->ctx.si_aead_ctx,
                         ad_length, plaintext_length ) );
@@ -2532,7 +2532,7 @@ psa_status_t psa_driver_wrapper_aead_update_ad(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_aead_update_ad(
                         &operation->ctx.si_aead_ctx,
                         input, input_length ) );
@@ -2585,7 +2585,7 @@ psa_status_t psa_driver_wrapper_aead_update(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_aead_update(
                         &operation->ctx.si_aead_ctx,
                         input, input_length, output, output_size,
@@ -2646,7 +2646,7 @@ psa_status_t psa_driver_wrapper_aead_finish(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_aead_finish(
                         &operation->ctx.si_aead_ctx,
                         ciphertext, ciphertext_size,
@@ -2726,7 +2726,7 @@ psa_status_t psa_driver_wrapper_aead_verify(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_aead_verify(
                         &operation->ctx.si_aead_ctx,
                         plaintext, plaintext_size,
@@ -2771,7 +2771,7 @@ psa_status_t psa_driver_wrapper_aead_abort(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_aead_abort(
                &operation->ctx.si_aead_ctx ) );
 
@@ -3074,7 +3074,7 @@ psa_status_t psa_driver_wrapper_mac_update(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_mac_update(
                         &operation->ctx.si_mac_ctx,
                         input, input_length ) );
@@ -3116,7 +3116,7 @@ psa_status_t psa_driver_wrapper_mac_sign_finish(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_mac_sign_finish(
                         &operation->ctx.si_mac_ctx,
                         mac, mac_size, mac_length ) );
@@ -3159,7 +3159,7 @@ psa_status_t psa_driver_wrapper_mac_verify_finish(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_mac_verify_finish(
                         &operation->ctx.si_mac_ctx,
                         mac, mac_length ) );
@@ -3198,10 +3198,10 @@ psa_status_t psa_driver_wrapper_mac_abort(
 
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
-        case PSA_CRYPTO_TRANSPARENT_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_TRANSPARENT_DRIVER_ID:
             return( si_mac_abort(
                         &operation->ctx.si_mac_ctx ) );
-        case PSA_CRYPTO_OPAQUE_TEST_DRIVER_ID:
+        case MBEDTLS_TEST_OPAQUE_DRIVER_ID:
             return( mbedtls_test_opaque_mac_abort(
                         &operation->ctx.opaque_test_driver_ctx ) );
 #endif /* PSA_CRYPTO_DRIVER_TEST */

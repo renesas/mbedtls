@@ -31,17 +31,15 @@
 #define MBEDTLS_CONFIG_PSA_H
 
 #if defined(MBEDTLS_PSA_CRYPTO_CONFIG)
-#if !defined(PSA_CRYPTO_CONFIG_FILE)
+#if !defined(MBEDTLS_PSA_CRYPTO_CONFIG_FILE)
 #include "psa/crypto_config.h"
 #else
-#include PSA_CRYPTO_CONFIG_FILE
+#include MBEDTLS_PSA_CRYPTO_CONFIG_FILE
 #endif
 #endif /* defined(MBEDTLS_PSA_CRYPTO_CONFIG) */
 
-#if !defined(PSA_CRYPTO_DRIVERS_FILE)
-#include "mbedtls/crypto_drivers.h"
-#else
-#include PSA_CRYPTO_DRIVERS_FILE
+#if defined(MBEDTLS_PSA_CRYPTO_DRIVERS_FILE)
+#include MBEDTLS_PSA_CRYPTO_DRIVERS_FILE
 #endif
 
 #ifdef __cplusplus

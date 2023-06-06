@@ -38,7 +38,9 @@
 #endif
 #endif /* defined(MBEDTLS_PSA_CRYPTO_CONFIG) */
 
-#if defined(MBEDTLS_PSA_CRYPTO_DRIVERS_FILE)
+#if !defined(MBEDTLS_PSA_CRYPTO_DRIVERS_FILE)
+#include "mbedtls/crypto_drivers.h"
+#else
 #include MBEDTLS_PSA_CRYPTO_DRIVERS_FILE
 #endif
 

@@ -1984,6 +1984,16 @@ psa_status_t psa_import_key(const psa_key_attributes_t *attributes,
     }
 
 
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
+    {
+        status = psa_import_key_into_slot_vendor( attributes, slot, data, data_length, key, true );
+
+            goto exit;
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+
+#if defined(PSA_CRYPTO_DRIVER_TEST)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
         status = psa_import_key_unwarp_vendor(attributes, slot, data, data_length, &psa_key, &psa_key_length);
@@ -1992,6 +2002,7 @@ psa_status_t psa_import_key(const psa_key_attributes_t *attributes,
         storage_size = psa_key_length;
 
     }
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
     /* In the case of a transparent key or an opaque key stored in local
      * storage ( thus not in the case of importing a key in a secure element

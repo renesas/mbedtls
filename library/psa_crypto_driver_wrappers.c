@@ -150,6 +150,7 @@ void psa_driver_wrapper_free( void )
 #endif
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_signature_sign_message(
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer,
@@ -160,6 +161,7 @@ extern psa_status_t si_signature_sign_message(
     uint8_t *signature,
     size_t signature_size,
     size_t *signature_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 /* Start delegation functions */
 psa_status_t psa_driver_wrapper_sign_message(
@@ -1927,9 +1929,11 @@ psa_status_t psa_driver_wrapper_hash_compute(
     return( PSA_ERROR_NOT_SUPPORTED );
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_hash_setup(
         si_hash_operation_t *operation,
         psa_algorithm_t alg );
+#endif /* PSA_CRYPTO_DRIVER_TEST */        
 
 psa_status_t psa_driver_wrapper_hash_setup(
     psa_hash_operation_t *operation,
@@ -1971,9 +1975,12 @@ psa_status_t psa_driver_wrapper_hash_setup(
     return( PSA_ERROR_NOT_SUPPORTED );
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_hash_clone(
         const si_hash_operation_t *src,
         si_hash_operation_t *dst );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
+
 psa_status_t psa_driver_wrapper_hash_clone(
     const psa_hash_operation_t *source_operation,
     psa_hash_operation_t *target_operation )
@@ -2009,10 +2016,13 @@ psa_status_t psa_driver_wrapper_hash_clone(
     }
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_hash_update(
     si_hash_operation_t *operation,
     const uint8_t *input,
     size_t input_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
+
 psa_status_t psa_driver_wrapper_hash_update(
     psa_hash_operation_t *operation,
     const uint8_t *input,
@@ -2046,11 +2056,13 @@ psa_status_t psa_driver_wrapper_hash_update(
     }
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_hash_finish(
     si_hash_operation_t *operation,
     uint8_t *hash,
     size_t hash_size,
     size_t *hash_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_hash_finish(
     psa_hash_operation_t *operation,
@@ -2087,8 +2099,10 @@ psa_status_t psa_driver_wrapper_hash_finish(
     }
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_hash_abort(
     si_hash_operation_t *operation);
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_hash_abort(
     psa_hash_operation_t *operation )
@@ -2116,7 +2130,7 @@ psa_status_t psa_driver_wrapper_hash_abort(
     }
 }
 
-
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_encrypt(
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
@@ -2125,7 +2139,7 @@ extern psa_status_t si_aead_encrypt(
     const uint8_t *additional_data, size_t additional_data_length,
     const uint8_t *plaintext, size_t plaintext_length,
     uint8_t *ciphertext, size_t ciphertext_size, size_t *ciphertext_length );
-
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_aead_encrypt(
     const psa_key_attributes_t *attributes,
@@ -2193,6 +2207,7 @@ psa_status_t psa_driver_wrapper_aead_encrypt(
     }
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_decrypt(
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
@@ -2201,6 +2216,7 @@ extern psa_status_t si_aead_decrypt(
     const uint8_t *additional_data, size_t additional_data_length,
     const uint8_t *ciphertext, size_t ciphertext_length,
     uint8_t *plaintext, size_t plaintext_size, size_t *plaintext_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_aead_decrypt(
     const psa_key_attributes_t *attributes,
@@ -2268,11 +2284,13 @@ psa_status_t psa_driver_wrapper_aead_decrypt(
     }
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_encrypt_setup(
     si_aead_operation_t *operation,
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_get_tag_len( psa_aead_operation_t *operation,
                                      uint8_t *tag_len )
@@ -2350,11 +2368,13 @@ psa_status_t psa_driver_wrapper_aead_encrypt_setup(
     }
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_decrypt_setup(
     si_aead_operation_t *operation,
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_aead_decrypt_setup(
    psa_aead_operation_t *operation,
@@ -2418,10 +2438,13 @@ psa_status_t psa_driver_wrapper_aead_decrypt_setup(
             return( PSA_ERROR_INVALID_ARGUMENT );
     }
 }
+
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_set_nonce(
         si_aead_operation_t *operation,
         const uint8_t *nonce,
         size_t nonce_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_aead_set_nonce(
    psa_aead_operation_t *operation,
@@ -2464,10 +2487,12 @@ psa_status_t psa_driver_wrapper_aead_set_nonce(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_set_lengths(
     si_aead_operation_t *operation,
     size_t ad_length,
     size_t plaintext_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_aead_set_lengths(
    psa_aead_operation_t *operation,
@@ -2510,10 +2535,12 @@ psa_status_t psa_driver_wrapper_aead_set_lengths(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_update_ad(
     si_aead_operation_t *operation,
     const uint8_t *input,
     size_t input_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_aead_update_ad(
    psa_aead_operation_t *operation,
@@ -2556,6 +2583,7 @@ psa_status_t psa_driver_wrapper_aead_update_ad(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_update(
         si_aead_operation_t *operation,
         const uint8_t *input,
@@ -2563,6 +2591,7 @@ extern psa_status_t si_aead_update(
         uint8_t *output,
         size_t output_size,
         size_t *output_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_aead_update(
    psa_aead_operation_t *operation,
@@ -2614,6 +2643,7 @@ psa_status_t psa_driver_wrapper_aead_update(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_finish(
    si_aead_operation_t *operation,
    uint8_t *ciphertext,
@@ -2622,6 +2652,7 @@ extern psa_status_t si_aead_finish(
    uint8_t *tag,
    size_t tag_size,
    size_t *tag_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_aead_finish(
    psa_aead_operation_t *operation,
@@ -2676,6 +2707,7 @@ psa_status_t psa_driver_wrapper_aead_finish(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_verify(
    si_aead_operation_t *operation,
    uint8_t *plaintext,
@@ -2683,6 +2715,7 @@ extern psa_status_t si_aead_verify(
    size_t *plaintext_length,
    const uint8_t *tag,
    size_t tag_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_aead_verify(
    psa_aead_operation_t *operation,
@@ -2755,8 +2788,11 @@ psa_status_t psa_driver_wrapper_aead_verify(
     return( PSA_ERROR_INVALID_ARGUMENT );
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_aead_abort(
    si_aead_operation_t *operation );
+
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_aead_abort(
    psa_aead_operation_t *operation )
@@ -2793,12 +2829,14 @@ psa_status_t psa_driver_wrapper_aead_abort(
 /*
  * MAC functions
  */
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_mac_compute(
     const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg,
     const uint8_t *input, size_t input_length,
     uint8_t *mac, size_t mac_size, size_t *mac_length );
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_mac_compute(
     const psa_key_attributes_t *attributes,
@@ -2878,10 +2916,12 @@ psa_status_t psa_driver_wrapper_mac_compute(
     }
 }
 
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_mac_sign_setup(
     si_mac_operation_t *operation, const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg);
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_mac_sign_setup(
     psa_mac_operation_t *operation,
@@ -2966,12 +3006,12 @@ psa_status_t psa_driver_wrapper_mac_sign_setup(
             return( PSA_ERROR_INVALID_ARGUMENT );
     }
 }
-
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_mac_verify_setup(
     si_mac_operation_t *operation, const psa_key_attributes_t *attributes,
     const uint8_t *key_buffer, size_t key_buffer_size,
     psa_algorithm_t alg);
-
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 psa_status_t psa_driver_wrapper_mac_verify_setup(
     psa_mac_operation_t *operation,
     const psa_key_attributes_t *attributes,
@@ -3055,10 +3095,11 @@ psa_status_t psa_driver_wrapper_mac_verify_setup(
             return( PSA_ERROR_INVALID_ARGUMENT );
     }
 }
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_mac_update(
     si_mac_operation_t *operation,
     const uint8_t *input, size_t input_length );
-
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 psa_status_t psa_driver_wrapper_mac_update(
     psa_mac_operation_t *operation,
     const uint8_t *input,
@@ -3095,10 +3136,11 @@ psa_status_t psa_driver_wrapper_mac_update(
             return( PSA_ERROR_INVALID_ARGUMENT );
     }
 }
-
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_mac_sign_finish(
     si_mac_operation_t *operation,
     uint8_t *mac, size_t mac_size, size_t *mac_length);
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_mac_sign_finish(
     psa_mac_operation_t *operation,
@@ -3139,10 +3181,11 @@ psa_status_t psa_driver_wrapper_mac_sign_finish(
             return( PSA_ERROR_INVALID_ARGUMENT );
     }
 }
-
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_mac_verify_finish(
             si_mac_operation_t  *ctxt,
             const uint8_t *mac, size_t mac_length);
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 
 psa_status_t psa_driver_wrapper_mac_verify_finish(
     psa_mac_operation_t *operation,
@@ -3182,10 +3225,10 @@ psa_status_t psa_driver_wrapper_mac_verify_finish(
             return( PSA_ERROR_INVALID_ARGUMENT );
     }
 }
-
+#if defined(PSA_CRYPTO_DRIVER_TEST)
 extern psa_status_t si_mac_abort(
     si_mac_operation_t *ctxt );
-
+#endif /* PSA_CRYPTO_DRIVER_TEST */
 psa_status_t psa_driver_wrapper_mac_abort(
     psa_mac_operation_t *operation )
 {

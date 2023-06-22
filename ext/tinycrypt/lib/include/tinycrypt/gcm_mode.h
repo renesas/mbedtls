@@ -53,6 +53,7 @@
 
 #include <tinycrypt/aes.h>
 #include <stddef.h>
+#include "rm_tinycrypt_port_cfg.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,6 +67,11 @@ extern "C" {
 
 /* max message size in bytes: (2^39 - 2^8)/8 = 68719476704 */
 #define TC_GCM_PAYLOAD_MAX_BYTES 0xFFFFFFFE0
+
+typedef struct tc_gcm_mode_struct {
+	TCAesKeySched_t sched; /* AES key schedule */
+	unsigned int tlen; /* tag length in bytes (parameter t in SP-800 38D) */
+} *TCGcmMode_t;
 
 /**
  * @brief initialize the GCM mode encryption procedure
@@ -96,7 +102,7 @@ int tc_gcm_encryption_init(const TCAesKeySched_t sched, uint8_t * iv, uint8_t * 
  * @param length IN -- intput length
  */
 int tc_gcm_encryption_update(const TCAesKeySched_t sched, const uint8_t * input, uint8_t * output,
-                             uint8_t length);
+                             uint32_t length);
 
 /**
  * @brief calculates TAG for GCM mode encryption procedure
@@ -117,8 +123,8 @@ int tc_gcm_encryption_update(const TCAesKeySched_t sched, const uint8_t * input,
  */
 int tc_gcm_encryption_final(const TCAesKeySched_t sched,
                             uint8_t             * input,
-                            uint8_t               input_len,
-                            uint8_t               aad_len,
+                            uint32_t              input_len,
+                            uint32_t              aad_len,
                             uint8_t             * output,
                             uint8_t             * tag);
 
@@ -151,7 +157,7 @@ int tc_gcm_decryption_init(const TCAesKeySched_t sched, uint8_t * iv, uint8_t * 
  * @param length IN -- intput length
  */
 int tc_gcm_decryption_update(const TCAesKeySched_t sched, const uint8_t * input, uint8_t * output,
-                             uint8_t length);
+                             uint32_t length);
 
 /**
  * @brief calculates TAG for GCM mode decryption procedure
@@ -175,15 +181,10 @@ int tc_gcm_decryption_update(const TCAesKeySched_t sched, const uint8_t * input,
 int tc_gcm_decryption_final(const TCAesKeySched_t sched,
                             uint8_t             * input,
                             uint8_t             * tag,
-                            uint8_t               aad_len,
-                            uint8_t               input_len,
+                            uint32_t              aad_len,
+                            uint32_t              input_len,
                             uint8_t               tag_len,
                             uint8_t             * output);
-
-typedef struct tc_gcm_mode_struct {
-	TCAesKeySched_t sched; /* AES key schedule */
-	unsigned int tlen; /* tag length in bytes (parameter t in SP-800 38D) */
-} *TCGcmMode_t;
 
 /**
  * @brief GCM configuration procedure

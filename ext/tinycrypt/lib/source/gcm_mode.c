@@ -79,7 +79,7 @@ int tc_gcm_encryption_init(const TCAesKeySched_t sched, uint8_t * iv, uint8_t * 
 }
 
 int tc_gcm_encryption_update(const TCAesKeySched_t sched, const uint8_t * input, uint8_t * output,
-                             uint8_t length)
+                             uint32_t length)
 {
 	TC_PARAMETER_NOT_USED(sched);
 	TC_PARAMETER_NOT_USED(*input);
@@ -90,8 +90,8 @@ int tc_gcm_encryption_update(const TCAesKeySched_t sched, const uint8_t * input,
 
 int tc_gcm_encryption_final(const TCAesKeySched_t sched,
                             uint8_t             * input,
-                            uint8_t               input_len,
-                            uint8_t               aad_len,
+                            uint32_t              input_len,
+                            uint32_t              aad_len,
                             uint8_t             * output,
                             uint8_t             * tag)
 {
@@ -114,7 +114,7 @@ int tc_gcm_decryption_init(const TCAesKeySched_t sched, uint8_t * iv, uint8_t * 
 }
 
 int tc_gcm_decryption_update(const TCAesKeySched_t sched, const uint8_t * input, uint8_t * output,
-                             uint8_t length)
+                             uint32_t length)
 {
 	TC_PARAMETER_NOT_USED(sched);
 	TC_PARAMETER_NOT_USED(*input);
@@ -126,8 +126,8 @@ int tc_gcm_decryption_update(const TCAesKeySched_t sched, const uint8_t * input,
 int tc_gcm_decryption_final(const TCAesKeySched_t sched,
                             uint8_t             * input,
                             uint8_t             * tag,
-                            uint8_t               aad_len,
-                            uint8_t               input_len,
+                            uint32_t              aad_len,
+                            uint32_t              input_len,
                             uint8_t               tag_len,
                             uint8_t             * output)
 {

@@ -324,7 +324,7 @@ int mbedtls_ct_hmac(mbedtls_md_context_t *ctx,
 
 #endif /* MBEDTLS_SSL_SOME_SUITES_USE_MAC */
 
-#if defined(MBEDTLS_PKCS1_V15) && defined(MBEDTLS_RSA_C) && !defined(MBEDTLS_RSA_ALT)
+#if defined(MBEDTLS_PKCS1_V15) && defined(MBEDTLS_RSA_C)
 
 /** This function performs the unpadding part of a PKCS#1 v1.5 decryption
  *  operation (EME-PKCS1-v1_5 decoding).
@@ -358,6 +358,6 @@ int mbedtls_ct_rsaes_pkcs1_v15_unpadding(unsigned char *input,
                                          size_t output_max_len,
                                          size_t *olen);
 
-#endif /* MBEDTLS_PKCS1_V15 && MBEDTLS_RSA_C && ! MBEDTLS_RSA_ALT */
+#endif /* MBEDTLS_PKCS1_V15 && MBEDTLS_RSA_C */
 
 #endif /* MBEDTLS_CONSTANT_TIME_INTERNAL_H */

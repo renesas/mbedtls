@@ -23,6 +23,7 @@
 
 #include "psa/crypto.h"
 #include "psa/crypto_driver_common.h"
+#include "psa/crypto_accel_driver.h"
 
 /*
  * Initialization and termination functions

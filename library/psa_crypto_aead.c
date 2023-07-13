@@ -35,6 +35,9 @@
 #include "mbedtls/gcm.h"
 #include "mbedtls/error.h"
 
+/* Functions to support vendor defined format */
+psa_status_t vendor_bitlength_to_raw_bitlength(psa_key_type_t type, size_t vendor_bits, size_t * raw_bits);
+
 static psa_status_t psa_aead_setup(
     mbedtls_psa_aead_operation_t *operation,
     const psa_key_attributes_t *attributes,

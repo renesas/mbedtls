@@ -21,22 +21,32 @@
 #include <inttypes.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "sysflash/sysflash.h"
 
 #include "bootutil/bootutil_log.h"
-#include "cbor_encode.h"
+#include "zcbor_encode.h"
 
 #ifdef __ZEPHYR__
-#include <sys/reboot.h>
-#include <sys/byteorder.h>
-#include <sys/__assert.h>
-#include <drivers/flash.h>
-#include <sys/crc.h>
-#include <sys/base64.h>
+#include <zephyr/sys/reboot.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/__assert.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/crc.h>
+#include <zephyr/sys/base64.h>
+#include <hal/hal_flash.h>
+#elif __ESPRESSIF__
+#include <bootloader_utility.h>
+#include <esp_rom_sys.h>
+#include <esp_crc.h>
+#include <endian.h>
+#include <mbedtls/base64.h>
 #else
 #include <bsp/bsp.h>
 #include <hal/hal_system.h>
+#include <hal/hal_flash.h>
 #include <os/endian.h>
 #include <os/os_cputime.h>
 #include <crc/crc16.h>
@@ -44,7 +54,6 @@
 #endif /* __ZEPHYR__ */
 
 #include <flash_map_backend/flash_map_backend.h>
-#include <hal/hal_flash.h>
 #include <os/os.h>
 #include <os/os_malloc.h>
 
@@ -53,6 +62,7 @@
 
 #include "boot_serial/boot_serial.h"
 #include "boot_serial_priv.h"
+#include "mcuboot_config/mcuboot_config.h"
 
 #ifdef MCUBOOT_ERASE_PROGRESSIVELY
 #include "bootutil_priv.h"
@@ -63,12 +73,17 @@
 #endif
 
 #include "serial_recovery_cbor.h"
+#include "serial_recovery_echo.h"
 #include "bootutil/boot_hooks.h"
 
 BOOT_LOG_MODULE_DECLARE(mcuboot);
 
-#define BOOT_SERIAL_INPUT_MAX   512
-#define BOOT_SERIAL_OUT_MAX     (128 * BOOT_IMAGE_NUMBER)
+#ifndef MCUBOOT_SERIAL_MAX_RECEIVE_SIZE
+#define MCUBOOT_SERIAL_MAX_RECEIVE_SIZE 512
+#endif
+
+#define BOOT_SERIAL_OUT_MAX     (160 * BOOT_IMAGE_NUMBER)
+#define BOOT_SERIAL_FRAME_MTU   124 /* 127 - pkt start (2 bytes) and stop (1 byte) */
 
 #ifdef __ZEPHYR__
 /* base64 lib encodes data to null-terminated string */
@@ -79,6 +94,15 @@ BOOT_LOG_MODULE_DECLARE(mcuboot);
 
 #define ntohs(x) sys_be16_to_cpu(x)
 #define htons(x) sys_cpu_to_be16(x)
+#elif __ESPRESSIF__
+#define BASE64_ENCODE_SIZE(in_size) ((((((in_size) - 1) / 3) * 4) + 4) + 1)
+#define CRC16_INITIAL_CRC       0       /* what to seed crc16 with */
+
+#define ntohs(x) be16toh(x)
+#define htons(x) htobe16(x)
+
+#define base64_decode mbedtls_base64_decode
+#define base64_encode mbedtls_base64_encode
 #endif
 
 #if (BOOT_IMAGE_NUMBER > 1)
@@ -87,11 +111,9 @@ BOOT_LOG_MODULE_DECLARE(mcuboot);
 #define IMAGES_ITER(x)
 #endif
 
-static char in_buf[BOOT_SERIAL_INPUT_MAX + 1];
-static char dec_buf[BOOT_SERIAL_INPUT_MAX + 1];
+static char in_buf[MCUBOOT_SERIAL_MAX_RECEIVE_SIZE + 1];
+static char dec_buf[MCUBOOT_SERIAL_MAX_RECEIVE_SIZE + 1];
 const struct boot_uart_funcs *boot_uf;
-static uint32_t curr_off;
-static uint32_t img_size;
 static struct nmgr_hdr *bs_hdr;
 static bool bs_entry;
 
@@ -99,10 +121,18 @@ static char bs_obuf[BOOT_SERIAL_OUT_MAX];
 
 static void boot_serial_output(void);
 
-static cbor_state_backups_t dummy_backups;
-static cbor_state_t cbor_state = {
-    .backups = &dummy_backups
-};
+#ifdef MCUBOOT_SERIAL_IMG_GRP_HASH
+static int boot_serial_get_hash(const struct image_header *hdr,
+                                const struct flash_area *fap, uint8_t *hash);
+#endif
+
+static zcbor_state_t cbor_state[2];
+
+void reset_cbor_state(void)
+{
+    zcbor_new_encode_state(cbor_state, 2, (uint8_t *)bs_obuf,
+        (size_t)bs_obuf + sizeof(bs_obuf), 0);
+}
 
 /**
  * Function that processes MGMT_GROUP_ID_PERUSER mcumgr group and may be
@@ -118,8 +148,12 @@ static cbor_state_t cbor_state = {
  */
 extern int bs_peruser_system_specific(const struct nmgr_hdr *hdr,
                                       const char *buffer,
-                                      int len, cbor_state_t *cs);
+                                      int len, zcbor_state_t *cs);
 
+#define zcbor_tstr_put_lit_cast(state, string) \
+	zcbor_tstr_encode_ptr(state, (uint8_t *)string, sizeof(string) - 1)
+
+#ifndef MCUBOOT_USE_SNPRINTF
 /*
  * Convert version into string without use of snprintf().
  */
@@ -165,6 +199,17 @@ bs_list_img_ver(char *dst, int maxlen, struct image_version *ver)
     dst[off++] = '.';
     off += u32toa(dst + off, ver->iv_build_num);
 }
+#else
+/*
+ * dst has to be able to fit "255.255.65535.4294967295" (25 characters).
+ */
+static void
+bs_list_img_ver(char *dst, int maxlen, struct image_version *ver)
+{
+   snprintf(dst, maxlen, "%hu.%hu.%hu.%u", (uint16_t)ver->iv_major,
+            (uint16_t)ver->iv_minor, ver->iv_revision, ver->iv_build_num);
+}
+#endif /* !MCUBOOT_USE_SNPRINTF */
 
 /*
  * List images.
@@ -177,10 +222,13 @@ bs_list(char *buf, int len)
     uint32_t slot, area_id;
     const struct flash_area *fap;
     uint8_t image_index;
+#ifdef MCUBOOT_SERIAL_IMG_GRP_HASH
+    uint8_t hash[32];
+#endif
 
-    map_start_encode(&cbor_state, 1);
-    tstrx_put(&cbor_state, "images");
-    list_start_encode(&cbor_state, 5);
+    zcbor_map_start_encode(cbor_state, 1);
+    zcbor_tstr_put_lit_cast(cbor_state, "images");
+    zcbor_list_start_encode(cbor_state, 5);
     image_index = 0;
     IMAGES_ITER(image_index) {
         for (slot = 0; slot < 2; slot++) {
@@ -196,14 +244,14 @@ bs_list(char *buf, int len)
                 flash_area_read(fap, 0, &hdr, sizeof(hdr));
             }
 
-            fih_int fih_rc = FIH_FAILURE;
+            FIH_DECLARE(fih_rc, FIH_FAILURE);
 
             if (hdr.ih_magic == IMAGE_MAGIC)
             {
                 BOOT_HOOK_CALL_FIH(boot_image_check_hook,
-                                   fih_int_encode(BOOT_HOOK_REGULAR),
+                                   FIH_BOOT_HOOK_REGULAR,
                                    fih_rc, image_index, slot);
-                if (fih_eq(fih_rc, BOOT_HOOK_REGULAR))
+                if (FIH_EQ(fih_rc, FIH_BOOT_HOOK_REGULAR))
                 {
 #ifdef MCUBOOT_ENC_IMAGES
                     if (slot == 0 && IS_ENCRYPTED(&hdr)) {
@@ -221,32 +269,95 @@ bs_list(char *buf, int len)
                 }
             }
 
+#ifdef MCUBOOT_SERIAL_IMG_GRP_HASH
+            /* Retrieve SHA256 hash of image for identification */
+            rc = boot_serial_get_hash(&hdr, fap, hash);
+#endif
+
             flash_area_close(fap);
 
-            if (fih_not_eq(fih_rc, FIH_SUCCESS)) {
+            if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
                 continue;
             }
 
-            map_start_encode(&cbor_state, 20);
+            zcbor_map_start_encode(cbor_state, 20);
 
 #if (BOOT_IMAGE_NUMBER > 1)
-            tstrx_put(&cbor_state, "image");
-            uintx32_put(&cbor_state, image_index);
+            zcbor_tstr_put_lit_cast(cbor_state, "image");
+            zcbor_uint32_put(cbor_state, image_index);
 #endif
 
-            tstrx_put(&cbor_state, "slot");
-            uintx32_put(&cbor_state, slot);
-            tstrx_put(&cbor_state, "version");
+            zcbor_tstr_put_lit_cast(cbor_state, "slot");
+            zcbor_uint32_put(cbor_state, slot);
+
+#ifdef MCUBOOT_SERIAL_IMG_GRP_HASH
+            if (rc == 0) {
+                zcbor_tstr_put_lit_cast(cbor_state, "hash");
+                zcbor_bstr_encode_ptr(cbor_state, hash, sizeof(hash));
+            }
+#endif
+
+            zcbor_tstr_put_lit_cast(cbor_state, "version");
 
             bs_list_img_ver((char *)tmpbuf, sizeof(tmpbuf), &hdr.ih_ver);
-            tstrx_put_term(&cbor_state, (char *)tmpbuf);
-            map_end_encode(&cbor_state, 20);
+
+            zcbor_tstr_encode_ptr(cbor_state, tmpbuf, strlen((char *)tmpbuf));
+            zcbor_map_end_encode(cbor_state, 20);
         }
     }
-    list_end_encode(&cbor_state, 5);
-    map_end_encode(&cbor_state, 1);
+    zcbor_list_end_encode(cbor_state, 5);
+    zcbor_map_end_encode(cbor_state, 1);
     boot_serial_output();
 }
+
+#ifdef MCUBOOT_ERASE_PROGRESSIVELY
+
+/** Erases range of flash, aligned to sector size
+ *
+ * Function will erase all sectors withing [start, end] range; it does not check
+ * the @p start for alignment, and it will use @p end to find boundaries of las
+ * sector to erase. Function returns offset of the first byte past the last
+ * erased sector, so basically offset of next sector to be erased if needed.
+ * The function is intended to be called iteratively with previously returned
+ * offset as @p start.
+ *
+ * @param   start starting offset, aligned to sector offset;
+ * @param   end ending offset, maybe anywhere within sector;
+ *
+ * @retval On success: offset of the first byte past last erased sector;
+ *         On failure: -EINVAL.
+ */
+static off_t erase_range(const struct flash_area *fap, off_t start, off_t end)
+{
+    struct flash_sector sect;
+    size_t size;
+    int rc;
+
+    if (end >= flash_area_get_size(fap)) {
+        return -EINVAL;
+    }
+
+    if (end < start) {
+        return start;
+    }
+
+    if (flash_area_get_sector(fap, end, &sect)) {
+        return -EINVAL;
+    }
+
+    size = flash_sector_get_off(&sect) + flash_sector_get_size(&sect) - start;
+    BOOT_LOG_INF("Erasing range 0x%jx:0x%jx", (intmax_t)start,
+		 (intmax_t)(start + size - 1));
+
+    rc = flash_area_erase(fap, start, size);
+    if (rc != 0) {
+        BOOT_LOG_ERR("Error %d while erasing range", rc);
+        return -EINVAL;
+    }
+
+    return start + size;
+}
+#endif
 
 /*
  * Image upload request.
@@ -254,18 +365,26 @@ bs_list(char *buf, int len)
 static void
 bs_upload(char *buf, int len)
 {
-    const uint8_t *img_data = NULL;
-    long long int off = UINT64_MAX;
-    size_t img_blen = 0;
-    uint8_t rem_bytes;
-    long long int data_len = UINT64_MAX;
+    static size_t img_size;             /* Total image size, held for duration of upload */
+    static uint32_t curr_off;           /* Expected current offset */
+    const uint8_t *img_chunk = NULL;    /* Pointer to buffer with received image chunk */
+    size_t img_chunk_len = 0;           /* Length of received image chunk */
+    size_t img_chunk_off = SIZE_MAX;    /* Offset of image chunk within image  */
+    uint8_t rem_bytes;                  /* Reminder bytes after aligning chunk write to
+                                         * to flash alignment */
     int img_num;
-    size_t slen;
+    size_t img_size_tmp = SIZE_MAX;     /* Temp variable for image size */
     const struct flash_area *fap = NULL;
     int rc;
 #ifdef MCUBOOT_ERASE_PROGRESSIVELY
-    static off_t off_last = -1;
-    struct flash_sector sector;
+    static off_t not_yet_erased = 0;    /* Offset of next byte to erase; writes to flash
+                                         * are done in consecutive manner and erases are done
+                                         * to allow currently received chunk to be written;
+                                         * this state variable holds information where last
+                                         * erase has stopped to let us know whether erase
+                                         * is needed to be able to write current chunk.
+                                         */
+    static struct flash_sector status_sector;
 #endif
 
     img_num = 0;
@@ -281,29 +400,28 @@ bs_upload(char *buf, int len)
      */
 
     struct Upload upload;
-    uint32_t decoded_len;
-    bool result = cbor_decode_Upload((const uint8_t *)buf, len, &upload, &decoded_len);
+    size_t decoded_len;
+    uint_fast8_t result = cbor_decode_Upload((const uint8_t *)buf, len, &upload, &decoded_len);
 
-    if (!result || (len != decoded_len)) {
+    if ((result != ZCBOR_SUCCESS) || (len != decoded_len)) {
         goto out_invalid_data;
     }
 
     for (int i = 0; i < upload._Upload_members_count; i++) {
-        struct Member_ *member = &upload._Upload_members[i];
+        struct Member_ *member = &upload._Upload_members[i]._Upload_members;
         switch(member->_Member_choice) {
             case _Member_image:
                 img_num = member->_Member_image;
                 break;
             case _Member_data:
-                img_data = member->_Member_data.value;
-                slen = member->_Member_data.len;
-                img_blen = slen;
+                img_chunk = member->_Member_data.value;
+                img_chunk_len = member->_Member_data.len;
                 break;
             case _Member_len:
-                data_len = member->_Member_len;
+                img_size_tmp = member->_Member_len;
                 break;
             case _Member_off:
-                off = member->_Member_off;
+                img_chunk_off = member->_Member_off;
                 break;
             case _Member_sha:
             default:
@@ -312,7 +430,7 @@ bs_upload(char *buf, int len)
         }
     }
 
-    if (off == UINT64_MAX || img_data == NULL) {
+    if (img_chunk_off == SIZE_MAX || img_chunk == NULL) {
         /*
          * Offset must be set in every block.
          */
@@ -329,111 +447,150 @@ bs_upload(char *buf, int len)
         goto out;
     }
 
-    if (off == 0) {
+    if (img_chunk_off == 0) {
+        /* Receiving chunk with 0 offset resets the upload state; this basically
+         * means that upload has started from beginning.
+         */
+        const size_t area_size = flash_area_get_size(fap);
+
         curr_off = 0;
-        if (data_len > flash_area_get_size(fap)) {
-            goto out_invalid_data;
-        }
+#ifdef MCUBOOT_ERASE_PROGRESSIVELY
+        /* Get trailer sector information; this is done early because inability to get
+         * that sector information means that upload will not work anyway.
+         * TODO: This is single occurrence issue, it should get detected during tests
+         * and fixed otherwise you are deploying broken mcuboot.
+         */
+        if (flash_area_get_sector(fap, boot_status_off(fap), &status_sector)) {
+            rc = MGMT_ERR_EUNKNOWN;
+            BOOT_LOG_ERR("Unable to determine flash sector of the image trailer");
+            goto out;
+         }
+#endif
+
+
 #if defined(MCUBOOT_VALIDATE_PRIMARY_SLOT_ONCE)
         /* We are using swap state at end of flash area to store validation
          * result. Make sure the user cannot write it from an image to skip validation.
          */
-        if (data_len > (flash_area_get_size(fap) - BOOT_MAGIC_SZ)) {
+        if (img_size_tmp > (area_size - BOOT_MAGIC_SZ)) {
             goto out_invalid_data;
         }
+#else
+        if (img_size_tmp > area_size) {
+            goto out_invalid_data;
+        }
+
 #endif
+
 #ifndef MCUBOOT_ERASE_PROGRESSIVELY
-        rc = flash_area_erase(fap, 0, flash_area_get_size(fap));
+        /* Non-progressive erase erases entire image slot when first chunk of
+         * an image is received.
+         */
+        rc = flash_area_erase(fap, 0, area_size);
         if (rc) {
             goto out_invalid_data;
         }
+#else
+        not_yet_erased = 0;
 #endif
-        img_size = data_len;
-    }
-    if (off != curr_off) {
+
+        img_size = img_size_tmp;
+    } else if (img_chunk_off != curr_off) {
+        /* If received chunk offset does not match expected one jump, pretend
+         * success and jump to out; out will respond to client with success
+         * and request the expected offset, held by curr_off.
+         */
         rc = 0;
         goto out;
-    }
-
-    if (curr_off + img_blen > img_size) {
+    } else if (curr_off + img_chunk_len > img_size) {
         rc = MGMT_ERR_EINVAL;
         goto out;
     }
 
-    rem_bytes = img_blen % flash_area_align(fap);
-
-    if ((curr_off + img_blen < img_size) && rem_bytes) {
-        img_blen -= rem_bytes;
-        rem_bytes = 0;
-    }
-
 #ifdef MCUBOOT_ERASE_PROGRESSIVELY
-    rc = flash_area_sector_from_off(curr_off + img_blen, &sector);
-    if (rc) {
-        BOOT_LOG_ERR("Unable to determine flash sector size");
+    /* Progressive erase will erase enough flash, aligned to sector size,
+     * as needed for the current chunk to be written.
+     */
+    not_yet_erased = erase_range(fap, not_yet_erased,
+                                 curr_off + img_chunk_len - 1);
+
+    if (not_yet_erased < 0) {
+        rc = MGMT_ERR_EINVAL;
         goto out;
-    }
-    if (off_last != flash_sector_get_off(&sector)) {
-        off_last = flash_sector_get_off(&sector);
-        BOOT_LOG_INF("Erasing sector at offset 0x%x", flash_sector_get_off(&sector));
-        rc = flash_area_erase(fap, flash_sector_get_off(&sector),
-                              flash_sector_get_size(&sector));
-        if (rc) {
-            BOOT_LOG_ERR("Error %d while erasing sector", rc);
-            goto out;
-        }
     }
 #endif
 
-    BOOT_LOG_INF("Writing at 0x%x until 0x%x", curr_off, curr_off + img_blen);
-    if (rem_bytes) {
-        /* the last chunk of the image might be unaligned */
-        uint8_t wbs_aligned[BOOT_MAX_ALIGN];
-        size_t w_size = img_blen - rem_bytes;
+    /* Writes are aligned to flash write alignment, so may drop a few bytes
+     * from the end of the buffer; we will request these bytes again with
+     * new buffer by responding with request for offset after the last aligned
+     * write.
+     */
+    rem_bytes = img_chunk_len % flash_area_align(fap);
+    img_chunk_len -= rem_bytes;
 
-        if (w_size) {
-            rc = flash_area_write(fap, curr_off, img_data, w_size);
-            if (rc) {
-                goto out_invalid_data;
+    if (curr_off + img_chunk_len + rem_bytes < img_size) {
+        rem_bytes = 0;
+    }
+
+    BOOT_LOG_INF("Writing at 0x%x until 0x%x", curr_off, curr_off + img_chunk_len);
+    /* Write flash aligned chunk, note that img_chunk_len now holds aligned length */
+#if defined(MCUBOOT_SERIAL_UNALIGNED_BUFFER_SIZE) && MCUBOOT_SERIAL_UNALIGNED_BUFFER_SIZE > 0
+    if (flash_area_align(fap) > 1 &&
+        (((size_t)img_chunk) & (flash_area_align(fap) - 1)) != 0) {
+        /* Buffer address incompatible with write address, use buffer to write */
+        uint8_t write_size = MCUBOOT_SERIAL_UNALIGNED_BUFFER_SIZE;
+        uint8_t wbs_aligned[MCUBOOT_SERIAL_UNALIGNED_BUFFER_SIZE];
+
+        while (img_chunk_len >= flash_area_align(fap)) {
+            if (write_size > img_chunk_len) {
+                write_size = img_chunk_len;
             }
-            curr_off += w_size;
-            img_blen -= w_size;
-            img_data += w_size;
-        }
 
-        if (img_blen) {
-            memcpy(wbs_aligned, img_data, rem_bytes);
-            memset(wbs_aligned + rem_bytes, flash_area_erased_val(fap),
-                   sizeof(wbs_aligned) - rem_bytes);
-            rc = flash_area_write(fap, curr_off, wbs_aligned, flash_area_align(fap));
-        }
+            memset(wbs_aligned, flash_area_erased_val(fap), sizeof(wbs_aligned));
+            memcpy(wbs_aligned, img_chunk, write_size);
 
+            rc = flash_area_write(fap, curr_off, wbs_aligned, write_size);
+
+            if (rc != 0) {
+                goto out;
+            }
+
+            curr_off += write_size;
+            img_chunk += write_size;
+            img_chunk_len -= write_size;
+        }
     } else {
-        rc = flash_area_write(fap, curr_off, img_data, img_blen);
+        rc = flash_area_write(fap, curr_off, img_chunk, img_chunk_len);
+    }
+#else
+    rc = flash_area_write(fap, curr_off, img_chunk, img_chunk_len);
+#endif
+
+    if (rc == 0 && rem_bytes) {
+        /* Non-zero rem_bytes means that last chunk needs alignment; the aligned
+         * part, in the img_chunk_len - rem_bytes count bytes, has already been
+         * written by the above write, so we are left with the rem_bytes.
+         */
+        uint8_t wbs_aligned[BOOT_MAX_ALIGN];
+
+        memset(wbs_aligned, flash_area_erased_val(fap), sizeof(wbs_aligned));
+        memcpy(wbs_aligned, img_chunk + img_chunk_len, rem_bytes);
+
+        rc = flash_area_write(fap, curr_off + img_chunk_len, wbs_aligned,
+                              flash_area_align(fap));
     }
 
     if (rc == 0) {
-        curr_off += img_blen;
+        curr_off += img_chunk_len + rem_bytes;
         if (curr_off == img_size) {
 #ifdef MCUBOOT_ERASE_PROGRESSIVELY
-            /* get the last sector offset */
-            rc = flash_area_sector_from_off(boot_status_off(fap), &sector);
-            if (rc) {
-                BOOT_LOG_ERR("Unable to determine flash sector of"
-                             "the image trailer");
-                goto out;
-            }
             /* Assure that sector for image trailer was erased. */
             /* Check whether it was erased during previous upload. */
-            if (off_last < flash_sector_get_off(&sector)) {
-                BOOT_LOG_INF("Erasing sector at offset 0x%x",
-                             flash_sector_get_off(&sector));
-                rc = flash_area_erase(fap, flash_sector_get_off(&sector),
-                                      flash_sector_get_size(&sector));
-                if (rc) {
-                    BOOT_LOG_ERR("Error %d while erasing sector", rc);
-                    goto out;
-                }
+            off_t start = flash_sector_get_off(&status_sector);
+
+            if (erase_range(fap, start, start) < 0) {
+                rc = MGMT_ERR_EUNKNOWN;
+                goto out;
             }
 #endif
             rc = BOOT_HOOK_CALL(boot_serial_uploaded_hook, 0, img_num, fap,
@@ -450,14 +607,14 @@ bs_upload(char *buf, int len)
 
 out:
     BOOT_LOG_INF("RX: 0x%x", rc);
-    map_start_encode(&cbor_state, 10);
-    tstrx_put(&cbor_state, "rc");
-    uintx32_put(&cbor_state, rc);
+    zcbor_map_start_encode(cbor_state, 10);
+    zcbor_tstr_put_lit_cast(cbor_state, "rc");
+    zcbor_int32_put(cbor_state, rc);
     if (rc == 0) {
-        tstrx_put(&cbor_state, "off");
-        uintx32_put(&cbor_state, curr_off);
+        zcbor_tstr_put_lit_cast(cbor_state, "off");
+        zcbor_uint32_put(cbor_state, curr_off);
     }
-    map_end_encode(&cbor_state, 10);
+    zcbor_map_end_encode(cbor_state, 10);
 
     boot_serial_output();
     flash_area_close(fap);
@@ -470,50 +627,51 @@ out:
 #endif //#ifdef MCUBOOT_ENC_IMAGES
 }
 
-#ifdef MCUBOOT_BOOT_MGMT_ECHO
-static bool
-decode_echo(cbor_state_t *state, cbor_string_type_t *result)
-{
-    size_t bsstrdecoded;
-    int ret;
-
-    if (!map_start_decode(state)) {
-        return false;
-    }
-    ret = multi_decode(2, 2, &bsstrdecoded, (void *)tstrx_decode, state, result, sizeof(cbor_string_type_t));
-    map_end_decode(state);
-    return ret;
-}
-
-
-static void
-bs_echo(char *buf, int len)
-{
-    size_t bsstrdecoded;
-    cbor_string_type_t str[2];
-
-    if (entry_function((const uint8_t *)buf, len, str, &bsstrdecoded, (void *)decode_echo, 1, 2)) {
-        map_start_encode(&cbor_state, 10);
-        tstrx_put(&cbor_state, "r");
-        tstrx_encode(&cbor_state, &str[1]);
-        map_end_encode(&cbor_state, 10);
-        boot_serial_output();
-    }
-}
-#endif
-
 /*
  * Send rc code only.
  */
 static void
 bs_rc_rsp(int rc_code)
 {
-    map_start_encode(&cbor_state, 10);
-    tstrx_put(&cbor_state, "rc");
-    uintx32_put(&cbor_state, rc_code);
-    map_end_encode(&cbor_state, 10);
+    zcbor_map_start_encode(cbor_state, 10);
+    zcbor_tstr_put_lit_cast(cbor_state, "rc");
+    zcbor_int32_put(cbor_state, rc_code);
+    zcbor_map_end_encode(cbor_state, 10);
     boot_serial_output();
 }
+
+
+#ifdef MCUBOOT_BOOT_MGMT_ECHO
+static void
+bs_echo(char *buf, int len)
+{
+    struct Echo echo = { 0 };
+    size_t decoded_len;
+    uint32_t rc = MGMT_ERR_EINVAL;
+    uint_fast8_t result = cbor_decode_Echo((const uint8_t *)buf, len, &echo, &decoded_len);
+
+    if ((result != ZCBOR_SUCCESS) || (len != decoded_len)) {
+        goto out;
+    }
+
+    if (echo._Echo_d.value == NULL) {
+        goto out;
+    }
+
+    zcbor_map_start_encode(cbor_state, 10);
+    zcbor_tstr_put_term(cbor_state, "r");
+    if (zcbor_tstr_encode(cbor_state, &echo._Echo_d) && zcbor_map_end_encode(cbor_state, 10)) {
+        boot_serial_output();
+        return;
+    } else {
+        rc = MGMT_ERR_ENOMEM;
+    }
+
+out:
+    reset_cbor_state();
+    bs_rc_rsp(rc);
+}
+#endif
 
 /*
  * Reset, and (presumably) boot to newly uploaded image. Flush console
@@ -522,19 +680,34 @@ bs_rc_rsp(int rc_code)
 static void
 bs_reset(char *buf, int len)
 {
-    bs_rc_rsp(0);
+    int rc = BOOT_HOOK_CALL(boot_reset_request_hook, 0, false);
+    if (rc == BOOT_RESET_REQUEST_HOOK_BUSY) {
+	rc = MGMT_ERR_EBUSY;
+    } else {
+        /* Currently whatever else is returned it is just converted
+         * to 0/no error. Boot serial starts accepting "force" parameter
+         * in command this needs to change.
+         */
+         rc = 0;
+    }
+    bs_rc_rsp(rc);
 
+    if (rc == 0) {
 #ifdef __ZEPHYR__
 #ifdef CONFIG_MULTITHREADING
-    k_sleep(K_MSEC(250));
+        k_sleep(K_MSEC(250));
 #else
-    k_busy_wait(250000);
+        k_busy_wait(250000);
 #endif
-    sys_reboot(SYS_REBOOT_COLD);
+        sys_reboot(SYS_REBOOT_COLD);
+#elif __ESPRESSIF__
+        esp_rom_delay_us(250000);
+        bootloader_reset();
 #else
-    os_cputime_delay_usecs(250000);
-    hal_system_reset();
+        os_cputime_delay_usecs(250000);
+        hal_system_reset();
 #endif
+    }
 }
 
 /*
@@ -558,9 +731,7 @@ boot_serial_input(char *buf, int len)
     buf += sizeof(*hdr);
     len -= sizeof(*hdr);
 
-    cbor_state.payload_mut = (uint8_t *)bs_obuf;
-    cbor_state.payload_end = (const uint8_t *)bs_obuf
-                             + sizeof(bs_obuf);
+    reset_cbor_state();
 
     /*
      * Limited support for commands.
@@ -595,7 +766,7 @@ boot_serial_input(char *buf, int len)
             break;
         }
     } else if (MCUBOOT_PERUSER_MGMT_GROUP_ENABLED == 1) {
-        if (bs_peruser_system_specific(hdr, buf, len, &cbor_state) == 0) {
+        if (bs_peruser_system_specific(hdr, buf, len, cbor_state) == 0) {
             boot_serial_output();
         }
     } else {
@@ -610,15 +781,16 @@ static void
 boot_serial_output(void)
 {
     char *data;
-    int len;
+    int len, out;
     uint16_t crc;
     uint16_t totlen;
+    char pkt_cont[2] = { SHELL_NLIP_DATA_START1, SHELL_NLIP_DATA_START2 };
     char pkt_start[2] = { SHELL_NLIP_PKT_START1, SHELL_NLIP_PKT_START2 };
-    char buf[BOOT_SERIAL_OUT_MAX];
-    char encoded_buf[BASE64_ENCODE_SIZE(BOOT_SERIAL_OUT_MAX)];
+    char buf[BOOT_SERIAL_OUT_MAX + sizeof(*bs_hdr) + sizeof(crc) + sizeof(totlen)];
+    char encoded_buf[BASE64_ENCODE_SIZE(sizeof(buf))];
 
     data = bs_obuf;
-    len = (uint32_t)cbor_state.payload_mut - (uint32_t)bs_obuf;
+    len = (uint32_t)cbor_state->payload_mut - (uint32_t)bs_obuf;
 
     bs_hdr->nh_op++;
     bs_hdr->nh_flags = 0;
@@ -628,13 +800,15 @@ boot_serial_output(void)
 #ifdef __ZEPHYR__
     crc =  crc16_itu_t(CRC16_INITIAL_CRC, (uint8_t *)bs_hdr, sizeof(*bs_hdr));
     crc =  crc16_itu_t(crc, data, len);
+#elif __ESPRESSIF__
+    /* For ESP32 it was used the CRC API in rom/crc.h */
+    crc =  ~esp_crc16_be(~CRC16_INITIAL_CRC, (uint8_t *)bs_hdr, sizeof(*bs_hdr));
+    crc =  ~esp_crc16_be(~crc, (uint8_t *)data, len);
 #else
     crc = crc16_ccitt(CRC16_INITIAL_CRC, bs_hdr, sizeof(*bs_hdr));
     crc = crc16_ccitt(crc, data, len);
 #endif
     crc = htons(crc);
-
-    boot_uf->write(pkt_start, sizeof(pkt_start));
 
     totlen = len + sizeof(*bs_hdr) + sizeof(crc);
     totlen = htons(totlen);
@@ -651,11 +825,30 @@ boot_serial_output(void)
     size_t enc_len;
     base64_encode(encoded_buf, sizeof(encoded_buf), &enc_len, buf, totlen);
     totlen = enc_len;
+#elif __ESPRESSIF__
+    size_t enc_len;
+    base64_encode((unsigned char *)encoded_buf, sizeof(encoded_buf), &enc_len, (unsigned char *)buf, totlen);
+    totlen = enc_len;
 #else
     totlen = base64_encode(buf, totlen, encoded_buf, 1);
 #endif
-    boot_uf->write(encoded_buf, totlen);
-    boot_uf->write("\n\r", 2);
+
+    out = 0;
+    while (out < totlen) {
+        if (out == 0) {
+            boot_uf->write(pkt_start, sizeof(pkt_start));
+        } else {
+            boot_uf->write(pkt_cont, sizeof(pkt_cont));
+        }
+
+        len = MIN(BOOT_SERIAL_FRAME_MTU, totlen - out);
+        boot_uf->write(&encoded_buf[out], len);
+
+        out += len;
+
+        boot_uf->write("\n", 1);
+    }
+
     BOOT_LOG_INF("TX");
 }
 
@@ -672,6 +865,12 @@ boot_serial_in_dec(char *in, int inlen, char *out, int *out_off, int maxout)
 #ifdef __ZEPHYR__
     int err;
     err = base64_decode( &out[*out_off], maxout - *out_off, &rc, in, inlen - 2);
+    if (err) {
+        return -1;
+    }
+#elif __ESPRESSIF__
+    int err;
+    err = base64_decode((unsigned char *)&out[*out_off], maxout - *out_off, (size_t *)&rc, (unsigned char *)in, inlen);
     if (err) {
         return -1;
     }
@@ -702,6 +901,8 @@ boot_serial_in_dec(char *in, int inlen, char *out, int *out_off, int maxout)
     out += sizeof(uint16_t);
 #ifdef __ZEPHYR__
     crc = crc16_itu_t(CRC16_INITIAL_CRC, out, len);
+#elif __ESPRESSIF__
+    crc = ~esp_crc16_be(~CRC16_INITIAL_CRC, (uint8_t *)out, len);
 #else
     crc = crc16_ccitt(CRC16_INITIAL_CRC, out, len);
 #endif
@@ -733,7 +934,14 @@ boot_serial_read_console(const struct boot_uart_funcs *f,int timeout_in_ms)
 
     off = 0;
     while (timeout_in_ms > 0 || bs_entry) {
+        /*
+         * Don't enter CPU idle state here if timeout based serial recovery is
+         * used as otherwise the boot process hangs forever, waiting for input
+         * from serial console (if single-thread mode is used).
+         */
+#ifndef MCUBOOT_SERIAL_WAIT_FOR_DFU
         MCUBOOT_CPU_IDLE();
+#endif
         MCUBOOT_WATCHDOG_FEED();
 #ifdef MCUBOOT_SERIAL_WAIT_FOR_DFU
         uint32_t start = k_uptime_get_32();
@@ -797,5 +1005,52 @@ boot_serial_check_start(const struct boot_uart_funcs *f, int timeout_in_ms)
 {
     bs_entry = false;
     boot_serial_read_console(f,timeout_in_ms);
+}
+#endif
+
+#ifdef MCUBOOT_SERIAL_IMG_GRP_HASH
+/* Function to find the hash of an image, returns 0 on success. */
+static int boot_serial_get_hash(const struct image_header *hdr,
+                                const struct flash_area *fap, uint8_t *hash)
+{
+    struct image_tlv_iter it;
+    uint32_t offset;
+    uint16_t len;
+    uint16_t type;
+    int rc;
+
+    /* Manifest data is concatenated to the end of the image.
+     * It is encoded in TLV format.
+     */
+    rc = bootutil_tlv_iter_begin(&it, hdr, fap, IMAGE_TLV_ANY, false);
+    if (rc) {
+        return -1;
+    }
+
+    /* Traverse through the TLV area to find the image hash TLV. */
+    while (true) {
+        rc = bootutil_tlv_iter_next(&it, &offset, &len, &type);
+        if (rc < 0) {
+            return -1;
+        } else if (rc > 0) {
+            break;
+        }
+
+        if (type == IMAGE_TLV_SHA256) {
+            /* Get the image's hash value from the manifest section. */
+            if (len != 32) {
+                return -1;
+            }
+
+            rc = flash_area_read(fap, offset, hash, len);
+            if (rc) {
+                return -1;
+            }
+
+            return 0;
+        }
+    }
+
+    return -1;
 }
 #endif

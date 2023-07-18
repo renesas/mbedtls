@@ -9,16 +9,7 @@
 #ifndef __MCUBOOT_CONFIG_H__
 #define __MCUBOOT_CONFIG_H__
 
-/*
- * This file is also included by the simulator, but we don't want to
- * define anything here in simulator builds.
- *
- * Instead of using mcuboot_config.h, the simulator adds MCUBOOT_xxx
- * configuration flags to the compiler command lines based on the
- * values of environment variables. However, the file still must
- * exist, or bootutil won't build.
- */
-#ifndef __BOOTSIM__
+#include <zephyr/devicetree.h>
 
 #ifdef CONFIG_BOOT_SIGNATURE_TYPE_RSA
 #define MCUBOOT_SIGN_RSA
@@ -53,6 +44,9 @@
 #endif
 #endif
 
+/* Zephyr, regardless of C library used, provides snprintf */
+#define MCUBOOT_USE_SNPRINTF 1
+
 #ifdef CONFIG_BOOT_HW_KEY
 #define MCUBOOT_HW_KEY
 #endif
@@ -85,6 +79,12 @@
 
 #ifdef CONFIG_BOOT_DIRECT_XIP_REVERT
 #define MCUBOOT_DIRECT_XIP_REVERT
+#endif
+
+#ifdef CONFIG_BOOT_RAM_LOAD
+#define MCUBOOT_RAM_LOAD 1
+#define IMAGE_EXECUTABLE_RAM_START CONFIG_BOOT_IMAGE_EXECUTABLE_RAM_START
+#define IMAGE_EXECUTABLE_RAM_SIZE CONFIG_BOOT_IMAGE_EXECUTABLE_RAM_SIZE
 #endif
 
 #ifdef CONFIG_UPDATEABLE_IMAGE_NUMBER
@@ -133,6 +133,14 @@
 
 #ifdef CONFIG_MCUBOOT_DOWNGRADE_PREVENTION
 #define MCUBOOT_DOWNGRADE_PREVENTION 1
+/* MCUBOOT_DOWNGRADE_PREVENTION_SECURITY_COUNTER is used later as bool value so it is
+ * always defined, (unlike MCUBOOT_DOWNGRADE_PREVENTION which is only used in
+ * preprocessor condition and my be not defined) */
+#  ifdef CONFIG_MCUBOOT_DOWNGRADE_PREVENTION_SECURITY_COUNTER
+#    define MCUBOOT_DOWNGRADE_PREVENTION_SECURITY_COUNTER 1
+#  else
+#    define MCUBOOT_DOWNGRADE_PREVENTION_SECURITY_COUNTER 0
+#  endif
 #endif
 
 #ifdef CONFIG_MCUBOOT_HW_DOWNGRADE_PREVENTION
@@ -197,6 +205,10 @@
 #define MCUBOOT_SERIAL_WAIT_FOR_DFU
 #endif
 
+#ifdef CONFIG_BOOT_SERIAL_IMG_GRP_HASH
+#define MCUBOOT_SERIAL_IMG_GRP_HASH
+#endif
+
 /*
  * The option enables code, currently in boot_serial, that attempts
  * to erase flash progressively, as update fragments are received,
@@ -233,7 +245,21 @@
 #define MCUBOOT_MAX_IMG_SECTORS       128
 #endif
 
-#endif /* !__BOOTSIM__ */
+#ifdef CONFIG_BOOT_SERIAL_MAX_RECEIVE_SIZE
+#define MCUBOOT_SERIAL_MAX_RECEIVE_SIZE CONFIG_BOOT_SERIAL_MAX_RECEIVE_SIZE
+#endif
+
+#ifdef CONFIG_BOOT_SERIAL_UNALIGNED_BUFFER_SIZE
+#define MCUBOOT_SERIAL_UNALIGNED_BUFFER_SIZE CONFIG_BOOT_SERIAL_UNALIGNED_BUFFER_SIZE
+#endif
+
+/* Support 32-byte aligned flash sizes */
+#if DT_HAS_CHOSEN(zephyr_flash)
+    #if DT_PROP_OR(DT_CHOSEN(zephyr_flash), write_block_size, 0) > 8
+        #define MCUBOOT_BOOT_MAX_ALIGN \
+            DT_PROP(DT_CHOSEN(zephyr_flash), write_block_size)
+    #endif
+#endif
 
 #if CONFIG_BOOT_WATCHDOG_FEED
 #if CONFIG_NRFX_WDT
@@ -262,18 +288,31 @@
 #endif /* defined(CONFIG_NRFX_WDT0) && defined(CONFIG_NRFX_WDT1) */
 
 #elif CONFIG_IWDG_STM32 /* CONFIG_NRFX_WDT */
-#include <drivers/watchdog.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/watchdog.h>
 
 #define MCUBOOT_WATCHDOG_FEED() \
     do {                        \
-        const struct device* wdt =                          \
-            device_get_binding(                             \
-                DT_LABEL(DT_INST(0, st_stm32_watchdog)));   \
-        wdt_feed(wdt, 0);                                   \
+        const struct device* wdt =                                  \
+            DEVICE_DT_GET_OR_NULL(DT_INST(0, st_stm32_watchdog));   \
+        if (device_is_ready(wdt)) {                                 \
+            wdt_feed(wdt, 0);                                       \
+        }                                                           \
     } while (0)
 
-#else /* CONFIG_IWDG_STM32 */
-#warning "MCUBOOT_WATCHDOG_FEED() is no-op"
+#elif DT_NODE_HAS_STATUS(DT_ALIAS(watchdog0), okay) /* CONFIG_IWDG_STM32 */
+#include <zephyr/device.h>
+#include <zephyr/drivers/watchdog.h>
+
+#define MCUBOOT_WATCHDOG_FEED()                               \
+    do {                                                      \
+        const struct device* wdt =                            \
+            DEVICE_DT_GET(DT_ALIAS(watchdog0));               \
+        if (device_is_ready(wdt)) {                           \
+            wdt_feed(wdt, 0);                                 \
+        }                                                     \
+    } while (0)
+#else /* DT_NODE_HAS_STATUS(DT_ALIAS(watchdog0), okay) */
 /* No vendor implementation, no-op for historical reasons */
 #define MCUBOOT_WATCHDOG_FEED()         \
     do {                                \

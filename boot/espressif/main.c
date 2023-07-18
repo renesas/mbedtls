@@ -13,6 +13,16 @@
 #include "bootloader_utility.h"
 #include "bootloader_random.h"
 
+#ifdef CONFIG_MCUBOOT_SERIAL
+#include "boot_serial/boot_serial.h"
+#include "serial_adapter/serial_adapter.h"
+
+const struct boot_uart_funcs boot_funcs = {
+    .read = console_read,
+    .write = console_write
+};
+#endif
+
 #if defined(CONFIG_EFUSE_VIRTUAL_KEEP_IN_FLASH) || defined(CONFIG_SECURE_BOOT)
 #include "esp_efuse.h"
 #endif
@@ -26,6 +36,12 @@
 #include "esp_loader.h"
 #include "os/os_malloc.h"
 
+#define IMAGE_INDEX_0   0
+#define IMAGE_INDEX_1   1
+
+#define PRIMARY_SLOT    0
+#define SECONDARY_SLOT  1
+
 #ifdef CONFIG_SECURE_BOOT
 extern esp_err_t check_and_generate_secure_boot_keys(void);
 #endif
@@ -34,13 +50,54 @@ void do_boot(struct boot_rsp *rsp)
 {
     BOOT_LOG_INF("br_image_off = 0x%x", rsp->br_image_off);
     BOOT_LOG_INF("ih_hdr_size = 0x%x", rsp->br_hdr->ih_hdr_size);
-    int slot = (rsp->br_image_off == CONFIG_ESP_APPLICATION_PRIMARY_START_ADDRESS) ? 0 : 1;
-    esp_app_image_load(slot, rsp->br_hdr->ih_hdr_size);
+    int slot = (rsp->br_image_off == CONFIG_ESP_IMAGE0_PRIMARY_START_ADDRESS) ? PRIMARY_SLOT : SECONDARY_SLOT;
+    start_cpu0_image(IMAGE_INDEX_0, slot, rsp->br_hdr->ih_hdr_size);
 }
+
+#ifdef CONFIG_ESP_MULTI_PROCESSOR_BOOT
+int read_image_header(uint32_t img_index, uint32_t slot, struct image_header *img_header)
+{
+    const struct flash_area *fap;
+    int area_id;
+    int rc = 0;
+
+    area_id = flash_area_id_from_multi_image_slot(img_index, slot);
+    rc = flash_area_open(area_id, &fap);
+    if (rc != 0) {
+        rc = BOOT_EFLASH;
+        goto done;
+    }
+
+    if (flash_area_read(fap, 0, img_header, sizeof(struct image_header))) {
+        rc = BOOT_EFLASH;
+        goto done;
+    }
+
+    BOOT_LOG_INF("Image offset = 0x%x", fap->fa_off);
+    BOOT_LOG_INF("Image header size = 0x%x", img_header->ih_hdr_size);
+
+done:
+    flash_area_close(fap);
+    return rc;
+}
+
+void do_boot_appcpu(uint32_t img_index, uint32_t slot)
+{
+    struct image_header img_header;
+
+    if (read_image_header(img_index, slot, &img_header) != 0) {
+        FIH_PANIC;
+    }
+
+    start_cpu1_image(img_index, slot, img_header.ih_hdr_size);
+}
+#endif
 
 int main()
 {
-    bootloader_init();
+    if (bootloader_init() != ESP_OK) {
+        FIH_PANIC;
+    }
 
     BOOT_LOG_INF("Enabling RNG early entropy source...");
     bootloader_random_enable();
@@ -91,15 +148,25 @@ int main()
 
     struct boot_rsp rsp;
 
-    fih_int fih_rc = FIH_FAILURE;
+    FIH_DECLARE(fih_rc, FIH_FAILURE);
+
+#ifdef CONFIG_MCUBOOT_SERIAL
+    boot_console_init();
+    if (boot_serial_detect_pin()) {
+        BOOT_LOG_INF("Enter the serial recovery mode");
+        boot_serial_start(&boot_funcs);
+    }
+#endif
 
     /* Step 2 (see above for full description):
      *   2) MCUboot validates the application images and prepares the booting process.
      */
 
+    /* MCUboot's boot_go validates and checks all images for update and returns
+     * the load information for booting the main image
+     */
     FIH_CALL(boot_go, fih_rc, &rsp);
-
-    if (fih_not_eq(fih_rc, FIH_SUCCESS)) {
+    if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS)) {
         BOOT_LOG_ERR("Unable to find bootable image");
 #ifdef CONFIG_SECURE_BOOT
         esp_efuse_batch_write_cancel();
@@ -164,6 +231,13 @@ int main()
 
     BOOT_LOG_INF("Disabling RNG early entropy source...");
     bootloader_random_disable();
+
+#ifdef CONFIG_ESP_MULTI_PROCESSOR_BOOT
+    /* Multi image independent boot
+     * Boot on the second processor happens before the image0 boot
+     */
+    do_boot_appcpu(IMAGE_INDEX_1, PRIMARY_SLOT);
+#endif
 
     do_boot(&rsp);
 

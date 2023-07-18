@@ -33,6 +33,27 @@
 #include "flash_map_backend/flash_map_backend.h"
 
 /****************************************************************************
+ * Pre-processor Definitions
+ ****************************************************************************/
+
+/* Should we perform board-specific driver initialization?  There are two
+ * ways that board initialization can occur:  1) automatically via
+ * board_late_initialize() during bootupif CONFIG_BOARD_LATE_INITIALIZE
+ * or 2).
+ * via a call to boardctl() if the interface is enabled
+ * (CONFIG_BOARDCTL=y).
+ * If this task is running as an NSH built-in application, then that
+ * initialization has probably already been performed otherwise we do it
+ * here.
+ */
+
+#undef NEED_BOARDINIT
+
+#if defined(CONFIG_BOARDCTL) && !defined(CONFIG_NSH_ARCHINIT)
+#  define NEED_BOARDINIT 1
+#endif
+
+/****************************************************************************
  * Private Functions
  ****************************************************************************/
 
@@ -77,13 +98,34 @@ static void do_boot(struct boot_rsp *rsp)
 int main(int argc, FAR char *argv[])
 {
   struct boot_rsp rsp;
-  fih_int fih_rc = FIH_FAILURE;
+  FIH_DECLARE(fih_rc, FIH_FAILURE);
+
+#ifdef NEED_BOARDINIT
+  /* Perform architecture-specific initialization (if configured) */
+
+  boardctl(BOARDIOC_INIT, 0);
+
+#ifdef CONFIG_BOARDCTL_FINALINIT
+  /* Perform architecture-specific final-initialization (if configured) */
+  
+  boardctl(BOARDIOC_FINALINIT, 0);
+#endif
+#endif
 
   syslog(LOG_INFO, "*** Booting MCUboot build %s ***\n", CONFIG_MCUBOOT_VERSION);
 
+#ifdef CONFIG_MCUBOOT_WATCHDOG
+  int ret = mcuboot_watchdog_init();
+  if (ret < 0)
+  {
+    syslog(LOG_ERR, "Unable to initialize the watchdog timer\n");
+    FIH_PANIC;
+  }
+#endif
+
   FIH_CALL(boot_go, fih_rc, &rsp);
 
-  if (fih_not_eq(fih_rc, FIH_SUCCESS))
+  if (FIH_NOT_EQ(fih_rc, FIH_SUCCESS))
     {
       syslog(LOG_ERR, "Unable to find bootable image\n");
       FIH_PANIC;

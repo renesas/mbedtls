@@ -49,10 +49,15 @@ _Static_assert(IS_ALIGNED(FLASH_BUFFER_SIZE, 4), "Buffer size for SPI Flash oper
 
 #define BOOTLOADER_START_ADDRESS CONFIG_BOOTLOADER_OFFSET_IN_FLASH
 #define BOOTLOADER_SIZE CONFIG_ESP_BOOTLOADER_SIZE
-#define APPLICATION_PRIMARY_START_ADDRESS CONFIG_ESP_APPLICATION_PRIMARY_START_ADDRESS
-#define APPLICATION_SECONDARY_START_ADDRESS CONFIG_ESP_APPLICATION_SECONDARY_START_ADDRESS
-#define APPLICATION_SIZE CONFIG_ESP_APPLICATION_SIZE
+#define IMAGE0_PRIMARY_START_ADDRESS CONFIG_ESP_IMAGE0_PRIMARY_START_ADDRESS
+#define IMAGE0_SECONDARY_START_ADDRESS CONFIG_ESP_IMAGE0_SECONDARY_START_ADDRESS
 #define SCRATCH_OFFSET CONFIG_ESP_SCRATCH_OFFSET
+#if (MCUBOOT_IMAGE_NUMBER == 2)
+#define IMAGE1_PRIMARY_START_ADDRESS CONFIG_ESP_IMAGE1_PRIMARY_START_ADDRESS
+#define IMAGE1_SECONDARY_START_ADDRESS CONFIG_ESP_IMAGE1_SECONDARY_START_ADDRESS
+#endif
+
+#define APPLICATION_SIZE CONFIG_ESP_APPLICATION_SIZE
 #define SCRATCH_SIZE CONFIG_ESP_SCRATCH_SIZE
 
 extern int ets_printf(const char *fmt, ...);
@@ -67,16 +72,32 @@ static const struct flash_area bootloader = {
 static const struct flash_area primary_img0 = {
     .fa_id = FLASH_AREA_IMAGE_PRIMARY(0),
     .fa_device_id = FLASH_DEVICE_INTERNAL_FLASH,
-    .fa_off = APPLICATION_PRIMARY_START_ADDRESS,
+    .fa_off = IMAGE0_PRIMARY_START_ADDRESS,
     .fa_size = APPLICATION_SIZE,
 };
 
 static const struct flash_area secondary_img0 = {
     .fa_id = FLASH_AREA_IMAGE_SECONDARY(0),
     .fa_device_id = FLASH_DEVICE_INTERNAL_FLASH,
-    .fa_off = APPLICATION_SECONDARY_START_ADDRESS,
+    .fa_off = IMAGE0_SECONDARY_START_ADDRESS,
     .fa_size = APPLICATION_SIZE,
 };
+
+#if (MCUBOOT_IMAGE_NUMBER == 2)
+static const struct flash_area primary_img1 = {
+    .fa_id = FLASH_AREA_IMAGE_PRIMARY(1),
+    .fa_device_id = FLASH_DEVICE_INTERNAL_FLASH,
+    .fa_off = IMAGE1_PRIMARY_START_ADDRESS,
+    .fa_size = APPLICATION_SIZE,
+};
+
+static const struct flash_area secondary_img1 = {
+    .fa_id = FLASH_AREA_IMAGE_SECONDARY(1),
+    .fa_device_id = FLASH_DEVICE_INTERNAL_FLASH,
+    .fa_off = IMAGE1_SECONDARY_START_ADDRESS,
+    .fa_size = APPLICATION_SIZE,
+};
+#endif
 
 static const struct flash_area scratch_img0 = {
     .fa_id = FLASH_AREA_IMAGE_SCRATCH,
@@ -89,6 +110,10 @@ static const struct flash_area *s_flash_areas[] = {
     &bootloader,
     &primary_img0,
     &secondary_img0,
+#if (MCUBOOT_IMAGE_NUMBER == 2)
+    &primary_img1,
+    &secondary_img1,
+#endif
     &scratch_img0,
 };
 
@@ -185,6 +210,61 @@ int flash_area_read(const struct flash_area *fa, uint32_t off, void *dst,
     return 0;
 }
 
+static bool aligned_flash_write(size_t dest_addr, const void *src, size_t size)
+{
+    bool flash_encryption_enabled = esp_flash_encryption_enabled();
+
+    if (IS_ALIGNED(dest_addr, 4) && IS_ALIGNED((uintptr_t)src, 4) && IS_ALIGNED(size, 4)) {
+        /* A single write operation is enough when all parameters are aligned */
+
+        return bootloader_flash_write(dest_addr, (void *)src, size, flash_encryption_enabled) == ESP_OK;
+    }
+
+    const uint32_t aligned_addr = ALIGN_DOWN(dest_addr, 4);
+    const uint32_t addr_offset = ALIGN_OFFSET(dest_addr, 4);
+    uint32_t bytes_remaining = size;
+    uint8_t write_data[FLASH_BUFFER_SIZE] = {0};
+
+    /* Perform a read operation considering an offset not aligned to 4-byte boundary */
+
+    uint32_t bytes = MIN(bytes_remaining + addr_offset, sizeof(write_data));
+    if (bootloader_flash_read(aligned_addr, write_data, ALIGN_UP(bytes, 4), true) != ESP_OK) {
+        return false;
+    }
+
+    uint32_t bytes_written = bytes - addr_offset;
+    memcpy(&write_data[addr_offset], src, bytes_written);
+
+    if (bootloader_flash_write(aligned_addr, write_data, ALIGN_UP(bytes, 4), flash_encryption_enabled) != ESP_OK) {
+        return false;
+    }
+
+    bytes_remaining -= bytes_written;
+
+    /* Write remaining data to Flash if any */
+
+    uint32_t offset = bytes;
+
+    while (bytes_remaining != 0) {
+        bytes = MIN(bytes_remaining, sizeof(write_data));
+        if (bootloader_flash_read(aligned_addr + offset, write_data, ALIGN_UP(bytes, 4), true) != ESP_OK) {
+            return false;
+        }
+
+        memcpy(write_data, &((uint8_t *)src)[bytes_written], bytes);
+
+        if (bootloader_flash_write(aligned_addr + offset, write_data, ALIGN_UP(bytes, 4), flash_encryption_enabled) != ESP_OK) {
+            return false;
+        }
+
+        offset += bytes;
+        bytes_written += bytes;
+        bytes_remaining -= bytes;
+    }
+
+    return true;
+}
+
 int flash_area_write(const struct flash_area *fa, uint32_t off, const void *src,
                      uint32_t len)
 {
@@ -198,12 +278,11 @@ int flash_area_write(const struct flash_area *fa, uint32_t off, const void *src,
         return -1;
     }
 
-    bool flash_encryption_enabled = esp_flash_encryption_enabled();
-
     const uint32_t start_addr = fa->fa_off + off;
     BOOT_LOG_DBG("%s: Addr: 0x%08x Length: %d", __func__, (int)start_addr, (int)len);
 
-    if (bootloader_flash_write(start_addr, (void *)src, len, flash_encryption_enabled) != ESP_OK) {
+    bool success = aligned_flash_write(start_addr, src, len);
+    if (!success) {
         BOOT_LOG_ERR("%s: Flash write failed", __func__);
         return -1;
     }
@@ -282,6 +361,23 @@ int flash_area_get_sectors(int fa_id, uint32_t *count,
     }
 
     *count = total_count;
+    return 0;
+}
+
+int flash_area_sector_from_off(uint32_t off, struct flash_sector *sector)
+{
+    sector->fs_off = (off / FLASH_SECTOR_SIZE) * FLASH_SECTOR_SIZE;
+    sector->fs_size = FLASH_SECTOR_SIZE;
+
+    return 0;
+}
+
+int flash_area_get_sector(const struct flash_area *fa, uint32_t off,
+                          struct flash_sector *sector)
+{
+    sector->fs_off = (off / FLASH_SECTOR_SIZE) * FLASH_SECTOR_SIZE;
+    sector->fs_size = FLASH_SECTOR_SIZE;
+
     return 0;
 }
 

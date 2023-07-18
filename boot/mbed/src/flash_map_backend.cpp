@@ -91,15 +91,22 @@ int flash_area_open(uint8_t id, const struct flash_area** fapp) {
     fap->fa_device_id = 0; // not relevant
 
     mbed::BlockDevice* bd = flash_map_bd[id];
-    fap->fa_size = (uint32_t) bd->size();
 
     /* Only initialize if this isn't a nested call to open the flash area */
     if (open_count[id] == 1) {
         MCUBOOT_LOG_DBG("initializing flash area %d...", id);
-        return bd->init();
+        int ret = bd->init();
+        if (ret)
+        {
+            MCUBOOT_LOG_ERR("initializing flash area failed %d", ret);
+            return ret;
+        }
     } else {
         return 0;
     }
+
+    fap->fa_size = (uint32_t) bd->size();
+    return 0;
 }
 
 void flash_area_close(const struct flash_area* fap) {
@@ -222,10 +229,6 @@ int flash_area_get_sectors(int fa_id, uint32_t* count, struct flash_sector* sect
 
 int flash_area_id_from_image_slot(int slot) {
     return slot;
-}
-
-int flash_area_id_to_image_slot(int area_id) {
-    return area_id;
 }
 
 /**

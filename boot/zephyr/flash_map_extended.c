@@ -5,8 +5,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr.h>
-#include <drivers/flash.h>
+#include <zephyr/kernel.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/flash.h>
 
 #include "target.h"
 
@@ -17,25 +18,19 @@
 
 BOOT_LOG_MODULE_DECLARE(mcuboot);
 
-#if (!defined(CONFIG_XTENSA) && defined(DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL))
+#if (!defined(CONFIG_XTENSA) && DT_HAS_CHOSEN(zephyr_flash_controller))
 #define FLASH_DEVICE_ID SOC_FLASH_0_ID
 #define FLASH_DEVICE_BASE CONFIG_FLASH_BASE_ADDRESS
-#elif (defined(CONFIG_XTENSA) && defined(DT_JEDEC_SPI_NOR_0_LABEL))
+#define FLASH_DEVICE_NODE DT_CHOSEN(zephyr_flash_controller)
+#elif (defined(CONFIG_XTENSA) && DT_NODE_EXISTS(DT_INST(0, jedec_spi_nor)))
 #define FLASH_DEVICE_ID SPI_FLASH_0_ID
 #define FLASH_DEVICE_BASE 0
+#define FLASH_DEVICE_NODE DT_INST(0, jedec_spi_nor)
 #else
 #error "FLASH_DEVICE_ID could not be determined"
 #endif
 
-static const struct device *flash_dev;
-
-const struct device *flash_device_get_binding(char *dev_name)
-{
-    if (!flash_dev) {
-        flash_dev = device_get_binding(dev_name);
-    }
-    return flash_dev;
-}
+static const struct device *flash_dev = DEVICE_DT_GET(FLASH_DEVICE_NODE);
 
 int flash_device_base(uint8_t fd_id, uintptr_t *ret)
 {
@@ -88,29 +83,24 @@ int flash_area_id_to_multi_image_slot(int image_index, int area_id)
     return -1;
 }
 
-int flash_area_id_to_image_slot(int area_id)
-{
-    return flash_area_id_to_multi_image_slot(0, area_id);
-}
-
 #if defined(CONFIG_MCUBOOT_SERIAL_DIRECT_IMAGE_UPLOAD)
 int flash_area_id_from_direct_image(int image_id)
 {
     switch (image_id) {
     case 0:
     case 1:
-        return FLASH_AREA_ID(image_0);
-#if DT_HAS_FIXED_PARTITION_LABEL(image_1)
+        return FIXED_PARTITION_ID(slot0_partition);
+#if FIXED_PARTITION_EXISTS(slot1_partition)
     case 2:
-        return FLASH_AREA_ID(image_1);
+        return FIXED_PARTITION_ID(slot1_partition);
 #endif
-#if DT_HAS_FIXED_PARTITION_LABEL(image_2)
+#if FIXED_PARTITION_EXISTS(slot2_partition)
     case 3:
-        return FLASH_AREA_ID(image_2);
+        return FIXED_PARTITION_ID(slot2_partition);
 #endif
-#if DT_HAS_FIXED_PARTITION_LABEL(image_3)
+#if FIXED_PARTITION_EXISTS(slot3_partition)
     case 4:
-        return FLASH_AREA_ID(image_3);
+        return FIXED_PARTITION_ID(slot3_partition);
 #endif
     }
     return -EINVAL;
@@ -144,4 +134,25 @@ __weak uint8_t flash_area_erased_val(const struct flash_area *fap)
 {
     (void)fap;
     return ERASED_VAL;
+}
+
+int flash_area_get_sector(const struct flash_area *fap, off_t off,
+                          struct flash_sector *fsp)
+{
+    struct flash_pages_info fpi;
+    int rc;
+
+    if (off >= fap->fa_size) {
+        return -ERANGE;
+    }
+
+    rc = flash_get_page_info_by_offs(fap->fa_dev, fap->fa_off + off,
+            &fpi);
+
+    if (rc == 0) {
+        fsp->fs_off = fpi.start_offset - fap->fa_off;
+        fsp->fs_size = fpi.size;
+    }
+
+    return rc;
 }

@@ -33,6 +33,7 @@
  #define PSA_CRYPTO_ACCEL_DRIVER_H
 
  #include "crypto_driver_common.h"
+ #include <stdbool.h>
 
  #ifdef __cplusplus
 extern "C" {

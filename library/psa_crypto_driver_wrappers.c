@@ -77,20 +77,18 @@
 #define PSA_CRYPTO_MBED_TLS_DRIVER_ID (1)
 #define MBEDTLS_TEST_OPAQUE_DRIVER_ID (2)
 #define MBEDTLS_TEST_TRANSPARENT_DRIVER_ID (3)
+#if defined(PSA_CRYPTO_DRIVER_CC3XX)
+#define PSA_CRYPTO_CC3XX_DRIVER_ID (4)
+#endif /* PSA_CRYPTO_DRIVER_CC3XX */
+#if defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER)
+#define PSA_CRYPTO_TFM_BUILTIN_KEY_LOADER_DRIVER_ID (5)
+#endif /* PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER */
 
 /* END-driver id */
 
 /* BEGIN-Common Macro definitions */
 
 /* END-Common Macro definitions */
-
-#if defined(PSA_CRYPTO_DRIVER_CC3XX)
-#define PSA_CRYPTO_CC3XX_DRIVER_ID (4)
-#endif /* PSA_CRYPTO_DRIVER_CC3XX */
-
-#if defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER)
-#define PSA_CRYPTO_TFM_BUILTIN_KEY_LOADER_DRIVER_ID (5)
-#endif /* PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER */
 
 /* Support the 'old' SE interface when asked to */
 #if defined(MBEDTLS_PSA_CRYPTO_SE_C)
@@ -105,6 +103,12 @@
 psa_status_t psa_driver_wrapper_init( void )
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
+
+#if defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER)
+    status = tfm_builtin_key_loader_init();
+    if (status != PSA_SUCCESS)
+        return ( status );
+#endif /* PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER */
 
 #if defined(PSA_CRYPTO_DRIVER_CC3XX)
     status = cc3xx_init();
@@ -204,8 +208,18 @@ psa_status_t psa_driver_wrapper_sign_message(
             return( status );
 #endif /* PSA_CRYPTO_DRIVER_CC3XX */
 #endif /* PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT */
-            break;
-
+#if !defined(PSA_CRYPTO_DRIVER_CC3XX)
+            /* Fell through, meaning no accelerator supports this operation */
+            return( psa_sign_message_builtin( attributes,
+                                      key_buffer,
+                                      key_buffer_size,
+                                      alg,
+                                      input,
+                                      input_length,
+                                      signature,
+                                      signature_size,
+                                      signature_length ) );
+#endif /* PSA_CRYPTO_DRIVER_CC3XX */
         /* Add cases for opaque driver here */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
@@ -228,18 +242,10 @@ psa_status_t psa_driver_wrapper_sign_message(
         default:
             /* Key is declared with a lifetime not known to us */
             (void)status;
-            break;
+            return( PSA_ERROR_INVALID_ARGUMENT );
     }
 
-    return( psa_sign_message_builtin( attributes,
-                                      key_buffer,
-                                      key_buffer_size,
-                                      alg,
-                                      input,
-                                      input_length,
-                                      signature,
-                                      signature_size,
-                                      signature_length ) );
+    return status;
 }
 
 psa_status_t psa_driver_wrapper_verify_message(
@@ -292,8 +298,17 @@ psa_status_t psa_driver_wrapper_verify_message(
             return( status );
 #endif /* PSA_CRYPTO_DRIVER_CC3XX */
 #endif /* PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT */
-            break;
-
+#if !defined(PSA_CRYPTO_DRIVER_CC3XX)
+            /* Fell through, meaning no accelerator supports this operation */
+            return( psa_verify_message_builtin( attributes,
+                                        key_buffer,
+                                        key_buffer_size,
+                                        alg,
+                                        input,
+                                        input_length,
+                                        signature,
+                                        signature_length ) );
+#endif /* PSA_CRYPTO_DRIVER_CC3XX */
         /* Add cases for opaque driver here */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)
 #if defined(PSA_CRYPTO_DRIVER_TEST)
@@ -315,17 +330,9 @@ psa_status_t psa_driver_wrapper_verify_message(
         default:
             /* Key is declared with a lifetime not known to us */
             (void)status;
-            break;
+            return( PSA_ERROR_INVALID_ARGUMENT );
     }
-
-    return( psa_verify_message_builtin( attributes,
-                                        key_buffer,
-                                        key_buffer_size,
-                                        alg,
-                                        input,
-                                        input_length,
-                                        signature,
-                                        signature_length ) );
+    return status;
 }
 
 psa_status_t psa_driver_wrapper_sign_hash(
@@ -1179,6 +1186,7 @@ psa_status_t psa_driver_wrapper_export_public_key(
                          data_length );
             return( status );
 #endif /* PSA_CRYPTO_DRIVER_CC3XX */
+
 #endif /* PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT */
 #if !defined(PSA_CRYPTO_DRIVER_CC3XX)
             /* Fell through, meaning no accelerator supports this operation */
@@ -1239,7 +1247,7 @@ psa_status_t psa_driver_wrapper_get_builtin_key(
 #endif /* PSA_CRYPTO_DRIVER_TEST */
 #if defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER)
         case TFM_BUILTIN_KEY_LOADER_KEY_LOCATION:
-            return( tfm_builtin_key_loader_get_key_buffer(
+            return( tfm_builtin_key_loader_get_builtin_key(
                         slot_number,
                         attributes,
                         key_buffer, key_buffer_size, key_buffer_length ) );
@@ -3238,9 +3246,6 @@ psa_status_t psa_driver_wrapper_key_agreement(
     switch( location )
     {
         case PSA_KEY_LOCATION_LOCAL_STORAGE:
-#if defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER)
-        case TFM_BUILTIN_KEY_LOADER_KEY_LOCATION:
-#endif /* defined(PSA_CRYPTO_DRIVER_TFM_BUILTIN_KEY_LOADER) */
             /* Key is stored in the slot in export representation, so
              * cycle through all known transparent accelerators */
 #if defined(PSA_CRYPTO_ACCELERATOR_DRIVER_PRESENT)

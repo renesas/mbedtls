@@ -196,34 +196,22 @@ static psa_status_t psa_cipher_setup(
                                                   (psa_key_type_t) (key_type & ~PSA_KEY_TYPE_VENDOR_FLAG),
                                                    key_bits,
                                                    NULL);
+        ret = psa_crypto_cipher_setup_vendor(attributes, operation);
     }
     else
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
     {
     cipher_info = mbedtls_cipher_info_from_psa(alg, key_type,
                                                key_bits, NULL);
-    }
     if (cipher_info == NULL) {
         return PSA_ERROR_NOT_SUPPORTED;
     }
 
     ret = mbedtls_cipher_setup(&operation->ctx.cipher, cipher_info);
+    }
     if (ret != 0) {
         goto exit;
     }
-    
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(key_type))
-    {
-        mbedtls_aes_context * p_aes_ctx = NULL;
-
-        /* Setup the vendor context flag.
-         * Even though vendor_ctx is a void pointer since we only need true/false info
-         * we are using the pointer as a bool instead */
-        p_aes_ctx             = (mbedtls_aes_context *) operation->ctx.cipher.cipher_ctx;
-        p_aes_ctx->vendor_ctx = (bool *) true;
-    }
-#endif
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DES)
     if (key_type == PSA_KEY_TYPE_DES && key_bits == 128) {

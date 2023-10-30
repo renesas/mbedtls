@@ -187,16 +187,7 @@ static psa_status_t psa_cipher_setup(
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(key_type))
     {
-        ret = vendor_bitlength_to_raw_bitlength(key_type, key_bits, &key_bits);
-        if (ret != PSA_SUCCESS)
-        {
-            return ret;
-        }
-        cipher_info = mbedtls_cipher_info_from_psa(alg,
-                                                  (psa_key_type_t) (key_type & ~PSA_KEY_TYPE_VENDOR_FLAG),
-                                                   key_bits,
-                                                   NULL);
-        ret = psa_crypto_cipher_setup_vendor(attributes, operation);
+        ret = psa_cipher_setup_vendor(attributes, operation);
     }
     else
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */

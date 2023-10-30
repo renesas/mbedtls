@@ -112,6 +112,14 @@ static psa_status_t psa_aead_setup(
             }
 
             mbedtls_gcm_init(&operation->ctx.gcm);
+
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+if ((PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type)) && ((key_buffer_size == (SIZE_AES_128BIT_KEYLEN_BYTES_WRAPPED)) || (key_buffer_size == (SIZE_AES_192BIT_KEYLEN_BYTES_WRAPPED)) || (key_buffer_size == (SIZE_AES_256BIT_KEYLEN_BYTES_WRAPPED))))
+{
+    operation->ctx.gcm.vendor_flag = 1U;
+}
+#endif
+
             status = mbedtls_to_psa_error(
                 mbedtls_gcm_setkey(&operation->ctx.gcm, cipher_id,
                                    key_buffer, (unsigned int) key_bits));

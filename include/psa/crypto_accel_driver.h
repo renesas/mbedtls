@@ -156,12 +156,10 @@ psa_status_t psa_finish_key_creation_vendor(psa_key_slot_t * slot);
  * \retval #PSA_ERROR_NOT_SUPPORTED
  * .
  */
-psa_status_t psa_cipher_setup_vendor(psa_cipher_operation_t * operation,
-                                     psa_key_slot_t         * slot,
-                                     psa_algorithm_t          alg,
-                                     mbedtls_operation_t      cipher_operation);
-psa_status_t psa_crypto_cipher_setup_vendor (const psa_key_attributes_t *attributes,
-		                                     mbedtls_psa_cipher_operation_t *operation);
+psa_status_t psa_cipher_setup_vendor (const psa_key_attributes_t *attributes,
+		                              mbedtls_psa_cipher_operation_t *operation);
+
+void psa_aead_setup_vendor (void * ctx);									 
 
 /**@}*/
 

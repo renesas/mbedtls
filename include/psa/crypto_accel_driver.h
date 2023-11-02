@@ -131,34 +131,6 @@ psa_status_t psa_generate_symmetric_vendor(psa_key_type_t type, size_t bits, uin
  */
 psa_status_t psa_finish_key_creation_vendor(psa_key_slot_t * slot);
 
-/**
- * \brief Perform vendor specific setup for cipher operations.
- *
- *
- * \note    This function has to be defined by the vendor if MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C
- *          is defined.
- *          A weakly linked version is provided by default and returns
- *          PSA_ERROR_NOT_SUPPORTED. Do not use this function directly;
- *          to generate a key, use psa_generate_key() instead.
- *
- * \param[in,out] operation     The operation object to set up. It must have
- *                              been initialized as per the documentation for
- *                              #psa_cipher_operation_t and not yet in use.
- * \param handle                Handle to the key to use for the operation.
- *                              It must remain valid until the operation
- *                              terminates.
- * \param alg                   The cipher algorithm to compute
- *                              (\c PSA_ALG_XXX value such that
- *                              #PSA_ALG_IS_CIPHER(\p alg) is true).
- *
- * \retval #PSA_SUCCESS
- *         Success.
- * \retval #PSA_ERROR_NOT_SUPPORTED
- * .
- */
-psa_status_t psa_cipher_setup_vendor (const psa_key_attributes_t *attributes,
-		                              mbedtls_psa_cipher_operation_t *operation);
-
 void psa_aead_setup_vendor (void * ctx);									 
 
 /**@}*/

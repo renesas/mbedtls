@@ -4001,15 +4001,6 @@ static psa_status_t psa_cipher_setup(psa_cipher_operation_t *operation,
         .core = slot->attr
     };
 
-
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
-    {
-        status = psa_cipher_setup_vendor(operation, slot, alg, cipher_operation);
-        goto exit;
-    }
-#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
-
     /* Try doing the operation through a driver before using software fallback. */
     if (cipher_operation == MBEDTLS_ENCRYPT) {
         status = psa_driver_wrapper_cipher_encrypt_setup(operation,

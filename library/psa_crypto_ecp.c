@@ -74,10 +74,18 @@ psa_status_t mbedtls_psa_ecp_load_representation(
     }
 
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(type))
+    {
     curve_bytes = ( 0U != PSA_ECC_BYTES_VENDOR_RAW(curve_bytes) ) ?
                     PSA_ECC_BYTES_VENDOR_RAW(curve_bytes) : curve_bytes ;
 
     curve_bits = PSA_BYTES_TO_BITS(curve_bytes);
+
+    if((curve_bits == 528U) && (curve_bytes == 66U))
+    {
+    	curve_bits = curve_bits - 7U;
+    }
+    }
 #else
     if (explicit_bits) {
         /* With an explicit bit-size, the data must have the matching length. */

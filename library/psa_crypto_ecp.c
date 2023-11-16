@@ -79,12 +79,8 @@ psa_status_t mbedtls_psa_ecp_load_representation(
     curve_bytes = ( 0U != PSA_ECC_BYTES_VENDOR_RAW(curve_bytes) ) ?
                     PSA_ECC_BYTES_VENDOR_RAW(curve_bytes) : curve_bytes ;
 
-    curve_bits = PSA_BYTES_TO_BITS(curve_bytes);
-
-    if((curve_bits == 528U) && (curve_bytes == 66U))
-    {
-    	curve_bits = curve_bits - 7U;
-    }
+    curve_bits =  ( 0U != PSA_ECC_BITS_VENDOR_RAW(curve_bytes) ) ?
+    		        PSA_ECC_BITS_VENDOR_RAW(curve_bytes) : PSA_BYTES_TO_BITS(curve_bytes) ;
     }
 #else
     if (explicit_bits) {

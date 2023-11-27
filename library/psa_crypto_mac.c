@@ -181,11 +181,24 @@ static psa_status_t cmac_setup(mbedtls_psa_mac_operation_t *operation,
     }
 #endif
 
+size_t keybits = psa_get_key_bits(attributes);
+
+#if defined MBEDTLS_CMAC_ALT
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type))
+    {
+    	keybits = (PSA_CMAC_BITS_VENDOR_RAW(psa_get_key_bits(attributes)) != 0U ?
+                   PSA_CMAC_BITS_VENDOR_RAW(psa_get_key_bits(attributes)) : psa_get_key_bits(attributes));
+
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+#endif
+
     const mbedtls_cipher_info_t *cipher_info =
         mbedtls_cipher_info_from_psa(
             PSA_ALG_CMAC,
            (psa_get_key_type( attributes ) & ~PSA_KEY_TYPE_VENDOR_FLAG),
-            psa_get_key_bits( attributes ),
+            keybits,
             NULL);
 
     if (cipher_info == NULL) {
@@ -197,9 +210,18 @@ static psa_status_t cmac_setup(mbedtls_psa_mac_operation_t *operation,
         goto exit;
     }
 
+#if defined MBEDTLS_CMAC_ALT
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type))
+    {
+    	psa_aead_setup_vendor(operation->ctx.cmac.cipher_ctx);
+
+    }
+#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+#endif
     ret = mbedtls_cipher_cmac_starts(&operation->ctx.cmac,
                                      key_buffer,
-                                     psa_get_key_bits(attributes));
+                                     keybits);
 exit:
     return mbedtls_to_psa_error(ret);
 }

@@ -52,6 +52,7 @@ static psa_status_t psa_aead_setup(
 
     key_bits = attributes->core.bits;
 
+#if defined (MBEDTLS_CCM_ALT) || defined (MBEDTLS_GCM_ALT)
     #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type))
     {
@@ -69,6 +70,7 @@ static psa_status_t psa_aead_setup(
     }
     else
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+#endif
     {
         temp_keytype = (psa_key_type_t)(attributes->core.type);
     }

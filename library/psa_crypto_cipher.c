@@ -184,6 +184,7 @@ static psa_status_t psa_cipher_setup(
 
     operation->alg = alg;
     key_bits = attributes->core.bits;
+#if defined (MBEDTLS_CIPHER_ALT)
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(key_type))
     {
@@ -199,6 +200,7 @@ static psa_status_t psa_cipher_setup(
     }
     else
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+#endif
     {
     cipher_info = mbedtls_cipher_info_from_psa(alg, key_type,
                                                key_bits, NULL);
@@ -212,6 +214,7 @@ static psa_status_t psa_cipher_setup(
         goto exit;
     }
 
+#if defined (MBEDTLS_CIPHER_ALT)
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(key_type))
     {
@@ -220,6 +223,7 @@ static psa_status_t psa_cipher_setup(
         psa_aead_setup_vendor(p_aes_ctx);
     }
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
+#endif
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DES)
     if (key_type == PSA_KEY_TYPE_DES && key_bits == 128) {
         /* Two-key Triple-DES is 3-key Triple-DES with K1=K3 */

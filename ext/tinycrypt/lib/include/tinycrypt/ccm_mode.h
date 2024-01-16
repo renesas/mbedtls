@@ -76,6 +76,7 @@
 
 #include <tinycrypt/aes.h>
 #include <stddef.h>
+#include "rm_tinycrypt_port_cfg.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -92,6 +93,7 @@ typedef struct tc_ccm_mode_struct {
 	TCAesKeySched_t sched; /* AES key schedule */
 	uint8_t *nonce; /* nonce required by CCM */
 	unsigned int mlen; /* mac length in bytes (parameter t in SP-800 38C) */
+	unsigned int nlen;
 } *TCCcmMode_t;
 
 /**

@@ -61,6 +61,19 @@ extern "C" {
 #define TC_AES_BLOCK_SIZE (Nb*Nk)
 #define TC_AES_KEY_SIZE (Nb*Nk)
 
+/* AES key lengths defined for SCE operations. */
+#define TC_AES_128BIT_KEYLEN_BITS                      (128)
+#define TC_AES_128BIT_KEYLEN_BYTES                     ((TC_AES_128BIT_KEYLEN_BITS) / 8)
+#define TC_AES_128BIT_KEYLEN_WORDS                     ((TC_AES_128BIT_KEYLEN_BITS) / 32)
+
+#define TC_AES_192BIT_KEYLEN_BITS                      (192)
+#define TC_AES_192BIT_KEYLEN_BYTES                     ((TC_AES_192BIT_KEYLEN_BITS) / 8)
+#define TC_AES_192BIT_KEYLEN_WORDS                     ((TC_AES_192BIT_KEYLEN_BITS) / 32)
+
+#define TC_AES_256BIT_KEYLEN_BITS                      (256)
+#define TC_AES_256BIT_KEYLEN_BYTES                     ((TC_AES_256BIT_KEYLEN_BITS) / 8)
+#define TC_AES_256BIT_KEYLEN_WORDS                     ((TC_AES_256BIT_KEYLEN_BITS) / 32)
+
 typedef struct tc_aes_key_sched_struct {
 	unsigned int words[Nb*(Nr+1)];
 	unsigned int key_size;
@@ -80,30 +93,24 @@ typedef struct tc_aes_key_sched_struct {
 int tc_aes128_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k);
 
 /**
- *  @brief Set AES-192 encryption key
+ *  @brief Set AES-192, AES-256 encryption key
  *  Uses key k to initialize s
  *  @return  returns TC_CRYPTO_SUCCESS (1)
- *           returns TC_CRYPTO_FAIL (0) if: s == NULL or k == NULL
+ *           returns TC_CRYPTO_FAIL (0) if: 
+ * 				s == NULL or 
+ * 				k == NULL or 
+ * 				key_size != TC_AES_192BIT_KEYLEN_BYTES and key_size != TC_AES_256BIT_KEYLEN_BYTES 
+ *  @note       Only supporting the hardware accelerated mode
  *  @param      s IN/OUT -- initialized struct tc_aes_key_sched_struct
  *  @param      k IN -- points to the AES key
  */
-int tc_aes192_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k);
+int tc_aes_set_encrypt_key_extended(TCAesKeySched_t s, const uint8_t *k, unsigned int key_size);
 
 /**
- *  @brief Set AES-256 encryption key
- *  Uses key k to initialize s
- *  @return  returns TC_CRYPTO_SUCCESS (1)
- *           returns TC_CRYPTO_FAIL (0) if: s == NULL or k == NULL
- *  @param      s IN/OUT -- initialized struct tc_aes_key_sched_struct
- *  @param      k IN -- points to the AES key
- */
-int tc_aes256_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k);
-
-/**
- *  @brief AES-128 Encryption procedure
+ *  @brief AES-128, AES-192, AES-256 Encryption procedure
  *  Encrypts contents of in buffer into out buffer under key;
  *              schedule s
- *  @note Assumes s was initialized by aes_set_encrypt_key;
+ *  @note Assumes s was initialized by tc_aes128_set_encrypt_key or tc_aes_set_encrypt_key_extended;
  *              out and in point to 16 byte buffers
  *  @return  returns TC_CRYPTO_SUCCESS (1)
  *           returns TC_CRYPTO_FAIL (0) if: out == NULL or in == NULL or s == NULL
@@ -131,32 +138,21 @@ int tc_aes_encrypt(uint8_t *out, const uint8_t *in,
 int tc_aes128_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k);
 
 /**
- *  @brief Set the AES-192 decryption key
+ *  @brief Set the AES-192, AES-256 decryption key
  *  Uses key k to initialize s
  *  @return returns TC_CRYPTO_SUCCESS (1)
- *          returns TC_CRYPTO_FAIL (0) if: s == NULL or k == NULL
+ *          returns TC_CRYPTO_FAIL (0) if: 
+ * 				s == NULL or 
+ * 				k == NULL or
+ * 				key_size != TC_AES_192BIT_KEYLEN_BYTES and key_size != TC_AES_256BIT_KEYLEN_BYTES 
  *  @note       This is the implementation of the straightforward inverse cipher
  *              using the cipher documented in FIPS-197 figure 12, not the
  *              equivalent inverse cipher presented in Figure 15
- *  @note		Only supporting the hardware accelerated mode
+ *  @note       Only supporting the hardware accelerated mode
  *  @param s  IN/OUT -- initialized struct tc_aes_key_sched_struct
  *  @param k  IN -- points to the AES key
  */
-int tc_aes192_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k);
-
-/**
- *  @brief Set the AES-256 decryption key
- *  Uses key k to initialize s
- *  @return returns TC_CRYPTO_SUCCESS (1)
- *          returns TC_CRYPTO_FAIL (0) if: s == NULL or k == NULL
- *  @note       This is the implementation of the straightforward inverse cipher
- *              using the cipher documented in FIPS-197 figure 12, not the
- *              equivalent inverse cipher presented in Figure 15
- *  @note		Only supporting the hardware accelerated mode
- *  @param s  IN/OUT -- initialized struct tc_aes_key_sched_struct
- *  @param k  IN -- points to the AES key
- */
-int tc_aes256_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k);
+int tc_aes_set_decrypt_key_extended(TCAesKeySched_t s, const uint8_t *k, unsigned int key_size);
 
 /**
  *  @brief AES-128 Encryption procedure

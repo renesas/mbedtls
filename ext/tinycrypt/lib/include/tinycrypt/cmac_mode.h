@@ -143,6 +143,22 @@ int tc_cmac_setup(TCCmacState_t s, const uint8_t *key,
 		      TCAesKeySched_t sched);
 
 /**
+ * @brief Configures the CMAC state to use the given AES key 192, 256 bits
+ * @return returns TC_CRYPTO_SUCCESS (1) after having configured the CMAC state
+ *         returns TC_CRYPTO_FAIL (0) if:
+ *              s == NULL or
+ *              key == NULL or
+ * 				key_size != TC_AES_192BIT_KEYLEN_BYTES and key_size != TC_AES_256BIT_KEYLEN_BYTES
+ *
+ * @param s IN/OUT -- the state to set up
+ * @param key IN -- the key to use
+ * @param sched IN -- AES key schedule
+ */
+int tc_cmac_setup_extended(TCCmacState_t s, const uint8_t *key,
+		      TCAesKeySched_t sched, unsigned int key_size);
+
+
+/**
  * @brief Erases the CMAC state
  * @return returns TC_CRYPTO_SUCCESS (1) after having configured the CMAC state
  *         returns TC_CRYPTO_FAIL (0) if:

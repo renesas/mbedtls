@@ -76,7 +76,6 @@
 
 #include <tinycrypt/aes.h>
 #include <stddef.h>
-#include "rm_tinycrypt_port_cfg.h"
 
 #ifdef __cplusplus
 extern "C" {

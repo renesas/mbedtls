@@ -37,7 +37,6 @@
 #include <tinycrypt/utils.h>
 #include <stdio.h>
 
- #if (RM_TINYCRYPT_PORT_GCM_HW_ACCELERATION_ENABLED == 0)
 #define TC_PARAMETER_NOT_USED(p)    (void) ((p))
 #define TC_GCM_T_LEN_128_IN_BYTE     16
 #define TC_GCM_T_LEN_120_IN_BYTE     15
@@ -188,4 +187,3 @@ int tc_gcm_decryption_verification (uint8_t       * out,
 	TC_PARAMETER_NOT_USED(g);
 	return TC_CRYPTO_FAIL;
 }
-#endif

@@ -93,13 +93,13 @@ typedef struct tc_aes_key_sched_struct {
 int tc_aes128_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k);
 
 /**
- *  @brief Set AES-192, AES-256 encryption key
+ *  @brief Set AES-128, AES-192, AES-256 encryption key
  *  Uses key k to initialize s
  *  @return  returns TC_CRYPTO_SUCCESS (1)
  *           returns TC_CRYPTO_FAIL (0) if: 
  * 				s == NULL or 
  * 				k == NULL or 
- * 				key_size != TC_AES_192BIT_KEYLEN_BYTES and key_size != TC_AES_256BIT_KEYLEN_BYTES 
+ * 				key_size != TC_AES_128BIT_KEYLEN_BYTES and key_size != TC_AES_192BIT_KEYLEN_BYTES and key_size != TC_AES_256BIT_KEYLEN_BYTES
  *  @note       Only supporting the hardware accelerated mode
  *  @param      s IN/OUT -- initialized struct tc_aes_key_sched_struct
  *  @param      k IN -- points to the AES key
@@ -138,13 +138,13 @@ int tc_aes_encrypt(uint8_t *out, const uint8_t *in,
 int tc_aes128_set_decrypt_key(TCAesKeySched_t s, const uint8_t *k);
 
 /**
- *  @brief Set the AES-192, AES-256 decryption key
+ *  @brief Set the AES-128, AES-192, AES-256 decryption key
  *  Uses key k to initialize s
  *  @return returns TC_CRYPTO_SUCCESS (1)
  *          returns TC_CRYPTO_FAIL (0) if: 
  * 				s == NULL or 
  * 				k == NULL or
- * 				key_size != TC_AES_192BIT_KEYLEN_BYTES and key_size != TC_AES_256BIT_KEYLEN_BYTES 
+ * 				key_size != TC_AES_128BIT_KEYLEN_BYTES and key_size != TC_AES_192BIT_KEYLEN_BYTES and key_size != TC_AES_256BIT_KEYLEN_BYTES
  *  @note       This is the implementation of the straightforward inverse cipher
  *              using the cipher documented in FIPS-197 figure 12, not the
  *              equivalent inverse cipher presented in Figure 15

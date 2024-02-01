@@ -129,9 +129,7 @@ psa_status_t psa_generate_symmetric_vendor(psa_key_type_t type, size_t bits, uin
  *         The key was successfully created. The handle is now valid.
  * \return If this function fails, the key slot is an invalid state.
  */
-psa_status_t psa_finish_key_creation_vendor(psa_key_slot_t * slot);
-
-void psa_aead_setup_vendor (void * ctx);									 
+psa_status_t psa_finish_key_creation_vendor(psa_key_slot_t * slot);								 
 
 /**@}*/
 

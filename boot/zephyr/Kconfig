@@ -77,6 +77,7 @@ config BOOT_SIGNATURE_TYPE_RSA
 	bool "RSA signatures"
 	select BOOT_USE_MBEDTLS
 	select MBEDTLS
+	select BOOT_ENCRYPTION_SUPPORT
 
 if BOOT_SIGNATURE_TYPE_RSA
 config BOOT_SIGNATURE_TYPE_RSA_LEN
@@ -87,6 +88,7 @@ endif
 
 config BOOT_SIGNATURE_TYPE_ECDSA_P256
 	bool "Elliptic curve digital signatures with curve P-256"
+	select BOOT_ENCRYPTION_SUPPORT
 
 if BOOT_SIGNATURE_TYPE_ECDSA_P256
 choice BOOT_ECDSA_IMPLEMENTATION
@@ -109,6 +111,7 @@ endif
 
 config BOOT_SIGNATURE_TYPE_ED25519
 	bool "Edwards curve digital signatures using ed25519"
+	select BOOT_ENCRYPTION_SUPPORT
 
 if BOOT_SIGNATURE_TYPE_ED25519
 choice BOOT_ED25519_IMPLEMENTATION
@@ -149,7 +152,7 @@ config MCUBOOT_CLEANUP_ARM_CORE
 	default y
 	help
 	  This option instructs MCUboot to perform a clean-up of a set of
-	  architecture core HW registers before junping to the application
+	  architecture core HW registers before jumping to the application
 	  firmware. The clean-up sets these registers to their warm-reset
 	  values as specified by the architecture.
 
@@ -300,45 +303,57 @@ config BOOT_SWAP_SAVE_ENCTLV
 	  JTAG/SWD or primary slot in external flash).
 	  If unsure, leave at the default value.
 
-config BOOT_ENCRYPT_IMAGE
-	bool
-	help
-	  Hidden option used to check if any image encryption is enabled.
-
-config BOOT_ENCRYPT_RSA
-	bool "Support for encrypted upgrade images using RSA"
-	select BOOT_ENCRYPT_IMAGE
-	help
-	  If y, images in the secondary slot can be encrypted and are decrypted
-	  on the fly when upgrading to the primary slot, as well as encrypted
-	  back when swapping from the primary slot to the secondary slot. The
-	  encryption mechanism used in this case is RSA-OAEP (2048 bits).
-
-config BOOT_ENCRYPT_EC256
-	bool "Support for encrypted upgrade images using ECIES-P256"
-	select BOOT_ENCRYPT_IMAGE
-	help
-	  If y, images in the secondary slot can be encrypted and are decrypted
-	  on the fly when upgrading to the primary slot, as well as encrypted
-	  back when swapping from the primary slot to the secondary slot. The
-	  encryption mechanism used in this case is ECIES using primitives
-	  described under "ECIES-P256 encryption" in docs/encrypted_images.md.
-
-config BOOT_ENCRYPT_X25519
-	bool "Support for encrypted upgrade images using ECIES-X25519"
-	select BOOT_ENCRYPT_IMAGE
-	help
-	  If y, images in the secondary slot can be encrypted and are decrypted
-	  on the fly when upgrading to the primary slot, as well as encrypted
-	  back when swapping from the primary slot to the secondary slot. The
-	  encryption mechanism used in this case is ECIES using primitives
-	  described under "ECIES-X25519 encryption" in docs/encrypted_images.md.
 endif # !SINGLE_APPLICATION_SLOT
 
+config BOOT_ENCRYPTION_SUPPORT
+	bool
+	help
+	  Hidden option used to check if image encryption is supported.
+
+config BOOT_ENCRYPT_IMAGE
+	bool "Support for encrypted image updates"
+	depends on BOOT_ENCRYPTION_SUPPORT
+	select BOOT_ENCRYPT_RSA if BOOT_SIGNATURE_TYPE_RSA
+	select BOOT_ENCRYPT_EC256 if BOOT_SIGNATURE_TYPE_ECDSA_P256
+	select BOOT_ENCRYPT_X25519 if BOOT_SIGNATURE_TYPE_ED25519
+	depends on !SINGLE_APPLICATION_SLOT || MCUBOOT_SERIAL
+	help
+	  If y, images in the secondary slot can be encrypted and are decrypted
+	  on the fly when upgrading to the primary slot, as well as encrypted
+	  back when swapping from the primary slot to the secondary slot. The
+	  encryption mechanism must match the same type as the signature type,
+	  supported types include:
+	   - RSA-OAEP (2048 bits).
+	   - ECIES using primitives described under "ECIES-P256 encryption" in
+	     docs/encrypted_images.md.
+	   - ECIES using primitives described under "ECIES-X25519 encryption"
+	     in docs/encrypted_images.md.
+
+	  Note that for single slot operation, this can still be used to allow
+	  loading encrypted images via serial recovery which are then
+	  decrypted on-the-fly without needing a second slot.
+
+config BOOT_ENCRYPT_RSA
+	bool
+	help
+	  Hidden option selecting RSA encryption.
+
+config BOOT_ENCRYPT_EC256
+	bool
+	help
+	  Hidden option selecting EC256 encryption.
+
+config BOOT_ENCRYPT_X25519
+	bool
+	help
+	  Hidden option selecting x25519 encryption.
+
 config BOOT_ENCRYPTION_KEY_FILE
-	string "encryption key file"
-    depends on BOOT_ENCRYPT_EC256 || BOOT_SERIAL_ENCRYPT_EC256
-	default "enc-ec256-priv.pem" if BOOT_SIGNATURE_TYPE_ECDSA_P256
+	string "Encryption key file"
+	depends on BOOT_ENCRYPT_IMAGE
+	default "enc-rsa2048-priv.pem" if BOOT_ENCRYPT_RSA
+	default "enc-ec256-priv.pem" if BOOT_ENCRYPT_EC256
+	default "enc-x25519-priv.pem" if BOOT_ENCRYPT_X25519
 	default ""
 	help
 	  You can use either absolute or relative path.
@@ -359,17 +374,91 @@ config BOOT_MAX_IMG_SECTORS
 	  memory usage; larger values allow it to support larger images.
 	  If unsure, leave at the default value.
 
-config MEASURED_BOOT
-	bool "Store the boot state/measurements in shared memory"
+config BOOT_SHARE_BACKEND_AVAILABLE
+	bool
 	default n
+	help
+	  Hidden open which indicates if there is a sharing backend available.
+
+# Workaround for not being able to have commas in macro arguments
+DT_CHOSEN_BOOTLOADER_INFO := zephyr,bootloader-info
+
+config BOOT_SHARE_BACKEND_AVAILABLE
+	bool
+	default n
+	help
+	  Hidden open which indicates if there is a sharing backend available.
+
+choice BOOT_SHARE_BACKEND
+	prompt "Shared data backend"
+	default BOOT_SHARE_BACKEND_DISABLED
+
+config BOOT_SHARE_BACKEND_DISABLED
+	bool "Disabled"
+	help
+	  No data sharing support.
+
+config BOOT_SHARE_BACKEND_RETENTION
+	bool "Retention"
+	depends on RETENTION
+	depends on $(dt_chosen_enabled,$(DT_CHOSEN_BOOTLOADER_INFO))
+	select BOOT_SHARE_BACKEND_AVAILABLE
+	help
+	  Use retention to share data with application. Requires:
+	    - Retained memory area
+	    - Retention partition of retained memory area
+	    - Chosen node "zephyr,bootloader-info" to be set to the retention
+	      partition
+
+config BOOT_SHARE_BACKEND_EXTERNAL
+	bool "External (user-provided code)"
+	select BOOT_SHARE_BACKEND_AVAILABLE
+	help
+	  Use a custom user-specified storage.
+
+endchoice
+
+menuconfig BOOT_SHARE_DATA
+	bool "Save application specific data"
+	default n
+	depends on BOOT_SHARE_BACKEND_AVAILABLE
+	help
+	  This will allow data to be shared between MCUboot and an application,
+	  it does not include any informatiom by default.
+
+	  Note: This requires a backend to function, see
+	  BOOT_SHARE_BACKEND_RETENTION for details on using the retention
+	  subsystem as a backend.
+
+config BOOT_SHARE_DATA_BOOTINFO
+	bool "Save boot information data"
+	default n
+	depends on BOOT_SHARE_DATA
+	help
+	  This will place information about the MCUboot configuration and
+	  running application into a shared memory area.
+
+menuconfig MEASURED_BOOT
+	bool "Store the boot state/measurements in shared memory area"
+	default n
+	depends on BOOT_SHARE_BACKEND_AVAILABLE
 	help
 	  If enabled, the bootloader will store certain boot measurements such as
 	  the hash of the firmware image in a shared memory area. This data can
 	  be used later by runtime services (e.g. by a device attestation service).
 
-config BOOT_SHARE_DATA
-	bool "Save application specific data in shared memory area"
-	default n
+	  Note: This requires a backend to function, see
+	  BOOT_SHARE_BACKEND_RETENTION for details on using the retention
+	  subsystem as a backend.
+
+config MEASURED_BOOT_MAX_CBOR_SIZE
+	int "Maximum CBOR size of boot state/measurements"
+	default 64
+	range 0 256
+	depends on MEASURED_BOOT
+	help
+	  The maximum size of the CBOR message which stores boot
+	  state/measurements.
 
 choice BOOT_FAULT_INJECTION_HARDENING_PROFILE
 	prompt "Fault injection hardening profile"
@@ -498,10 +587,10 @@ config MCUBOOT_LOG_THREAD_STACK_SIZE
 
 config MCUBOOT_INDICATION_LED
 	bool "Turns on LED indication when device is in DFU"
-	default n
+	select GPIO
 	help
 	  Device device activates the LED while in bootloader mode.
-	  bootloader-led0 alias must be set in the device's .dts
+	  mcuboot-led0 alias must be set in the device's .dts
 	  definitions for this to work.
 
 rsource "Kconfig.serial_recovery"
@@ -521,6 +610,15 @@ config UPDATEABLE_IMAGE_NUMBER
 	range 1 1 if SINGLE_APPLICATION_SLOT
 	help
 	  Enables support of multi image update.
+
+config BOOT_VERSION_CMP_USE_BUILD_NUMBER
+	bool "Use build number while comparing image version"
+	depends on (UPDATEABLE_IMAGE_NUMBER > 1) || BOOT_DIRECT_XIP || \
+		   BOOT_RAM_LOAD || MCUBOOT_DOWNGRADE_PREVENTION
+	help
+	  By default, the image version comparison relies only on version major,
+	  minor and revision. Enable this option to take into account the build
+	  number as well.
 
 choice BOOT_DOWNGRADE_PREVENTION_CHOICE
 	prompt "Downgrade prevention"
@@ -619,6 +717,7 @@ config MULTITHREADING
 	default y if BOOT_SERIAL_CDC_ACM #usb driver requires MULTITHREADING
 	default y if BOOT_USB_DFU_GPIO || BOOT_USB_DFU_WAIT
 	default n if SOC_FAMILY_NRF
+	default n if SOC_FAMILY_ESP32 && MCUBOOT
 	default y
 
 config LOG_PROCESS_THREAD

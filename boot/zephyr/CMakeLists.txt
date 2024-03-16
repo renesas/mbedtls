@@ -85,11 +85,28 @@ if(DEFINED CONFIG_ENABLE_MGMT_PERUSER)
   zephyr_library_sources(
     boot_serial_extensions.c
     )
+
+  zephyr_linker_sources_ifdef(
+    CONFIG_ENABLE_MGMT_PERUSER
+    SECTIONS include/boot_serial/boot_serial.ld
+  )
+
+  if(DEFINED CONFIG_BOOT_MGMT_CUSTOM_STORAGE_ERASE OR DEFINED CONFIG_BOOT_MGMT_CUSTOM_IMG_LIST)
+    zephyr_library_sources(
+      boot_serial_extension_zephyr_basic.c
+      )
+  endif()
 endif()
 
 if(NOT DEFINED CONFIG_FLASH_PAGE_LAYOUT)
   zephyr_library_sources(
     flash_map_legacy.c
+    )
+endif()
+
+if(DEFINED CONFIG_BOOT_SHARE_BACKEND_RETENTION)
+  zephyr_library_sources(
+    shared_data.c
     )
 endif()
 
@@ -100,11 +117,24 @@ zephyr_library_sources(
   ${BOOT_DIR}/bootutil/src/tlv.c
   ${BOOT_DIR}/bootutil/src/encrypted.c
   ${BOOT_DIR}/bootutil/src/image_rsa.c
-  ${BOOT_DIR}/bootutil/src/image_ec256.c
+  ${BOOT_DIR}/bootutil/src/image_ecdsa.c
   ${BOOT_DIR}/bootutil/src/image_ed25519.c
   ${BOOT_DIR}/bootutil/src/bootutil_misc.c
   ${BOOT_DIR}/bootutil/src/fault_injection_hardening.c
   )
+
+if(DEFINED CONFIG_MEASURED_BOOT OR DEFINED CONFIG_BOOT_SHARE_DATA)
+  zephyr_library_sources(
+    ${BOOT_DIR}/bootutil/src/boot_record.c
+    )
+
+  # Set a define for this file which will allow inclusion of the Zephyr version
+  # include file
+  set_source_files_properties(
+    ${BOOT_DIR}/bootutil/src/boot_record.c
+    PROPERTIES COMPILE_FLAGS -DZEPHYR_VER_INCLUDE=1
+    )
+endif()
 
 # library which might be common source code for MCUBoot and an application
 zephyr_link_libraries(MCUBOOT_BOOTUTIL)
@@ -130,7 +160,7 @@ zephyr_library_sources(
   )
 endif()
 
-if(CONFIG_BOOT_SIGNATURE_TYPE_ECDSA_P256 OR CONFIG_BOOT_ENCRYPT_EC256 OR CONFIG_BOOT_SERIAL_ENCRYPT_EC256)
+if(CONFIG_BOOT_SIGNATURE_TYPE_ECDSA_P256 OR CONFIG_BOOT_ENCRYPT_EC256)
   zephyr_library_include_directories(
     ${MBEDTLS_ASN1_DIR}/include
     )
@@ -219,7 +249,7 @@ elseif(CONFIG_BOOT_SIGNATURE_TYPE_ED25519 OR CONFIG_BOOT_ENCRYPT_X25519)
   )
 endif()
 
-if(CONFIG_BOOT_ENCRYPT_EC256 OR CONFIG_BOOT_ENCRYPT_X25519 OR CONFIG_BOOT_SERIAL_ENCRYPT_EC256)
+if(CONFIG_BOOT_ENCRYPT_EC256 OR CONFIG_BOOT_ENCRYPT_X25519)
   zephyr_library_sources(
     ${TINYCRYPT_DIR}/source/aes_encrypt.c
     ${TINYCRYPT_DIR}/source/aes_decrypt.c
@@ -238,9 +268,7 @@ endif()
 if(CONFIG_MCUBOOT_SERIAL)
   zephyr_sources(${BOOT_DIR}/zephyr/serial_adapter.c)
   zephyr_sources(${BOOT_DIR}/boot_serial/src/boot_serial.c)
-  zephyr_sources(${BOOT_DIR}/boot_serial/src/serial_recovery_cbor.c)
-
-  zephyr_sources_ifdef(CONFIG_BOOT_MGMT_ECHO ${BOOT_DIR}/boot_serial/src/serial_recovery_echo.c)
+  zephyr_sources(${BOOT_DIR}/boot_serial/src/zcbor_bulk.c)
 
   zephyr_include_directories(${BOOT_DIR}/bootutil/include)
   zephyr_include_directories(${BOOT_DIR}/boot_serial/include)
@@ -250,6 +278,12 @@ if(CONFIG_MCUBOOT_SERIAL)
     CONFIG_BOOT_ERASE_PROGRESSIVELY
     ${BOOT_DIR}/bootutil/src
     )
+
+  if(CONFIG_BOOT_ENCRYPT_IMAGE)
+    zephyr_library_sources(
+      ${BOOT_DIR}/boot_serial/src/boot_serial_encryption.c
+    )
+  endif()
 endif()
 
 if(NOT CONFIG_BOOT_SIGNATURE_KEY_FILE STREQUAL "")

@@ -40,6 +40,7 @@ extern "C" {
 #define MGMT_ERR_EUNKNOWN       1
 #define MGMT_ERR_ENOMEM         2
 #define MGMT_ERR_EINVAL         3
+#define MGMT_ERR_ENOENT         5
 #define MGMT_ERR_ENOTSUP        8
 #define MGMT_ERR_EBUSY		10
 
@@ -59,7 +60,15 @@ extern "C" {
 #endif
 
 struct nmgr_hdr {
-    uint8_t  nh_op;             /* NMGR_OP_XXX */
+#if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+    uint8_t  _res1:3;
+    uint8_t  nh_version:2;
+    uint8_t  nh_op:3;		/* NMGR_OP_XXX */
+#else
+    uint8_t  nh_op:3;		/* NMGR_OP_XXX */
+    uint8_t  nh_version:2;
+    uint8_t  _res1:3;
+#endif
     uint8_t  nh_flags;
     uint16_t nh_len;            /* length of the payload */
     uint16_t nh_group;          /* NMGR_GROUP_XXX */

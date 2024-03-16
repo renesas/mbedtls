@@ -29,7 +29,7 @@
 
 #include "mcuboot_config/mcuboot_config.h"
 
-#ifdef MCUBOOT_SIGN_RSA
+#if (defined(MCUBOOT_SIGN_RSA) && defined(MCUBOOT_USE_MBED_TLS))
 #include "bootutil_priv.h"
 #include "bootutil/sign_key.h"
 #include "bootutil/fault_injection_hardening.h"
@@ -285,4 +285,4 @@ out:
 
     FIH_RET(fih_rc);
 }
-#endif /* MCUBOOT_SIGN_RSA */
+#endif /* MCUBOOT_SIGN_RSA && MCUBOOT_USE_MBED_TLS */

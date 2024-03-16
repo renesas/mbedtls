@@ -34,8 +34,9 @@
 
 #if (defined(MCUBOOT_USE_TINYCRYPT) + \
      defined(MCUBOOT_USE_CC310) + \
-     defined(MCUBOOT_USE_PSA_OR_MBED_TLS)) != 1
-    #error "One crypto backend must be defined: either CC310/TINYCRYPT/MBED_TLS/PSA_CRYPTO"
+     defined(MCUBOOT_USE_PSA_OR_MBED_TLS) + \
+     defined(MCUBOOT_USE_USER_DEFINED_CRYPTO_STACK)) != 1
+    #error "One crypto backend must be defined: either CC310/TINYCRYPT/MBED_TLS/PSA_CRYPTO/User defined implementation"
 #endif
 
 #if defined(MCUBOOT_USE_TINYCRYPT)

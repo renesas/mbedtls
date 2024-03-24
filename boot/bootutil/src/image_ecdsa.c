@@ -30,7 +30,7 @@
 #include "mcuboot_config/mcuboot_config.h"
 
 #if defined(MCUBOOT_SIGN_EC256) || defined(MCUBOOT_SIGN_EC384)
-
+#if !defined(MCUBOOT_USE_USER_DEFINED_CRYPTO_STACK)
 #include "bootutil_priv.h"
 #include "bootutil/fault_injection_hardening.h"
 #include "bootutil/crypto/ecdsa.h"
@@ -66,4 +66,5 @@ out:
     FIH_RET(fih_rc);
 }
 
+#endif /* !MCUBOOT_USE_USER_DEFINED_CRYPTO_STACK */
 #endif /* MCUBOOT_SIGN_EC256 || MCUBOOT_SIGN_EC384 */

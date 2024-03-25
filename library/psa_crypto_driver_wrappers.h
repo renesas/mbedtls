@@ -26,6 +26,7 @@
 #include "psa_crypto_cipher.h"
 #include "psa_crypto_core.h"
 #include "psa_crypto_driver_wrappers_no_static.h"
+#include "psa/crypto_accel_driver.h"
 #include "psa_crypto_hash.h"
 #include "psa_crypto_mac.h"
 #include "psa_crypto_pake.h"

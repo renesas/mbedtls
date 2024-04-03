@@ -2219,16 +2219,26 @@ psa_status_t psa_hash_setup(psa_hash_operation_t *operation,
         goto exit;
     }
 
-    if (!PSA_ALG_IS_HASH(alg)) {
-        status = PSA_ERROR_INVALID_ARGUMENT;
-        goto exit;
+    if (alg != PSA_ALG_ED25519PH)
+    {
+        if (!PSA_ALG_IS_HASH(alg)) {
+            status = PSA_ERROR_INVALID_ARGUMENT;
+            goto exit;
+        }
     }
 
     /* Ensure all of the context is zeroized, since PSA_HASH_OPERATION_INIT only
      * directly zeroes the int-sized dummy member of the context union. */
     memset(&operation->ctx, 0, sizeof(operation->ctx));
 
-    status = psa_driver_wrapper_hash_setup(operation, alg);
+    if (alg != PSA_ALG_ED25519PH)
+    {
+        status = psa_driver_wrapper_hash_setup(operation, alg);
+    }
+    else
+    {
+        status = psa_driver_wrapper_hash_setup(operation, PSA_ALG_SHA_512);
+    }
 
 exit:
     if (status != PSA_SUCCESS) {

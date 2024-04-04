@@ -101,13 +101,17 @@ psa_status_t mbedtls_psa_ecp_load_representation(
     mbedtls_ecp_keypair_init(ecp);
 
     /* Load the group. */
-#if defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
-    grp_id = mbedtls_ecc_group_of_psa(PSA_KEY_TYPE_ECC_GET_FAMILY(type),
-                                      curve_bits, explicit_bits);
-#else
-    grp_id = mbedtls_ecc_group_of_psa(PSA_KEY_TYPE_ECC_GET_FAMILY(type),
-                                      curve_bits, !explicit_bits);
-#endif
+    if (PSA_KEY_TYPE_ECC_GET_FAMILY(type) == PSA_ECC_FAMILY_MONTGOMERY)
+    {
+        grp_id = mbedtls_ecc_group_of_psa(PSA_KEY_TYPE_ECC_GET_FAMILY(type),
+                                          curve_bits, explicit_bits);
+    }
+    else
+    {
+        grp_id = mbedtls_ecc_group_of_psa(PSA_KEY_TYPE_ECC_GET_FAMILY(type),
+                                          curve_bits, !explicit_bits);
+    }
+
     if (grp_id == MBEDTLS_ECP_DP_NONE) {
         /* We can't distinguish between a nonsensical family/size combination
          * (which would warrant PSA_ERROR_INVALID_ARGUMENT) and a

@@ -193,6 +193,44 @@ psa_status_t mbedtls_psa_ecdsa_sign_hash(
     psa_algorithm_t alg, const uint8_t *hash, size_t hash_length,
     uint8_t *signature, size_t signature_size, size_t *signature_length);
 
+/** Sign an already-calculated hash with EdDSA.
+ *
+ * \note The signature of this function is that of a PSA driver
+ *       sign_hash entry point. This function behaves as a sign_hash
+ *       entry point as defined in the PSA driver interface specification for
+ *       transparent drivers.
+ *
+ * \param[in]  attributes       The attributes of the ECC key to use for the
+ *                              operation.
+ * \param[in]  key_buffer       The buffer containing the ECC key context.
+ *                              format.
+ * \param[in]  key_buffer_size  Size of the \p key_buffer buffer in bytes.
+ * \param[in]  alg              Randomized or deterministic ECDSA algorithm.
+ * \param[in]  hash             The hash or message to sign.
+ * \param[in]  hash_length      Size of the \p hash buffer in bytes.
+ * \param[out] signature        Buffer where the signature is to be written.
+ * \param[in]  signature_size   Size of the \p signature buffer in bytes.
+ * \param[out] signature_length On success, the number of bytes
+ *                              that make up the returned signature value.
+ *
+ * \retval #PSA_SUCCESS \emptydescription
+ * \retval #PSA_ERROR_BUFFER_TOO_SMALL
+ *         The size of the \p signature buffer is too small. You can
+ *         determine a sufficient buffer size by calling
+ *         #PSA_SIGN_OUTPUT_SIZE(\c PSA_KEY_TYPE_ECC_KEY_PAIR, \c key_bits,
+ *         \p alg) where \c key_bits is the bit-size of the ECC key.
+ * \retval #PSA_ERROR_NOT_SUPPORTED \emptydescription
+ * \retval #PSA_ERROR_INVALID_ARGUMENT \emptydescription
+ * \retval #PSA_ERROR_INSUFFICIENT_MEMORY \emptydescription
+ * \retval #PSA_ERROR_CORRUPTION_DETECTED \emptydescription
+ * \retval #PSA_ERROR_INSUFFICIENT_ENTROPY \emptydescription
+ */
+psa_status_t mbedtls_psa_eddsa_sign_hash(
+    const psa_key_attributes_t *attributes,
+    const uint8_t *key_buffer, size_t key_buffer_size,
+    psa_algorithm_t alg, const uint8_t *hash, size_t hash_length,
+    uint8_t *signature, size_t signature_size, size_t *signature_length);
+
 /**
  * \brief Verify an ECDSA hash or short message signature.
  *

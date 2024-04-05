@@ -3004,7 +3004,7 @@ psa_status_t psa_sign_hash_builtin(
     } else if (PSA_KEY_TYPE_IS_ECC(attributes->core.type)) {
         if (PSA_ALG_IS_ECDSA(alg)) {
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_ECDSA) || \
-            defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA)
+            defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA) || defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
             return mbedtls_psa_ecdsa_sign_hash(
                 attributes,
                 key_buffer, key_buffer_size,
@@ -3012,6 +3012,14 @@ psa_status_t psa_sign_hash_builtin(
                 signature, signature_size, signature_length);
 #endif /* defined(MBEDTLS_PSA_BUILTIN_ALG_ECDSA) ||
         * defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA) */
+       } else if (PSA_ALG_IS_HASH_EDDSA(alg)) {
+#if defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
+            return mbedtls_psa_eddsa_sign_hash(
+                attributes,
+                key_buffer, key_buffer_size,
+                alg, hash, hash_length,
+                signature, signature_size, signature_length);
+#endif /* defined(MBEDTLS_PSA_BUILTIN_ALG_EDDSA) */
         } else {
             return PSA_ERROR_INVALID_ARGUMENT;
         }

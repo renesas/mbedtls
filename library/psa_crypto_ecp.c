@@ -525,6 +525,67 @@ cleanup:
         * defined(MBEDTLS_PSA_BUILTIN_ALG_DETERMINISTIC_ECDSA) */
 
 /****************************************************************/
+/* EDDSA sign/verify */
+/****************************************************************/
+
+#if defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
+psa_status_t mbedtls_psa_eddsa_sign_hash(
+    const psa_key_attributes_t *attributes,
+    const uint8_t *key_buffer, size_t key_buffer_size,
+    psa_algorithm_t alg, const uint8_t *hash, size_t hash_length,
+    uint8_t *signature, size_t signature_size, size_t *signature_length)
+{
+    psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
+    mbedtls_ecp_keypair *ecp = NULL;
+    int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+    size_t curve_bytes;
+    mbedtls_mpi r, s;
+
+    status = mbedtls_psa_ecp_load_representation(attributes->core.type,
+                                                 attributes->core.bits,
+                                                 key_buffer,
+                                                 key_buffer_size,
+                                                 &ecp);
+    if (status != PSA_SUCCESS) {
+        return status;
+    }
+
+    curve_bytes = PSA_BITS_TO_BYTES(ecp->grp.pbits);
+    mbedtls_mpi_init(&r);
+    mbedtls_mpi_init(&s);
+
+    if (signature_size < 2 * curve_bytes) {
+        ret = MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL;
+        goto cleanup;
+    }
+
+    (void) alg;
+    MBEDTLS_MPI_CHK(mbedtls_eddsa_sign(&ecp->grp, &r, &s, &ecp->d,
+                                           hash, hash_length,
+                                           mbedtls_psa_get_random,
+                                           MBEDTLS_PSA_RANDOM_STATE));
+
+    MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&r,
+                                             signature,
+                                             curve_bytes));
+    MBEDTLS_MPI_CHK(mbedtls_mpi_write_binary(&s,
+                                             signature + curve_bytes,
+                                             curve_bytes));
+cleanup:
+    mbedtls_mpi_free(&r);
+    mbedtls_mpi_free(&s);
+    if (ret == 0) {
+        *signature_length = 2 * curve_bytes;
+    }
+
+    mbedtls_ecp_keypair_free(ecp);
+    mbedtls_free(ecp);
+
+    return mbedtls_to_psa_error(ret);
+}
+#endif
+
+/****************************************************************/
 /* ECDH Key Agreement */
 /****************************************************************/
 

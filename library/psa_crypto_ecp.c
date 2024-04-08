@@ -560,7 +560,7 @@ psa_status_t mbedtls_psa_eddsa_sign_hash(
     }
 
     (void) alg;
-    MBEDTLS_MPI_CHK(mbedtls_eddsa_sign(&ecp->grp, &r, &s, &ecp->d,
+    MBEDTLS_MPI_CHK(mbedtls_eddsa_sign(&ecp->grp, &r, &s, &ecp->d, &ecp->Q,
                                            hash, hash_length,
                                            mbedtls_psa_get_random,
                                            MBEDTLS_PSA_RANDOM_STATE));

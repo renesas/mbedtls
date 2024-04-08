@@ -550,6 +550,16 @@ psa_status_t mbedtls_psa_eddsa_sign_hash(
         return status;
     }
 
+    /* Load the public value. */
+    status = mbedtls_to_psa_error(
+        mbedtls_ecp_point_read_binary(&ecp->grp, &ecp->Q,
+                                      hash,
+                                      hash_length));
+
+    if (status != PSA_SUCCESS) {
+        return status;
+    }
+
     curve_bytes = PSA_BITS_TO_BYTES(ecp->grp.pbits);
     mbedtls_mpi_init(&r);
     mbedtls_mpi_init(&s);
@@ -560,7 +570,7 @@ psa_status_t mbedtls_psa_eddsa_sign_hash(
     }
 
     (void) alg;
-    MBEDTLS_MPI_CHK(mbedtls_eddsa_sign(&ecp->grp, &r, &s, &ecp->d, &ecp->Q.X,
+    MBEDTLS_MPI_CHK(mbedtls_eddsa_sign(&ecp->grp, &r, &s, &ecp->d, &ecp->Q,
                                            hash, hash_length,
                                            mbedtls_psa_get_random,
                                            MBEDTLS_PSA_RANDOM_STATE));

@@ -147,6 +147,24 @@ psa_status_t mbedtls_psa_ecp_load_representation(
             goto exit;
         }
     } else {
+        if (PSA_KEY_TYPE_ECC_GET_FAMILY(type) == PSA_ECC_FAMILY_MONTGOMERY)
+        {
+            /* Load the public value. */
+            status = mbedtls_to_psa_error(
+                mbedtls_ecp_point_read_binary(&ecp->grp, &ecp->Q,
+                                            data,
+                                            data_length));
+            if (status != PSA_SUCCESS) {
+                goto exit;
+            }
+
+            /* Check that the point is on the curve. */
+            status = mbedtls_to_psa_error(
+                mbedtls_ecp_check_pubkey(&ecp->grp, &ecp->Q));
+            if (status != PSA_SUCCESS) {
+                goto exit;
+            }
+        }
         /* Load and validate the secret value. */
         status = mbedtls_to_psa_error(
             mbedtls_ecp_read_key(ecp->grp.id,
@@ -546,16 +564,6 @@ psa_status_t mbedtls_psa_eddsa_sign_hash(
                                                  key_buffer,
                                                  key_buffer_size,
                                                  &ecp);
-    if (status != PSA_SUCCESS) {
-        return status;
-    }
-
-    /* Load the public value. */
-    status = mbedtls_to_psa_error(
-        mbedtls_ecp_point_read_binary(&ecp->grp, &ecp->Q,
-                                      hash,
-                                      hash_length));
-
     if (status != PSA_SUCCESS) {
         return status;
     }

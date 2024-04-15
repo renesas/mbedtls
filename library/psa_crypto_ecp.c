@@ -559,6 +559,7 @@ psa_status_t mbedtls_psa_eddsa_sign_hash(
     size_t curve_bytes;
     mbedtls_mpi r, s;
 
+
     status = mbedtls_psa_ecp_load_representation(attributes->core.type,
                                                  attributes->core.bits,
                                                  key_buffer,
@@ -578,7 +579,8 @@ psa_status_t mbedtls_psa_eddsa_sign_hash(
     }
 
     (void) alg;
-    MBEDTLS_MPI_CHK(mbedtls_eddsa_sign(&ecp->grp, &r, &s, &ecp->d, &ecp->Q,
+//    MBEDTLS_MPI_CHK(mbedtls_eddsa_sign(&ecp->grp, &r, &s, &ecp->d, &ecp->Q,
+    MBEDTLS_MPI_CHK(mbedtls_eddsa_sign(&ecp->grp, &r, &s, &ecp->d, &ecp->Q.X,
                                            hash, hash_length,
                                            mbedtls_psa_get_random,
                                            MBEDTLS_PSA_RANDOM_STATE));

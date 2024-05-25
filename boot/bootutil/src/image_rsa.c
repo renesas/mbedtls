@@ -285,4 +285,4 @@ out:
 
     FIH_RET(fih_rc);
 }
-#endif /* MCUBOOT_SIGN_RSA && MCUBOOT_USE_MBED_TLS */
+#endif /* MCUBOOT_SIGN_RSA && MCUBOOT_USE_PSA_OR_MBED_TLS */

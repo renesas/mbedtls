@@ -29,7 +29,7 @@
 
 #include "mcuboot_config/mcuboot_config.h"
 
-#if (defined(MCUBOOT_SIGN_RSA) && defined(MCUBOOT_USE_MBED_TLS))
+#if (defined(MCUBOOT_SIGN_RSA) && defined(MCUBOOT_USE_PSA_OR_MBED_TLS))
 #include "bootutil_priv.h"
 #include "bootutil/sign_key.h"
 #include "bootutil/fault_injection_hardening.h"

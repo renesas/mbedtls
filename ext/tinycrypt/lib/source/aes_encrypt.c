@@ -97,6 +97,14 @@ int tc_aes128_set_encrypt_key(TCAesKeySched_t s, const uint8_t *k)
 
 	return TC_CRYPTO_SUCCESS;
 }
+int tc_aes_set_encrypt_key_extended (TCAesKeySched_t s, const uint8_t * k, unsigned int key_size)
+{
+	/* Only supporting the hardware accelerated mode */
+	(void) (s);
+	(void) (*k);
+	(void) (key_size);
+	return TC_CRYPTO_FAIL;
+}
 
 static inline void add_round_key(uint8_t *s, const unsigned int *k)
 {

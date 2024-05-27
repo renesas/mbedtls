@@ -36,7 +36,7 @@
 #include <tinycrypt/utils.h>
 
 /* max number of calls until change the key (2^48).*/
-const static uint64_t MAX_CALLS = ((uint64_t)1 << 48);
+static const uint64_t MAX_CALLS = ((uint64_t)1 << 48);
 
 /*
  *  gf_wrap -- In our implementation, GF(2^128) is represented as a 16 byte
@@ -108,7 +108,40 @@ int tc_cmac_setup(TCCmacState_t s, const uint8_t *key, TCAesKeySched_t sched)
 	s->sched = sched;
 
 	/* configure the encryption key used by the underlying block cipher */
-	tc_aes128_set_encrypt_key(s->sched, key);
+	if(!tc_aes128_set_encrypt_key(s->sched, key)) {
+		return TC_CRYPTO_FAIL;
+	}
+
+	/* compute s->K1 and s->K2 from s->iv using s->keyid */
+	_set(s->iv, 0, TC_AES_BLOCK_SIZE);
+	tc_aes_encrypt(s->iv, s->iv, s->sched);
+	gf_double (s->K1, s->iv);
+	gf_double (s->K2, s->K1);
+
+	/* reset s->iv to 0 in case someone wants to compute now */
+	tc_cmac_init(s);
+
+	return TC_CRYPTO_SUCCESS;
+}
+
+int tc_cmac_setup_extended(TCCmacState_t s, const uint8_t *key, TCAesKeySched_t sched, unsigned int key_size)
+{
+
+	/* input sanity check: */
+	if (s == (TCCmacState_t) 0 ||
+	    key == (const uint8_t *) 0 ||
+		((key_size != TC_AES_192BIT_KEYLEN_BYTES) && (key_size != TC_AES_256BIT_KEYLEN_BYTES))) {
+		return TC_CRYPTO_FAIL;
+	}
+
+	/* put s into a known state */
+	_set(s, 0, sizeof(*s));
+	s->sched = sched;
+
+	/* configure the encryption key used by the underlying block cipher */
+	if(!tc_aes_set_encrypt_key_extended(s->sched, key, key_size)) {
+		return TC_CRYPTO_FAIL;
+	}
 
 	/* compute s->K1 and s->K2 from s->iv using s->keyid */
 	_set(s->iv, 0, TC_AES_BLOCK_SIZE);

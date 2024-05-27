@@ -33,7 +33,6 @@
 #include <tinycrypt/ccm_mode.h>
 #include <tinycrypt/constants.h>
 #include <tinycrypt/utils.h>
-
 #include <stdio.h>
 
 int tc_ccm_config(TCCcmMode_t c, TCAesKeySched_t sched, uint8_t *nonce,

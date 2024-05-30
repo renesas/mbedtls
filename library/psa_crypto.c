@@ -96,6 +96,9 @@
 #define BUILTIN_ALG_ANY_HKDF 1
 #endif
 
+#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
+#include "psa/crypto_accel_driver.h"
+#endif 
 /****************************************************************/
 /* Global data, support functions and library management */
 /****************************************************************/

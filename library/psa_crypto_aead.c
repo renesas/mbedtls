@@ -3,19 +3,7 @@
  */
 /*
  *  Copyright The Mbed TLS Contributors
- *  SPDX-License-Identifier: Apache-2.0
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may
- *  not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
 #include "common.h"
@@ -43,43 +31,15 @@ static psa_status_t psa_aead_setup(
     psa_algorithm_t alg)
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-    size_t key_bits;
-    const mbedtls_cipher_info_t *cipher_info;
     mbedtls_cipher_id_t cipher_id;
-    psa_key_type_t temp_keytype = 0;
-
+    mbedtls_cipher_mode_t mode;
+    size_t key_bits = attributes->bits;
     (void) key_buffer_size;
 
-    key_bits = attributes->core.bits;
-
-#if defined (MBEDTLS_CCM_ALT) || defined (MBEDTLS_GCM_ALT)
-    #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type))
-    {
-        /* The mbedcrypto implementation obtains the list of methods based on the keybit size.
-         * Since the wrapped keybit size does not correspond to the raw key size i.e the
-         * AES256 raw bit size is 256 but the wrapped size is 416 bytes, provide the 256 bit value
-         * to mbedcrypto so that the right methods are invoked. */
-        status = vendor_bitlength_to_raw_bitlength(attributes->core.type, attributes->core.bits, &key_bits);
-        if (status != PSA_SUCCESS)
-        {
-            return status;
-        }
-
-        temp_keytype = (psa_key_type_t)(attributes->core.type & ~PSA_KEY_TYPE_VENDOR_FLAG);
-    }
-    else
-#endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
-#endif
-    {
-        temp_keytype = (psa_key_type_t)(attributes->core.type);
-    }
-
-    cipher_info = mbedtls_cipher_info_from_psa(alg,
-                                               temp_keytype, key_bits,
-                                               &cipher_id);
-    if (cipher_info == NULL) {
-        return PSA_ERROR_NOT_SUPPORTED;
+    status = mbedtls_cipher_values_from_psa(alg, attributes->type,
+                                            &key_bits, &mode, &cipher_id);
+    if (status != PSA_SUCCESS) {
+        return status;
     }
 
     switch (PSA_ALG_AEAD_WITH_SHORTENED_TAG(alg, 0)) {
@@ -89,19 +49,11 @@ static psa_status_t psa_aead_setup(
             /* CCM allows the following tag lengths: 4, 6, 8, 10, 12, 14, 16.
              * The call to mbedtls_ccm_encrypt_and_tag or
              * mbedtls_ccm_auth_decrypt will validate the tag length. */
-            if (PSA_BLOCK_CIPHER_BLOCK_LENGTH(attributes->core.type) != 16) {
+            if (PSA_BLOCK_CIPHER_BLOCK_LENGTH(attributes->type) != 16) {
                 return PSA_ERROR_INVALID_ARGUMENT;
             }
 
             mbedtls_ccm_init(&operation->ctx.ccm);
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-#if defined(MBEDTLS_CCM_ALT)
-if ((PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type)) && ((key_buffer_size == (SIZE_AES_128BIT_KEYLEN_BYTES_WRAPPED)) || (key_buffer_size == (SIZE_AES_192BIT_KEYLEN_BYTES_WRAPPED)) || (key_buffer_size == (SIZE_AES_256BIT_KEYLEN_BYTES_WRAPPED))))
-{
-    operation->ctx.ccm.vendor_flag = 1U;
-}
-#endif
-#endif
             status = mbedtls_to_psa_error(
                 mbedtls_ccm_setkey(&operation->ctx.ccm, cipher_id,
                                    key_buffer, (unsigned int) key_bits));
@@ -117,21 +69,11 @@ if ((PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type)) && ((key_buffer_size
             /* GCM allows the following tag lengths: 4, 8, 12, 13, 14, 15, 16.
              * The call to mbedtls_gcm_crypt_and_tag or
              * mbedtls_gcm_auth_decrypt will validate the tag length. */
-            if (PSA_BLOCK_CIPHER_BLOCK_LENGTH(attributes->core.type) != 16) {
+            if (PSA_BLOCK_CIPHER_BLOCK_LENGTH(attributes->type) != 16) {
                 return PSA_ERROR_INVALID_ARGUMENT;
             }
 
             mbedtls_gcm_init(&operation->ctx.gcm);
-
-#if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-#if defined(MBEDTLS_GCM_ALT)
-if ((PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type)) && ((key_buffer_size == (SIZE_AES_128BIT_KEYLEN_BYTES_WRAPPED)) || (key_buffer_size == (SIZE_AES_192BIT_KEYLEN_BYTES_WRAPPED)) || (key_buffer_size == (SIZE_AES_256BIT_KEYLEN_BYTES_WRAPPED))))
-{
-    operation->ctx.gcm.vendor_flag = 1U;
-}
-#endif
-#endif
-
             status = mbedtls_to_psa_error(
                 mbedtls_gcm_setkey(&operation->ctx.gcm, cipher_id,
                                    key_buffer, (unsigned int) key_bits));

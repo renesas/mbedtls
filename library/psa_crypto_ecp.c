@@ -317,9 +317,7 @@ psa_status_t mbedtls_psa_ecp_export_key(psa_key_type_t type,
             return PSA_ERROR_BUFFER_TOO_SMALL;
 
         status = mbedtls_to_psa_error(
-            mbedtls_ecp_write_key(ecp,
-                                  data,
-                                  private_key_bytes));
+            mbedtls_ecp_write_key_ext(ecp, data_length, data, data_size));
         if (status == PSA_SUCCESS) {
             *data_length = private_key_bytes;
         } else {

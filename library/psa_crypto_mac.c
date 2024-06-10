@@ -174,7 +174,7 @@ size_t keybits = psa_get_key_bits(attributes);
 
 #if defined MBEDTLS_CMAC_ALT
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type))
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->type))
     {
     	keybits = (PSA_CMAC_BITS_VENDOR_RAW(psa_get_key_bits(attributes)) != 0U ?
                    PSA_CMAC_BITS_VENDOR_RAW(psa_get_key_bits(attributes)) : psa_get_key_bits(attributes));
@@ -201,7 +201,7 @@ size_t keybits = psa_get_key_bits(attributes);
 
 #if defined MBEDTLS_CMAC_ALT
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
-    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->core.type))
+    if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(attributes->type))
     {
     	psa_aead_setup_vendor(operation->ctx.cmac.cipher_ctx);
 

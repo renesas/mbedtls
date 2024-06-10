@@ -77,8 +77,8 @@ psa_status_t psa_import_key_into_slot_vendor(const psa_key_attributes_t * attrib
  *
  * \param[in] slot
  * \param[in] bits
- * \param[in] domain_parameters
- * \param[in] domain_parameters_size
+ * \param[in] params
+ * \param[in] params_data_length
  *
  *
  * \retval #PSA_SUCCESS
@@ -89,10 +89,10 @@ psa_status_t psa_import_key_into_slot_vendor(const psa_key_attributes_t * attrib
  * \retval #PSA_ERROR_NOT_SUPPORTED
  * \retval Implementation dependent.
  */
-psa_status_t psa_generate_key_vendor(psa_key_slot_t * slot,
-                                     size_t           bits,
-                                     const uint8_t  * domain_parameters,
-                                     size_t           domain_parameters_size);
+psa_status_t psa_generate_key_vendor (psa_key_slot_t * slot,
+                                      size_t           bits,
+									  const psa_key_production_parameters_t *params,
+									  size_t params_data_length);
 
 /**
  * \brief Generate symmetric key of vendor defined format.

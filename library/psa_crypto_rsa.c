@@ -641,7 +641,7 @@ psa_status_t mbedtls_psa_asymmetric_decrypt(const psa_key_attributes_t *attribut
 
     *output_length = 0;
 
-    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR (attributes->core.type) ) {
+    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR (attributes->type) ) {
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_PKCS1V15_CRYPT) || \
         defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_OAEP)
         mbedtls_rsa_context *rsa = NULL;

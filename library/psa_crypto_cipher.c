@@ -301,7 +301,7 @@ static psa_status_t psa_cipher_setup(
     mbedtls_cipher_init(&operation->ctx.cipher);
 
     operation->alg = alg;
-    key_bits = attributes->core.bits;
+    key_bits = attributes->bits;
 #if defined (MBEDTLS_CIPHER_ALT)
 #if defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(key_type))

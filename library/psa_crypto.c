@@ -3195,7 +3195,7 @@ psa_status_t psa_sign_hash_builtin(
     psa_algorithm_t alg, const uint8_t *hash, size_t hash_length,
     uint8_t *signature, size_t signature_size, size_t *signature_length)
 {
-    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR(attributes->core.type) ) {
+    if( PSA_KEY_TYPE_IS_RSA_KEY_PAIR(attributes->type) ) {
         if (PSA_ALG_IS_RSA_PKCS1V15_SIGN(alg) ||
             PSA_ALG_IS_RSA_PSS(alg)) {
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_RSA_PKCS1V15_SIGN) || \
@@ -7984,9 +7984,9 @@ psa_status_t psa_generate_key_ext(const psa_key_attributes_t *attributes,
 #if defined(MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C)
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
-        status = psa_generate_key_vendor(slot, attributes->core.bits,
-            attributes->domain_parameters, attributes->domain_parameters_size);
-            goto exit;
+        status = psa_generate_key_vendor(slot, attributes->bits,
+        		                         params, params_data_length);
+        goto exit;
     }
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */   
 

@@ -199,7 +199,7 @@ psa_status_t mbedtls_cipher_values_from_psa(
 #endif
 
             case PSA_ALG_XTS:
-                mode = MBEDTLS_MODE_XTS;
+                *mode = MBEDTLS_MODE_XTS;
                 break;
 
             default:

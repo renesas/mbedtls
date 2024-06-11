@@ -225,7 +225,7 @@ psa_status_t mbedtls_psa_rsa_export_public_key(
         * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_PUBLIC_KEY) */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_KEY_PAIR_GENERATE)
-static psa_status_t psa_rsa_read_exponent(const uint8_t *e_bytes,
+psa_status_t psa_rsa_read_exponent(const uint8_t *e_bytes,
                                           size_t e_length,
                                           int *exponent)
 {

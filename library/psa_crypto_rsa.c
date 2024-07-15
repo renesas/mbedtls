@@ -99,6 +99,9 @@ psa_status_t mbedtls_psa_rsa_load_representation(
         (*p_rsa)->vendor_ctx = (bool *) true;
     }
     else
+    {
+        /* Do nothing */
+    }
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */
 
 exit:

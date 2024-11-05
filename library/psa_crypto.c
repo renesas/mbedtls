@@ -8038,7 +8038,7 @@ psa_status_t psa_generate_key_custom(const psa_key_attributes_t *attributes,
     if (PSA_KEY_TYPE_IS_VENDOR_DEFINED(slot->attr.type))
     {
         status = psa_generate_key_vendor(slot, attributes->bits,
-        		                         params, params_data_length);
+        		                         (const psa_key_production_parameters_t *)custom, custom_data_length);
         goto exit;
     }
 #endif /* MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C */   

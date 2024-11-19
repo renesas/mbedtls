@@ -37,8 +37,8 @@
  */
 #include "psa/build_info.h"
 
-#define PSA_BITS_TO_BYTES(bits) (((bits) + 7u) / 8u)
-#define PSA_BYTES_TO_BITS(bytes) ((bytes) * 8u)
+#define PSA_BITS_TO_BYTES(bits) (((bits) + 7U) / 8U)
+#define PSA_BYTES_TO_BITS(bytes) ((bytes) * 8U)
 #define PSA_MAX_OF_THREE(a, b, c) ((a) <= (b) ? (b) <= (c) ? \
                                    (c) : (b) : (a) <= (c) ? (c) : (a))
 

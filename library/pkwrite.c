@@ -234,14 +234,16 @@ static int pk_write_ec_param(unsigned char **p, unsigned char *start,
     size_t len = 0;
     const char *oid;
     size_t oid_len;
+    int tmp_len;
 
     if ((ret = mbedtls_oid_get_oid_by_ec_grp(grp_id, &oid, &oid_len)) != 0) {
         return ret;
     }
 
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_oid(p, start, oid, oid_len));
+    tmp_len = (int) len;
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_oid(p, start, oid, oid_len));
 
-    return (int) len;
+    return tmp_len;
 }
 
 #if defined(MBEDTLS_PK_HAVE_RFC8410_CURVES)
@@ -310,10 +312,12 @@ static int pk_write_ec_der(unsigned char **p, unsigned char *buf,
     int ret;
     size_t pub_len = 0, par_len = 0;
     mbedtls_ecp_group_id grp_id;
+    int tmp_len;
 
+    tmp_len = (int) pub_len;
     /* publicKey */
-    MBEDTLS_ASN1_CHK_ADD(pub_len, pk_write_ec_pubkey(p, buf, pk));
-
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, pk_write_ec_pubkey(p, buf, pk));
+    pub_len = (size_t) tmp_len;
     if (*p - buf < 1) {
         return MBEDTLS_ERR_ASN1_BUF_TOO_SMALL;
     }
@@ -321,33 +325,39 @@ static int pk_write_ec_der(unsigned char **p, unsigned char *buf,
     **p = 0;
     pub_len += 1;
 
-    MBEDTLS_ASN1_CHK_ADD(pub_len, mbedtls_asn1_write_len(p, buf, pub_len));
-    MBEDTLS_ASN1_CHK_ADD(pub_len, mbedtls_asn1_write_tag(p, buf, MBEDTLS_ASN1_BIT_STRING));
+    tmp_len = (int) pub_len;
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_len(p, buf, (size_t) tmp_len));
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_tag(p, buf, MBEDTLS_ASN1_BIT_STRING));
 
-    MBEDTLS_ASN1_CHK_ADD(pub_len, mbedtls_asn1_write_len(p, buf, pub_len));
-    MBEDTLS_ASN1_CHK_ADD(pub_len, mbedtls_asn1_write_tag(p, buf,
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_len(p, buf, (size_t) tmp_len));
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_tag(p, buf,
                                                          MBEDTLS_ASN1_CONTEXT_SPECIFIC |
                                                          MBEDTLS_ASN1_CONSTRUCTED | 1));
+    pub_len = (size_t) tmp_len;
     len += pub_len;
 
     /* parameters */
     grp_id = mbedtls_pk_get_ec_group_id(pk);
-    MBEDTLS_ASN1_CHK_ADD(par_len, pk_write_ec_param(p, buf, grp_id));
-    MBEDTLS_ASN1_CHK_ADD(par_len, mbedtls_asn1_write_len(p, buf, par_len));
-    MBEDTLS_ASN1_CHK_ADD(par_len, mbedtls_asn1_write_tag(p, buf,
+    tmp_len = (int) par_len;
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, pk_write_ec_param(p, buf, grp_id));
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_len(p, buf, (size_t) tmp_len));
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_tag(p, buf,
                                                          MBEDTLS_ASN1_CONTEXT_SPECIFIC |
                                                          MBEDTLS_ASN1_CONSTRUCTED | 0));
+    par_len = (size_t) tmp_len;
     len += par_len;
 
+    tmp_len = (int) len;
     /* privateKey */
-    MBEDTLS_ASN1_CHK_ADD(len, pk_write_ec_private(p, buf, pk));
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, pk_write_ec_private(p, buf, pk));
 
     /* version */
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_int(p, buf, 1));
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_int(p, buf, 1));
 
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(p, buf, len));
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_tag(p, buf, MBEDTLS_ASN1_CONSTRUCTED |
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_len(p, buf, (size_t) tmp_len));
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_tag(p, buf, MBEDTLS_ASN1_CONSTRUCTED |
                                                      MBEDTLS_ASN1_SEQUENCE));
+    len = (size_t) tmp_len;
 
     return (int) len;
 }
@@ -421,23 +431,26 @@ int mbedtls_pk_write_pubkey(unsigned char **p, unsigned char *start,
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     size_t len = 0;
+    int tmp_len;
 
+    tmp_len = (int) len;
 #if defined(MBEDTLS_RSA_C)
     if (mbedtls_pk_get_type(key) == MBEDTLS_PK_RSA) {
-        MBEDTLS_ASN1_CHK_ADD(len, mbedtls_rsa_write_pubkey(mbedtls_pk_rsa(*key), start, p));
+        MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_rsa_write_pubkey(mbedtls_pk_rsa(*key), start, p));
     } else
 #endif
 #if defined(MBEDTLS_PK_HAVE_ECC_KEYS)
     if (mbedtls_pk_get_type(key) == MBEDTLS_PK_ECKEY) {
-        MBEDTLS_ASN1_CHK_ADD(len, pk_write_ec_pubkey(p, start, key));
+        MBEDTLS_ASN1_CHK_ADD(tmp_len, pk_write_ec_pubkey(p, start, key));
     } else
 #endif
 #if defined(MBEDTLS_USE_PSA_CRYPTO)
     if (mbedtls_pk_get_type(key) == MBEDTLS_PK_OPAQUE) {
-        MBEDTLS_ASN1_CHK_ADD(len, pk_write_opaque_pubkey(p, start, key));
+        MBEDTLS_ASN1_CHK_ADD(tmp_len, pk_write_opaque_pubkey(p, start, key));
     } else
 #endif /* MBEDTLS_USE_PSA_CRYPTO */
     return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
+    len = (size_t) tmp_len;
 
     return (int) len;
 }
@@ -450,6 +463,7 @@ int mbedtls_pk_write_pubkey_der(const mbedtls_pk_context *key, unsigned char *bu
     size_t len = 0, par_len = 0, oid_len = 0;
     mbedtls_pk_type_t pk_type;
     const char *oid = NULL;
+    int tmp_len;
 
     if (size == 0) {
         return MBEDTLS_ERR_ASN1_BUF_TOO_SMALL;
@@ -457,7 +471,9 @@ int mbedtls_pk_write_pubkey_der(const mbedtls_pk_context *key, unsigned char *bu
 
     c = buf + size;
 
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_pk_write_pubkey(&c, buf, key));
+    tmp_len = (int) len;
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_pk_write_pubkey(&c, buf, key));
+    len = (size_t) tmp_len;
 
     if (c - buf < 1) {
         return MBEDTLS_ERR_ASN1_BUF_TOO_SMALL;
@@ -471,8 +487,10 @@ int mbedtls_pk_write_pubkey_der(const mbedtls_pk_context *key, unsigned char *bu
     *--c = 0;
     len += 1;
 
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(&c, buf, len));
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_tag(&c, buf, MBEDTLS_ASN1_BIT_STRING));
+    tmp_len = (int) len;
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_len(&c, buf, (size_t) tmp_len));
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_tag(&c, buf, MBEDTLS_ASN1_BIT_STRING));
+    len = (size_t) tmp_len;
 
     pk_type = pk_get_type_ext(key);
 
@@ -486,7 +504,9 @@ int mbedtls_pk_write_pubkey_der(const mbedtls_pk_context *key, unsigned char *bu
             }
             has_par = 0;
         } else {
-            MBEDTLS_ASN1_CHK_ADD(par_len, pk_write_ec_param(&c, buf, ec_grp_id));
+            tmp_len = (int) par_len;
+            MBEDTLS_ASN1_CHK_ADD(tmp_len, pk_write_ec_param(&c, buf, ec_grp_id));
+            par_len = (size_t) tmp_len;;
         }
     }
 #endif /* MBEDTLS_PK_HAVE_ECC_KEYS */
@@ -499,12 +519,14 @@ int mbedtls_pk_write_pubkey_der(const mbedtls_pk_context *key, unsigned char *bu
         }
     }
 
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_algorithm_identifier_ext(&c, buf, oid, oid_len,
+    tmp_len = (int) len;
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_algorithm_identifier_ext(&c, buf, oid, oid_len,
                                                                           par_len, has_par));
 
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(&c, buf, len));
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_tag(&c, buf, MBEDTLS_ASN1_CONSTRUCTED |
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_len(&c, buf, (size_t) tmp_len));
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_tag(&c, buf, MBEDTLS_ASN1_CONSTRUCTED |
                                                      MBEDTLS_ASN1_SEQUENCE));
+    len = (size_t) tmp_len;;
 
     return (int) len;
 }
@@ -566,7 +588,7 @@ int mbedtls_pk_write_pubkey_pem(const mbedtls_pk_context *key, unsigned char *bu
 
     if ((ret = mbedtls_pem_write_buffer(PEM_BEGIN_PUBLIC_KEY "\n", PEM_END_PUBLIC_KEY "\n",
                                         output_buf + PUB_DER_MAX_BYTES - ret,
-                                        ret, buf, size, &olen)) != 0) {
+                                        (size_t) ret, buf, size, &olen)) != 0) {
         goto cleanup;
     }
 
@@ -615,7 +637,7 @@ int mbedtls_pk_write_key_pem(const mbedtls_pk_context *key, unsigned char *buf, 
 
     if ((ret = mbedtls_pem_write_buffer(begin, end,
                                         output_buf + PRV_DER_MAX_BYTES - ret,
-                                        ret, buf, size, &olen)) != 0) {
+                                        (size_t) ret, buf, size, &olen)) != 0) {
         goto cleanup;
     }
 

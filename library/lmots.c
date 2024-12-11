@@ -90,7 +90,7 @@ static unsigned short lmots_checksum_calculate(const mbedtls_lmots_parameters_t 
         sum += DIGIT_MAX_VALUE - digest[idx];
     }
 
-    return sum;
+    return (unsigned short) sum;
 }
 
 /* Create the string of digest digits (in the base determined by the Winternitz

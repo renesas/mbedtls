@@ -58,7 +58,7 @@ size_t mbedtls_mpi_core_bitlen(const mbedtls_mpi_uint *A, size_t A_limbs)
     for (i = ((int) A_limbs) - 1; i >= 0; i--) {
         if (A[i] != 0) {
             j = biL - mbedtls_mpi_core_clz(A[i]);
-            return (i * biL) + j;
+            return ((unsigned int) i * biL) + j;
         }
     }
 

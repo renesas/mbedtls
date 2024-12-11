@@ -662,7 +662,8 @@ static int import_pair_into_psa(const mbedtls_pk_context *pk,
             if (ret < 0) {
                 return ret;
             }
-            size_t key_length = key_end - key_data;
+            size_t key_length;
+            key_length = (size_t) (key_end - key_data);
             ret = PSA_PK_TO_MBEDTLS_ERR(psa_import_key(attributes,
                                                        key_data, key_length,
                                                        key_id));

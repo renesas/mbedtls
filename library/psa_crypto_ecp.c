@@ -96,7 +96,9 @@ psa_status_t mbedtls_psa_ecp_load_representation(
     psa_status_t status;
     mbedtls_ecp_keypair *ecp = NULL;
     size_t curve_bytes = data_length;
+#if !(defined (MBEDTLS_PSA_CRYPTO_ACCEL_DRV_C) && defined(MBEDTLS_ECP_ALT))
     int explicit_bits = (curve_bits != 0);
+#endif
 
     if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type) &&
         PSA_KEY_TYPE_ECC_GET_FAMILY(type) != PSA_ECC_FAMILY_MONTGOMERY) {

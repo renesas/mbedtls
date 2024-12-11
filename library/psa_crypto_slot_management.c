@@ -665,7 +665,7 @@ psa_status_t psa_reserve_free_key_slot(psa_key_id_t *volatile_key_id,
         if (volatile_key_id != NULL) {
             /* Refresh slot_idx, for when the slot is not the original
              * selected_slot but rather unused_persistent_key_slot.  */
-            slot_idx = selected_slot - global_data.key_slots;
+            slot_idx = (size_t) (selected_slot - global_data.key_slots);
             *volatile_key_id = PSA_KEY_ID_VOLATILE_MIN + slot_idx;
         }
 #endif

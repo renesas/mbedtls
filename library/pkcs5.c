@@ -217,8 +217,8 @@ int mbedtls_pkcs5_pbes2_ext(const mbedtls_asn1_buf *pbe_params, int mode,
     memcpy(iv, enc_scheme_params.p, enc_scheme_params.len);
 
     if ((ret = mbedtls_pkcs5_pbkdf2_hmac_ext(md_type, pwd, pwdlen, salt.p,
-                                             salt.len, iterations, keylen,
-                                             key)) != 0) {
+                                             salt.len, (unsigned int) iterations,
+                                             (uint32_t) keylen, key)) != 0) {
         goto exit;
     }
 

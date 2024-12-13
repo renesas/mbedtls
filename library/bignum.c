@@ -450,7 +450,7 @@ size_t mbedtls_mpi_lsb(const mbedtls_mpi *X)
 #if defined(mbedtls_mpi_uint_ctz)
     for (i = 0; i < X->n; i++) {
         if (X->p[i] != 0) {
-            return i * biL + (unsigned int) (X->p[i]);
+            return i * biL + (unsigned int) mbedtls_mpi_uint_ctz(X->p[i]);
         }
     }
 #else

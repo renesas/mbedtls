@@ -616,6 +616,7 @@ static int mbedtls_a64_crypto_sha256_has_support(void)
     return supported;
 }
 
+MBEDTLS_MAYBE_UNUSED
 static size_t mbedtls_internal_sha256_process_many(mbedtls_sha256_context *ctx,
                                                    const uint8_t *msg, size_t len)
 {

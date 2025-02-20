@@ -47,6 +47,7 @@
 
 #include <string.h>
 
+#if !defined(MBEDTLS_SHA3_ALT)
 #if defined(MBEDTLS_SELF_TEST)
 #include "mbedtls/platform.h"
 #endif /* MBEDTLS_SELF_TEST */
@@ -717,5 +718,5 @@ int mbedtls_sha3_self_test(int verbose)
     return 0;
 }
 #endif /* MBEDTLS_SELF_TEST */
-
+#endif /* MBEDTLS_SHA3_ALT */
 #endif /* MBEDTLS_SHA3_C */

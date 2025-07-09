@@ -7916,6 +7916,14 @@ static psa_status_t psa_validate_key_type_and_size_for_key_generation(
     } else
 #endif /* defined(PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_GENERATE) */
 
+#if defined(PSA_WANT_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
+    if (PSA_KEY_TYPE_IS_MLKEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+        /* To avoid empty block, return successfully here. */
+        // REVISIT: KF do we want logic here?
+        return PSA_SUCCESS;
+    } else
+#endif /* defined(PSA_WANT_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE) */
+
 #if defined(PSA_WANT_KEY_TYPE_DH_KEY_PAIR_GENERATE)
     if (PSA_KEY_TYPE_IS_DH(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
         if (psa_is_dh_key_size_valid(bits) == 0) {
@@ -7974,6 +7982,15 @@ psa_status_t psa_generate_key_internal(
                                             key_buffer,
                                             key_buffer_size,
                                             key_buffer_length);
+    } else
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_GENERATE) */
+
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
+    if (PSA_KEY_TYPE_IS_MLKEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+        return mbedtls_psa_mlkem_generate_key(attributes,
+                                              key_buffer,
+                                              key_buffer_size,
+                                              key_buffer_length);
     } else
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_GENERATE) */
 

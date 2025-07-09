@@ -750,6 +750,26 @@
                         ((type) & PSA_KEY_TYPE_DH_GROUP_MASK) :  \
                         0))
 
+/** ML-KEM key pair.
+ *
+ */
+#define PSA_KEY_TYPE_MLKEM_KEY_PAIR ((psa_key_type_t)0x7004)
+
+#define PSA_KEY_TYPE_MLKEM_PUBLIC_KEY ((psa_key_type_t)0x4004)
+
+#define PSA_KEY_TYPE_IS_MLKEM(type) \
+    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_MLKEM_PUBLIC_KEY)
+
+/** ML-DSA key pair.
+ *
+ */
+#define PSA_KEY_TYPE_MLDSA_KEY_PAIR ((psa_key_type_t)0x7002)
+
+#define PSA_KEY_TYPE_MLDSA_PUBLIC_KEY ((psa_key_type_t)0x4002)
+
+#define PSA_KEY_TYPE_IS_MLDSA(type) \
+    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_MLDSA_PUBLIC_KEY)
+
 /** Diffie-Hellman groups defined in RFC 7919 Appendix A.
  *
  * This family includes groups with the following key sizes (in bits):
@@ -1703,7 +1723,7 @@
 #define PSA_ALG_IS_SIGN_HASH(alg)                                       \
     (PSA_ALG_IS_RSA_PSS(alg) || PSA_ALG_IS_RSA_PKCS1V15_SIGN(alg) ||    \
      PSA_ALG_IS_ECDSA(alg) || PSA_ALG_IS_HASH_EDDSA(alg) ||             \
-     PSA_ALG_IS_VENDOR_HASH_AND_SIGN(alg))
+     PSA_ALG_IS_HASH_MLDSA(alg) || PSA_ALG_IS_VENDOR_HASH_AND_SIGN(alg))
 
 /** Whether the specified algorithm is a signature algorithm that can be used
  * with psa_sign_message() and psa_verify_message().
@@ -2265,6 +2285,22 @@
  */
 #define PSA_ALG_IS_ECDH(alg) \
     (PSA_ALG_KEY_AGREEMENT_GET_BASE(alg) == PSA_ALG_ECDH)
+
+/** The ML-KEM algorithm.
+ *
+ */
+#define PSA_ALG_MLKEM                            ((psa_algorithm_t) 0x0c000200)
+
+/** The ML-DSA algorithm.
+ *
+ */
+#define PSA_ALG_MLDSA                            ((psa_algorithm_t) 0x06004400)
+
+#define PSA_ALG_IS_MLDSA(alg) \
+    (((alg) & ~0x00000100) == 0x06004400)
+
+#define PSA_ALG_IS_HASH_MLDSA(alg) \
+    (((alg) & ~0x000001ff) == 0x06004600)
 
 /** Whether the specified algorithm encoding is a wildcard.
  *

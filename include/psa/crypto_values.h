@@ -1768,6 +1768,19 @@
 #define PSA_ALG_IS_HASH_AND_SIGN(alg)                                   \
     (PSA_ALG_IS_SIGN_HASH(alg) &&                                       \
      ((alg) & PSA_ALG_HASH_MASK) != 0)
+ 
+/** Whether the specified algorithm is an encapsulation algorithm that can be used
+ * with psa_encapsulate() and psa_decapsulate().
+ *
+ * \param alg An algorithm identifier (value of type #psa_algorithm_t).
+ *
+ * \return 1 if alg is an encapsulation algorithm that can be used
+ *         to encapsulate and decapsulate. 0 if \p alg is not
+ *         an encapsulation algorithm. This macro can return either 0 or 1
+ *         if \p alg is not a supported algorithm identifier.
+ */
+#define PSA_ALG_IS_KEY_ENCAPSULATION(alg)                               \
+    PSA_ALG_IS_MLKEM(alg)    
 
 /** Get the hash used by a hash-and-sign signature algorithm.
  *
@@ -2291,6 +2304,9 @@
  */
 #define PSA_ALG_MLKEM                            ((psa_algorithm_t) 0x0c000200)
 
+#define PSA_ALG_IS_MLKEM(alg) \
+    (((alg) & ~0x00000100) == 0x0c000200)
+
 /** The ML-DSA algorithm.
  *
  */
@@ -2709,6 +2725,28 @@ static inline int mbedtls_svc_key_id_is_null(mbedtls_svc_key_id_t key)
  * psa_key_derivation_verify_key() at the end of the operation.
  */
 #define PSA_KEY_USAGE_VERIFY_DERIVATION         ((psa_key_usage_t) 0x00008000)
+
+/** Whether the key may be used to encapsulate a key.
+ *
+ * This flag allows the key to be used in a key encapsulation operation, if
+ * otherwise permitted by the key's type and policy.
+ *
+ * If this flag is present on all keys used in calls to
+ * psa_generate_key() for a key generation operation, then it
+ * permits calling psa_encapsulate()
+ */
+#define PSA_KEY_USAGE_ENCAPSULATE         ((psa_key_usage_t) 0x00010000)
+
+/** Whether the key may be used to decapsulate a key.
+ *
+ * This flag allows the key to be used in a key decapsulation operation, if
+ * otherwise permitted by the key's type and policy.
+ *
+ * If this flag is present on all keys used in calls to
+ * psa_generate_key() for a key generation operation, then it
+ * permits calling psa_decapsulate()
+ */
+#define PSA_KEY_USAGE_DECAPSULATE         ((psa_key_usage_t) 0x00020000)
 
 /**@}*/
 

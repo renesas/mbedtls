@@ -898,6 +898,15 @@
     (PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(key_bits) + \
      PSA_KEY_EXPORT_MLKEM_DEC_KEY_SIZE(key_bits))
 
+#define PSA_MLKEM_512_CIPHERTEXT_SIZE 768U
+#define PSA_MLKEM_768_CIPHERTEXT_SIZE 1088U
+
+#define PSA_MLKEM_CIPHERTEXT_SIZE(key_bits)      \
+    ((key_bits) == PSA_KEY_BITS_MLKEM_512 ? PSA_MLKEM_512_CIPHERTEXT_SIZE : \
+     (key_bits) == PSA_KEY_BITS_MLKEM_768 ? PSA_MLKEM_768_CIPHERTEXT_SIZE : 0U)
+
+#define PSA_MLKEM_SHARED_SECRET_SIZE 32U
+
 /** Sufficient output buffer size for psa_export_key() or
  * psa_export_public_key().
  *

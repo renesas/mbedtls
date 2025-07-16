@@ -1678,7 +1678,9 @@ static psa_status_t psa_validate_key_policy(const psa_key_policy_t *policy)
                            PSA_KEY_USAGE_SIGN_HASH |
                            PSA_KEY_USAGE_VERIFY_HASH |
                            PSA_KEY_USAGE_VERIFY_DERIVATION |
-                           PSA_KEY_USAGE_DERIVE)) != 0) {
+                           PSA_KEY_USAGE_DERIVE |
+                           PSA_KEY_USAGE_ENCAPSULATE |
+                           PSA_KEY_USAGE_DECAPSULATE)) != 0) {
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
@@ -8129,6 +8131,71 @@ psa_status_t psa_generate_key(const psa_key_attributes_t *attributes,
                                    &default_custom_production,
                                    NULL, 0,
                                    key);
+}
+
+psa_status_t psa_encapsulate(mbedtls_svc_key_id_t *key,
+                             psa_algorithm_t alg,
+                             uint8_t *ciphertext,
+                             size_t ciphertext_len,
+                             uint8_t *shared_secret,
+                             size_t *shared_secret_len)
+{
+    psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
+    psa_key_slot_t *slot = NULL;
+    psa_key_usage_t usage = PSA_KEY_USAGE_ENCAPSULATE;
+    
+    if (!PSA_ALG_IS_KEY_ENCAPSULATION(alg)) {
+        status = PSA_ERROR_INVALID_ARGUMENT;
+        goto exit;
+    }
+
+    status = psa_get_and_lock_key_slot_with_policy(key, &slot, usage, alg);
+    if (status != PSA_SUCCESS) {
+        goto exit;
+    }
+
+    status = mbedtls_psa_mlkem_encapsulate(&slot->attr,
+                                           slot->key.data,
+                                           slot->key.bytes,
+                                           ciphertext,
+                                           ciphertext_len,
+                                           shared_secret,
+                                           shared_secret_len);
+
+exit:
+    return status;
+}
+
+psa_status_t psa_decapsulate(mbedtls_svc_key_id_t *key,
+                             psa_algorithm_t alg,
+                             uint8_t *ciphertext,
+                             size_t ciphertext_len,
+                             uint8_t *shared_secret,
+                             size_t *shared_secret_len)
+{
+    psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
+    psa_key_slot_t *slot = NULL;
+    psa_key_usage_t usage = PSA_KEY_USAGE_DECAPSULATE;
+    
+    if (!PSA_ALG_IS_KEY_ENCAPSULATION(alg)) {
+        status = PSA_ERROR_INVALID_ARGUMENT;
+        goto exit;
+    }
+
+    status = psa_get_and_lock_key_slot_with_policy(key, &slot, usage, alg);
+    if (status != PSA_SUCCESS) {
+        goto exit;
+    }
+
+    status = mbedtls_psa_mlkem_decapsulate(&slot->attr,
+                                           slot->key.data,
+                                           slot->key.bytes,
+                                           ciphertext,
+                                           ciphertext_len,
+                                           shared_secret,
+                                           shared_secret_len);
+exit:
+    return status;
 }
 
 /****************************************************************/

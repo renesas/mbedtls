@@ -35,4 +35,22 @@ psa_status_t mbedtls_psa_mlkem_generate_key(
     const psa_key_attributes_t *attributes,
     uint8_t *key_buffer, size_t key_buffer_size, size_t *key_buffer_length);
 
+psa_status_t mbedtls_psa_mlkem_encapsulate(
+    const psa_key_attributes_t *attributes,
+    uint8_t *key_buffer,
+    size_t key_buffer_size,
+    uint8_t *ciphertext,
+    size_t ciphertext_len,
+    uint8_t *shared_secret,
+    size_t *shared_secret_len);
+
+psa_status_t mbedtls_psa_mlkem_decapsulate(
+    const psa_key_attributes_t *attributes,
+    uint8_t *key_buffer,
+    size_t key_buffer_size,
+    uint8_t *ciphertext,
+    size_t ciphertext_len,
+    uint8_t *shared_secret,
+    size_t *shared_secret_len);
+
 #endif /* PSA_CRYPTO_MLKEM_H */

@@ -22,7 +22,6 @@
 #include <mbedtls/mlkem.h>
 #include <mbedtls/error.h>
 
-#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
 
 uint32_t mbedtls_mlkem_get_random(const uint32_t rand_len, uint32_t * const p_random);
 
@@ -76,6 +75,8 @@ uint32_t mbedtls_mlkem_get_random(const uint32_t rand_len, uint32_t * const p_ra
     return (status == PSA_SUCCESS) ? 0x55555555U : 0xAAAAAAAAU;
 }
 #endif
+
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
 
 psa_status_t mbedtls_psa_mlkem_generate_key(
     const psa_key_attributes_t *attributes,

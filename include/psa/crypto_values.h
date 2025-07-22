@@ -760,6 +760,27 @@
 #define PSA_KEY_TYPE_IS_MLKEM(type) \
     (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_MLKEM_PUBLIC_KEY)
 
+/** The ML-KEM algorithm.
+ *
+ */
+#define PSA_ALG_MLKEM                            ((psa_algorithm_t) 0x0c000200)
+
+#define PSA_ALG_IS_MLKEM(alg) \
+    (((alg) & ~0x00000100) == 0x0c000200) 
+
+/** Whether the specified algorithm is an encapsulation algorithm that can be used
+ * with psa_encapsulate() and psa_decapsulate().
+ *
+ * \param alg An algorithm identifier (value of type #psa_algorithm_t).
+ *
+ * \return 1 if alg is an encapsulation algorithm that can be used
+ *         to encapsulate and decapsulate. 0 if \p alg is not
+ *         an encapsulation algorithm. This macro can return either 0 or 1
+ *         if \p alg is not a supported algorithm identifier.
+ */
+#define PSA_ALG_IS_KEY_ENCAPSULATION(alg)                               \
+    PSA_ALG_IS_MLKEM(alg)   
+
 /** ML-DSA key pair.
  *
  */
@@ -769,6 +790,17 @@
 
 #define PSA_KEY_TYPE_IS_MLDSA(type) \
     (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_MLDSA_PUBLIC_KEY)
+    
+/** The ML-DSA algorithm.
+ *
+ */
+#define PSA_ALG_MLDSA                            ((psa_algorithm_t) 0x06004400)
+
+#define PSA_ALG_IS_MLDSA(alg) \
+    (((alg) & ~0x00000100) == 0x06004400)
+
+#define PSA_ALG_IS_HASH_MLDSA(alg) \
+    (((alg) & ~0x000001ff) == 0x06004600)
 
 /** Diffie-Hellman groups defined in RFC 7919 Appendix A.
  *
@@ -1768,19 +1800,6 @@
 #define PSA_ALG_IS_HASH_AND_SIGN(alg)                                   \
     (PSA_ALG_IS_SIGN_HASH(alg) &&                                       \
      ((alg) & PSA_ALG_HASH_MASK) != 0)
- 
-/** Whether the specified algorithm is an encapsulation algorithm that can be used
- * with psa_encapsulate() and psa_decapsulate().
- *
- * \param alg An algorithm identifier (value of type #psa_algorithm_t).
- *
- * \return 1 if alg is an encapsulation algorithm that can be used
- *         to encapsulate and decapsulate. 0 if \p alg is not
- *         an encapsulation algorithm. This macro can return either 0 or 1
- *         if \p alg is not a supported algorithm identifier.
- */
-#define PSA_ALG_IS_KEY_ENCAPSULATION(alg)                               \
-    PSA_ALG_IS_MLKEM(alg)    
 
 /** Get the hash used by a hash-and-sign signature algorithm.
  *
@@ -2298,25 +2317,6 @@
  */
 #define PSA_ALG_IS_ECDH(alg) \
     (PSA_ALG_KEY_AGREEMENT_GET_BASE(alg) == PSA_ALG_ECDH)
-
-/** The ML-KEM algorithm.
- *
- */
-#define PSA_ALG_MLKEM                            ((psa_algorithm_t) 0x0c000200)
-
-#define PSA_ALG_IS_MLKEM(alg) \
-    (((alg) & ~0x00000100) == 0x0c000200)
-
-/** The ML-DSA algorithm.
- *
- */
-#define PSA_ALG_MLDSA                            ((psa_algorithm_t) 0x06004400)
-
-#define PSA_ALG_IS_MLDSA(alg) \
-    (((alg) & ~0x00000100) == 0x06004400)
-
-#define PSA_ALG_IS_HASH_MLDSA(alg) \
-    (((alg) & ~0x000001ff) == 0x06004600)
 
 /** Whether the specified algorithm encoding is a wildcard.
  *

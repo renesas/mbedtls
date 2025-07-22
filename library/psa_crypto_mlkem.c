@@ -93,14 +93,16 @@ psa_status_t mbedtls_psa_mlkem_generate_key(
     mlkem.encaps_key.key_len = PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(attributes->bits);
     mlkem.decaps_key.key_data = (uint32_t *)(key_buffer + mlkem.encaps_key.key_len);
     mlkem.decaps_key.key_len = PSA_KEY_EXPORT_MLKEM_DEC_KEY_SIZE(attributes->bits);
-    ret = mbedtls_mlkem_generate_key(&mlkem, attributes->bits, mbedtls_mlkem_get_random);
-    if (ret != 0) {
-        return mbedtls_to_psa_error(ret);
-    }
      
     if (key_buffer_size < mlkem.encaps_key.key_len + mlkem.decaps_key.key_len) {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
+
+    ret = mbedtls_mlkem_generate_key(&mlkem, attributes->bits, mbedtls_mlkem_get_random);
+    if (ret != 0) {
+        return mbedtls_to_psa_error(ret);
+    }
+
     *key_buffer_length = mlkem.encaps_key.key_len + mlkem.decaps_key.key_len;
 
     return mbedtls_to_psa_error(ret);
@@ -129,15 +131,16 @@ psa_status_t mbedtls_psa_mlkem_encapsulate(
     mlkem.cipher.key_len = ciphertext_len;
     mlkem.shared_key.key_data = (uint32_t *)shared_secret;
     mlkem.shared_key.key_len = *shared_secret_len;
+    
+    if (ciphertext_len < mlkem.cipher.key_len) {
+        return PSA_ERROR_BUFFER_TOO_SMALL;
+    }
 
     ret = mbedtls_mlkem_encapsulate(&mlkem, attributes->bits, mbedtls_mlkem_get_random);
     if (ret != 0) {
         return mbedtls_to_psa_error(ret);
     }
 
-    if (ciphertext_len < mlkem.cipher.key_len) {
-        return PSA_ERROR_BUFFER_TOO_SMALL;
-    }
     *shared_secret_len = mlkem.shared_key.key_len;
 
     return mbedtls_to_psa_error(ret);

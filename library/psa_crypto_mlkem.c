@@ -71,7 +71,7 @@ uint32_t mbedtls_mlkem_get_random(const uint32_t rand_len, uint32_t * const p_ra
 #else
 uint32_t mbedtls_mlkem_get_random(const uint32_t rand_len, uint32_t * const p_random)
 {
-    psa_status_t status = mbedtls_psa_get_random(MBEDTLS_PSA_RANDOM_STATE, p_random, rand_len);
+    psa_status_t status = mbedtls_psa_get_random(MBEDTLS_PSA_RANDOM_STATE, (unsigned char *)p_random, rand_len);
     return (status == PSA_SUCCESS) ? 0x55555555U : 0xAAAAAAAAU;
 }
 #endif

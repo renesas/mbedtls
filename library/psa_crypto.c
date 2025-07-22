@@ -8133,7 +8133,7 @@ psa_status_t psa_generate_key(const psa_key_attributes_t *attributes,
                                    key);
 }
 
-psa_status_t psa_encapsulate(mbedtls_svc_key_id_t *key,
+psa_status_t psa_encapsulate(mbedtls_svc_key_id_t key,
                              psa_algorithm_t alg,
                              uint8_t *ciphertext,
                              size_t ciphertext_len,
@@ -8166,7 +8166,7 @@ exit:
     return status;
 }
 
-psa_status_t psa_decapsulate(mbedtls_svc_key_id_t *key,
+psa_status_t psa_decapsulate(mbedtls_svc_key_id_t key,
                              psa_algorithm_t alg,
                              uint8_t *ciphertext,
                              size_t ciphertext_len,

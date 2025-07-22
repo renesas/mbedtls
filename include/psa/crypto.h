@@ -4363,7 +4363,7 @@ psa_status_t psa_generate_key_ext(const psa_key_attributes_t *attributes,
  *         It is implementation-dependent whether a failure to initialize
  *         results in this error code.
  */
-psa_status_t psa_encapsulate(mbedtls_svc_key_id_t *key,
+psa_status_t psa_encapsulate(mbedtls_svc_key_id_t key,
                              psa_algorithm_t alg,
                              uint8_t *ciphertext,
                              size_t ciphertext_len,
@@ -4402,7 +4402,7 @@ psa_status_t psa_encapsulate(mbedtls_svc_key_id_t *key,
  *         It is implementation-dependent whether a failure to initialize
  *         results in this error code.
  */
-psa_status_t psa_decapsulate(mbedtls_svc_key_id_t *key,
+psa_status_t psa_decapsulate(mbedtls_svc_key_id_t key,
                              psa_algorithm_t alg,
                              uint8_t *ciphertext,
                              size_t ciphertext_len,

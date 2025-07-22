@@ -28,8 +28,6 @@
 
 #include "mbedtls/bignum.h"
 
-#include "r_pqc_api.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

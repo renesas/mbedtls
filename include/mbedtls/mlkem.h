@@ -1,16 +1,7 @@
 /**
  * \file mlkem.h
  *
- * \brief This file provides an API for Elliptic Curves over GF(P) (MLKEM).
- *
- * The use of MLKEM in cryptography and TLS is defined in
- * <em>Standards for Efficient Cryptography Group (SECG): SEC1
- * Elliptic Curve Cryptography</em> and
- * <em>RFC-4492: Elliptic Curve Cryptography (ECC) Cipher Suites
- * for Transport Layer Security (TLS)</em>.
- *
- * <em>RFC-2409: The Internet Key Exchange (IKE)</em> defines MLKEM
- * group types.
+ * \brief This file provides an API for Post Quantum Cryptography Module Lattice Keys(MLKEM).
  *
  */
 

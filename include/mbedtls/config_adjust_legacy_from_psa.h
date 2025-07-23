@@ -366,6 +366,22 @@
 
 /* End of ECC section */
 
+/* MLKEM: key types: enable built-ins as needed.
+ */
+#if defined(PSA_WANT_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
+#define MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE 1
+#endif /* PSA_WANT_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE */
+
+#if defined(PSA_WANT_KEY_TYPE_MLKEM_KEY_ENCAPSULATE)
+#define MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE 1
+#endif /* PSA_WANT_KEY_TYPE_MLKEM_KEY_ENCAPSULATE */
+
+#if defined(PSA_WANT_KEY_TYPE_MLKEM_KEY_DECAPSULATE)
+#define MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE 1
+#endif /* PSA_WANT_KEY_TYPE_MLKEM_KEY_DECAPSULATE */
+
+/* End of MLKEM section */
+
 /*
  * DH key types follow the same pattern used above for EC keys. They are defined
  * by a triplet (group, key_type, alg). A triplet is accelerated if all its

@@ -872,6 +872,41 @@
 #define PSA_KEY_EXPORT_FFDH_PUBLIC_KEY_MAX_SIZE(key_bits)   \
     (PSA_BITS_TO_BYTES(key_bits))
 
+#define PSA_KEY_BITS_MLKEM_512 512U
+#define PSA_KEY_BITS_MLKEM_768 768U
+
+#define PSA_MLKEM_512_ENC_KEY_SIZE 800U
+#define PSA_MLKEM_512_DEC_KEY_SIZE 1632U
+#define PSA_MLKEM_768_ENC_KEY_SIZE 1184U
+#define PSA_MLKEM_768_DEC_KEY_SIZE 2400U
+
+/* Maximum size of the MLKEM Encap Key.
+ */
+#define PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(key_bits)      \
+    ((key_bits) == PSA_KEY_BITS_MLKEM_512 ? PSA_MLKEM_512_ENC_KEY_SIZE : \
+     (key_bits) == PSA_KEY_BITS_MLKEM_768 ? PSA_MLKEM_768_ENC_KEY_SIZE : 0U)
+     
+/* Maximum size of the MLKEM Decap Key.
+ */
+#define PSA_KEY_EXPORT_MLKEM_DEC_KEY_SIZE(key_bits)      \
+    ((key_bits) == PSA_KEY_BITS_MLKEM_512 ? PSA_MLKEM_512_DEC_KEY_SIZE : \
+     (key_bits) == PSA_KEY_BITS_MLKEM_768 ? PSA_MLKEM_768_DEC_KEY_SIZE : 0U)
+
+/* Maximum size of the export encoding of an MLKEM key pair.
+ */
+#define PSA_KEY_EXPORT_MLKEM_KEY_PAIR_MAX_SIZE(key_bits)      \
+    (PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(key_bits) + \
+     PSA_KEY_EXPORT_MLKEM_DEC_KEY_SIZE(key_bits))
+
+#define PSA_MLKEM_512_CIPHERTEXT_SIZE 768U
+#define PSA_MLKEM_768_CIPHERTEXT_SIZE 1088U
+
+#define PSA_MLKEM_CIPHERTEXT_SIZE(key_bits)      \
+    ((key_bits) == PSA_KEY_BITS_MLKEM_512 ? PSA_MLKEM_512_CIPHERTEXT_SIZE : \
+     (key_bits) == PSA_KEY_BITS_MLKEM_768 ? PSA_MLKEM_768_CIPHERTEXT_SIZE : 0U)
+
+#define PSA_MLKEM_SHARED_SECRET_SIZE 32U
+
 /** Sufficient output buffer size for psa_export_key() or
  * psa_export_public_key().
  *
@@ -920,6 +955,7 @@
      (key_type) == PSA_KEY_TYPE_DSA_PUBLIC_KEY ? PSA_KEY_EXPORT_DSA_PUBLIC_KEY_MAX_SIZE(key_bits) : \
      PSA_KEY_TYPE_IS_ECC_KEY_PAIR(key_type) ? PSA_KEY_EXPORT_ECC_KEY_PAIR_MAX_SIZE(key_bits) :      \
      PSA_KEY_TYPE_IS_ECC_PUBLIC_KEY(key_type) ? PSA_KEY_EXPORT_ECC_PUBLIC_KEY_MAX_SIZE(key_bits) :  \
+     PSA_KEY_TYPE_IS_MLKEM(key_type) ? PSA_KEY_EXPORT_MLKEM_KEY_PAIR_MAX_SIZE(key_bits) :  \
      0U)
 
 /** Sufficient output buffer size for psa_export_public_key().

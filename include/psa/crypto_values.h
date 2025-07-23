@@ -750,6 +750,58 @@
                         ((type) & PSA_KEY_TYPE_DH_GROUP_MASK) :  \
                         0))
 
+/** ML-KEM key pair.
+ *
+ */
+#define PSA_KEY_TYPE_MLKEM_KEY_PAIR ((psa_key_type_t)0x7004)
+
+#define PSA_KEY_TYPE_MLKEM_PUBLIC_KEY ((psa_key_type_t)0x4004)
+
+#define PSA_KEY_TYPE_IS_MLKEM(type) \
+    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_MLKEM_PUBLIC_KEY)
+
+/** The ML-KEM algorithm.
+ *
+ */
+#define PSA_ALG_MLKEM                            ((psa_algorithm_t) 0x0c000200)
+
+#define PSA_ALG_IS_MLKEM(alg) \
+    (((alg) & ~0x00000100) == 0x0c000200) 
+
+/** Whether the specified algorithm is an encapsulation algorithm that can be used
+ * with psa_encapsulate() and psa_decapsulate().
+ *
+ * \param alg An algorithm identifier (value of type #psa_algorithm_t).
+ *
+ * \return 1 if alg is an encapsulation algorithm that can be used
+ *         to encapsulate and decapsulate. 0 if \p alg is not
+ *         an encapsulation algorithm. This macro can return either 0 or 1
+ *         if \p alg is not a supported algorithm identifier.
+ */
+#define PSA_ALG_IS_KEY_ENCAPSULATION(alg)                               \
+    PSA_ALG_IS_MLKEM(alg)   
+
+/** ML-DSA key pair.
+ *
+ */
+#define PSA_KEY_TYPE_MLDSA_KEY_PAIR ((psa_key_type_t)0x7002)
+
+#define PSA_KEY_TYPE_MLDSA_PUBLIC_KEY ((psa_key_type_t)0x4002)
+
+#define PSA_KEY_TYPE_IS_MLDSA(type) \
+    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_MLDSA_PUBLIC_KEY)
+    
+/** The ML-DSA algorithm.
+ *
+ */
+#define PSA_ALG_MLDSA                            ((psa_algorithm_t) 0x06004400)
+
+#define PSA_ALG_IS_MLDSA(alg) \
+    (((alg) & ~0x00000100) == 0x06004400)
+
+#define PSA_ALG_IS_HASH_MLDSA(alg) \
+    (((alg) & ~0x000001ff) == 0x06004600)
+
 /** Diffie-Hellman groups defined in RFC 7919 Appendix A.
  *
  * This family includes groups with the following key sizes (in bits):
@@ -1703,7 +1755,7 @@
 #define PSA_ALG_IS_SIGN_HASH(alg)                                       \
     (PSA_ALG_IS_RSA_PSS(alg) || PSA_ALG_IS_RSA_PKCS1V15_SIGN(alg) ||    \
      PSA_ALG_IS_ECDSA(alg) || PSA_ALG_IS_HASH_EDDSA(alg) ||             \
-     PSA_ALG_IS_VENDOR_HASH_AND_SIGN(alg))
+     PSA_ALG_IS_HASH_MLDSA(alg) || PSA_ALG_IS_VENDOR_HASH_AND_SIGN(alg))
 
 /** Whether the specified algorithm is a signature algorithm that can be used
  * with psa_sign_message() and psa_verify_message().
@@ -2673,6 +2725,28 @@ static inline int mbedtls_svc_key_id_is_null(mbedtls_svc_key_id_t key)
  * psa_key_derivation_verify_key() at the end of the operation.
  */
 #define PSA_KEY_USAGE_VERIFY_DERIVATION         ((psa_key_usage_t) 0x00008000)
+
+/** Whether the key may be used to encapsulate a key.
+ *
+ * This flag allows the key to be used in a key encapsulation operation, if
+ * otherwise permitted by the key's type and policy.
+ *
+ * If this flag is present on all keys used in calls to
+ * psa_generate_key() for a key generation operation, then it
+ * permits calling psa_encapsulate()
+ */
+#define PSA_KEY_USAGE_ENCAPSULATE         ((psa_key_usage_t) 0x00010000)
+
+/** Whether the key may be used to decapsulate a key.
+ *
+ * This flag allows the key to be used in a key decapsulation operation, if
+ * otherwise permitted by the key's type and policy.
+ *
+ * If this flag is present on all keys used in calls to
+ * psa_generate_key() for a key generation operation, then it
+ * permits calling psa_decapsulate()
+ */
+#define PSA_KEY_USAGE_DECAPSULATE         ((psa_key_usage_t) 0x00020000)
 
 /**@}*/
 

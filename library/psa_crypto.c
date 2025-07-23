@@ -27,6 +27,7 @@
 #include "psa_crypto_ffdh.h"
 #include "psa_crypto_hash.h"
 #include "psa_crypto_mac.h"
+#include "psa_crypto_mlkem.h"
 #include "psa_crypto_rsa.h"
 #include "psa_crypto_ecp.h"
 #if defined(MBEDTLS_PSA_CRYPTO_SE_C)
@@ -61,6 +62,7 @@
 #include "mbedtls/error.h"
 #include "mbedtls/gcm.h"
 #include "mbedtls/md5.h"
+#include "mbedtls/mlkem.h"
 #include "mbedtls/pk.h"
 #include "pk_wrap.h"
 #include "mbedtls/platform_util.h"
@@ -1678,7 +1680,9 @@ static psa_status_t psa_validate_key_policy(const psa_key_policy_t *policy)
                            PSA_KEY_USAGE_SIGN_HASH |
                            PSA_KEY_USAGE_VERIFY_HASH |
                            PSA_KEY_USAGE_VERIFY_DERIVATION |
-                           PSA_KEY_USAGE_DERIVE)) != 0) {
+                           PSA_KEY_USAGE_DERIVE |
+                           PSA_KEY_USAGE_ENCAPSULATE |
+                           PSA_KEY_USAGE_DECAPSULATE)) != 0) {
         return PSA_ERROR_INVALID_ARGUMENT;
     }
 
@@ -7916,6 +7920,14 @@ static psa_status_t psa_validate_key_type_and_size_for_key_generation(
     } else
 #endif /* defined(PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_GENERATE) */
 
+#if defined(PSA_WANT_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
+    if (PSA_KEY_TYPE_IS_MLKEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+        /* To avoid empty block, return successfully here. */
+        // REVISIT: KF do we want logic here?
+        return PSA_SUCCESS;
+    } else
+#endif /* defined(PSA_WANT_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE) */
+
 #if defined(PSA_WANT_KEY_TYPE_DH_KEY_PAIR_GENERATE)
     if (PSA_KEY_TYPE_IS_DH(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
         if (psa_is_dh_key_size_valid(bits) == 0) {
@@ -7976,6 +7988,15 @@ psa_status_t psa_generate_key_internal(
                                             key_buffer_length);
     } else
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_GENERATE) */
+
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
+    if (PSA_KEY_TYPE_IS_MLKEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+        return mbedtls_psa_mlkem_generate_key(attributes,
+                                              key_buffer,
+                                              key_buffer_size,
+                                              key_buffer_length);
+    } else
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE) */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_GENERATE)
     if (PSA_KEY_TYPE_IS_DH(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
@@ -8112,6 +8133,80 @@ psa_status_t psa_generate_key(const psa_key_attributes_t *attributes,
                                    &default_custom_production,
                                    NULL, 0,
                                    key);
+}
+
+psa_status_t psa_encapsulate(mbedtls_svc_key_id_t key,
+                             psa_algorithm_t alg,
+                             uint8_t *ciphertext,
+                             size_t ciphertext_len,
+                             uint8_t *shared_secret,
+                             size_t *shared_secret_len)
+{
+    psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
+    psa_key_slot_t *slot = NULL;
+    psa_key_usage_t usage = PSA_KEY_USAGE_ENCAPSULATE;
+    
+    if (!PSA_ALG_IS_KEY_ENCAPSULATION(alg)) {
+        status = PSA_ERROR_INVALID_ARGUMENT;
+        goto exit;
+    }
+
+    status = psa_get_and_lock_key_slot_with_policy(key, &slot, usage, alg);
+    if (status != PSA_SUCCESS) {
+        goto exit;
+    }
+
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE)
+    status = mbedtls_psa_mlkem_encapsulate(&slot->attr,
+                                           slot->key.data,
+                                           slot->key.bytes,
+                                           ciphertext,
+                                           ciphertext_len,
+                                           shared_secret,
+                                           shared_secret_len);
+#else
+    status = PSA_ERROR_NOT_SUPPORTED;
+#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE */
+
+exit:
+    return status;
+}
+
+psa_status_t psa_decapsulate(mbedtls_svc_key_id_t key,
+                             psa_algorithm_t alg,
+                             uint8_t *ciphertext,
+                             size_t ciphertext_len,
+                             uint8_t *shared_secret,
+                             size_t *shared_secret_len)
+{
+    psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
+    psa_key_slot_t *slot = NULL;
+    psa_key_usage_t usage = PSA_KEY_USAGE_DECAPSULATE;
+    
+    if (!PSA_ALG_IS_KEY_ENCAPSULATION(alg)) {
+        status = PSA_ERROR_INVALID_ARGUMENT;
+        goto exit;
+    }
+
+    status = psa_get_and_lock_key_slot_with_policy(key, &slot, usage, alg);
+    if (status != PSA_SUCCESS) {
+        goto exit;
+    }
+
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE)
+    status = mbedtls_psa_mlkem_decapsulate(&slot->attr,
+                                           slot->key.data,
+                                           slot->key.bytes,
+                                           ciphertext,
+                                           ciphertext_len,
+                                           shared_secret,
+                                           shared_secret_len);
+#else
+    status = PSA_ERROR_NOT_SUPPORTED;
+#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE */
+
+exit:
+    return status;
 }
 
 /****************************************************************/

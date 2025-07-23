@@ -27,6 +27,7 @@
 #include "psa_crypto_ffdh.h"
 #include "psa_crypto_hash.h"
 #include "psa_crypto_mac.h"
+#include "psa_crypto_mlkem.h"
 #include "psa_crypto_rsa.h"
 #include "psa_crypto_ecp.h"
 #if defined(MBEDTLS_PSA_CRYPTO_SE_C)
@@ -61,6 +62,7 @@
 #include "mbedtls/error.h"
 #include "mbedtls/gcm.h"
 #include "mbedtls/md5.h"
+#include "mbedtls/mlkem.h"
 #include "mbedtls/pk.h"
 #include "pk_wrap.h"
 #include "mbedtls/platform_util.h"

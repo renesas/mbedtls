@@ -86,7 +86,7 @@ psa_status_t mbedtls_psa_mlkem_decapsulate(
     const psa_key_bits_t bits,
     uint8_t *key_buffer,
     size_t key_buffer_size,
-    uint8_t *ciphertext,
+    const uint8_t *ciphertext,
     size_t ciphertext_len,
     uint8_t *shared_secret,
     size_t *shared_secret_len);

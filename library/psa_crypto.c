@@ -8135,10 +8135,10 @@ psa_status_t psa_generate_key(const psa_key_attributes_t *attributes,
                                    key);
 }
 
-psa_status_t psa_encapsulate(mbedtls_svc_key_id_t key,
+psa_status_t psa_encapsulate(psa_key_id_t key,
                              psa_algorithm_t alg,
                              const psa_key_attributes_t * attributes,
-                             mbedtls_svc_key_id_t * output_key,
+                             psa_key_id_t * output_key,
                              uint8_t * ciphertext,
                              size_t ciphertext_size,
                              size_t * ciphertext_length)
@@ -8209,12 +8209,12 @@ exit:
     return status;
 }
 
-psa_status_t psa_decapsulate(mbedtls_svc_key_id_t key,
+psa_status_t psa_decapsulate(psa_key_id_t key,
                              psa_algorithm_t alg,
                              const uint8_t * ciphertext,
                              size_t ciphertext_length,
                              const psa_key_attributes_t * attributes,
-                             mbedtls_svc_key_id_t * output_key)
+                             psa_key_id_t * output_key)
 {
     psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
     psa_key_slot_t *slot = NULL;

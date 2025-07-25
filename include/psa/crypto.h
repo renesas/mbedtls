@@ -4340,10 +4340,11 @@ psa_status_t psa_generate_key_ext(const psa_key_attributes_t *attributes,
  * \param[in] alg                   The encapsulation algorithm to use.
  *                                  (\c PSA_ALG_XXX value such that
  *                                  #PSA_ALG_IS_KEY_ENCAPSULATION(\p alg) is true
- * \param[out] ciphertext           Buffer where encapsulated shared secret key is to be written.
- * \param[in]  ciphertext_len       Size of the \p ciphertext buffer in bytes.
- * \param[out] shared_secret        Buffer where the shared secret key is to be written.
- * \param[out] shared_secret_len    On success, the number of bytes that make up \c shared_secret.
+ * \param[in] attributes            The attributes of the key to be generated.
+ * \param[out] output_key           Identifier of the generated key is to be written.
+ * \param[out] ciphertext           Buffer where the ciphertext is to be written.
+ * \param ciphertext_size           Size of the \p ciphertext buffer in bytes.
+ * \param[in] ciphertext_length     On success, the number of bytes that make up \p ciphertext.
  *
  * \retval #PSA_SUCCESS \emptydescription
  * \retval #PSA_ERROR_ALREADY_EXISTS \emptydescription
@@ -4365,10 +4366,11 @@ psa_status_t psa_generate_key_ext(const psa_key_attributes_t *attributes,
  */
 psa_status_t psa_encapsulate(mbedtls_svc_key_id_t key,
                              psa_algorithm_t alg,
-                             uint8_t *ciphertext,
-                             size_t ciphertext_len,
-                             uint8_t *shared_secret,
-                             size_t *shared_secret_len);
+                             const psa_key_attributes_t * attributes,
+                             mbedtls_svc_key_id_t * output_key,
+                             uint8_t * ciphertext,
+                             size_t ciphertext_size,
+                             size_t * ciphertext_length);
 
 /**
  * \brief Decapslulate an encapsulated a shared secret key
@@ -4379,10 +4381,10 @@ psa_status_t psa_encapsulate(mbedtls_svc_key_id_t key,
  * \param[in] alg                   The encapsulation algorithm to use.
  *                                  (\c PSA_ALG_XXX value such that
  *                                  #PSA_ALG_IS_KEY_ENCAPSULATION(\p alg) is true
- * \param[in] ciphertext            Ciphertext containing the encapsulated shared secret key.
- * \param[in] ciphertext_len        Size of the \p ciphertext buffer in bytes.
- * \param[out] shared_secret        Buffer where the shared secret key is to be written.
- * \param[out] shared_secret_len    On success, the number of bytes that make up \p shared_secret.
+ * \param[in] ciphertext            The ciphertext to decapsulate.
+ * \param ciphertext_len            Size of the \p ciphertext buffer in bytes.
+ * \param[in] attributes            The attributes of the key to be generated.
+ * \param[out] output_key           Identifier of the generated key is to be written.
  *
  * \retval #PSA_SUCCESS \emptydescription
  * \retval #PSA_ERROR_ALREADY_EXISTS \emptydescription
@@ -4404,10 +4406,10 @@ psa_status_t psa_encapsulate(mbedtls_svc_key_id_t key,
  */
 psa_status_t psa_decapsulate(mbedtls_svc_key_id_t key,
                              psa_algorithm_t alg,
-                             uint8_t *ciphertext,
-                             size_t ciphertext_len,
-                             uint8_t *shared_secret,
-                             size_t *shared_secret_len);
+                             const uint8_t * ciphertext,
+                             size_t ciphertext_length,
+                             const psa_key_attributes_t * attributes,
+                             mbedtls_svc_key_id_t * output_key);
  
 /**@}*/
 

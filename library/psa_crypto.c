@@ -8349,77 +8349,149 @@ psa_status_t psa_generate_key(const psa_key_attributes_t *attributes,
                                    key);
 }
 
-psa_status_t psa_encapsulate(mbedtls_svc_key_id_t key,
+psa_status_t psa_encapsulate(psa_key_id_t key,
                              psa_algorithm_t alg,
-                             uint8_t *ciphertext,
-                             size_t ciphertext_len,
-                             uint8_t *shared_secret,
-                             size_t *shared_secret_len)
+                             const psa_key_attributes_t * attributes,
+                             psa_key_id_t * output_key,
+                             uint8_t * ciphertext,
+                             size_t ciphertext_size,
+                             size_t * ciphertext_length)
 {
     psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
     psa_key_slot_t *slot = NULL;
     psa_key_usage_t usage = PSA_KEY_USAGE_ENCAPSULATE;
+    psa_key_slot_t *output_slot = NULL;
+    psa_se_drv_table_entry_t *output_driver = NULL;
+    size_t output_key_buffer_size = PSA_MLKEM_SHARED_SECRET_SIZE;
     
     if (!PSA_ALG_IS_KEY_ENCAPSULATION(alg)) {
         status = PSA_ERROR_INVALID_ARGUMENT;
         goto exit;
     }
 
+    /* Look up the slot for the private key */
     status = psa_get_and_lock_key_slot_with_policy(key, &slot, usage, alg);
+    if (status != PSA_SUCCESS) {
+        goto exit;
+    }
+
+    /* Set up a key slot for the new secret */
+    *output_key = MBEDTLS_SVC_KEY_ID_INIT;
+
+    /* Reject any attempt to create a zero-length key so that we don't
+     * risk tripping up later, e.g. on a malloc(0) that returns NULL. */
+    if (psa_get_key_bits(attributes) == 0) {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    status = psa_start_key_creation(PSA_KEY_CREATION_GENERATE, attributes,
+                                    &output_slot, &output_driver);
+    if (status != PSA_SUCCESS) {
+        goto exit;
+    }
+
+    status = psa_allocate_buffer_to_slot(output_slot, output_key_buffer_size);
     if (status != PSA_SUCCESS) {
         goto exit;
     }
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE)
-    status = mbedtls_psa_mlkem_encapsulate(&slot->attr,
+    status = mbedtls_psa_mlkem_encapsulate(slot->attr.bits,
                                            slot->key.data,
                                            slot->key.bytes,
+                                           output_slot->key.data,
+                                           output_slot->key.bytes,
                                            ciphertext,
-                                           ciphertext_len,
-                                           shared_secret,
-                                           shared_secret_len);
+                                           ciphertext_size,
+                                           ciphertext_length);
 #else
     status = PSA_ERROR_NOT_SUPPORTED;
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE */
 
+    if (status != PSA_SUCCESS) {
+        psa_remove_key_data_from_memory(output_slot);
+    }
+
 exit:
+    if (status == PSA_SUCCESS) {
+        status = psa_finish_key_creation(output_slot, output_driver, output_key);
+    }
+    if (status != PSA_SUCCESS) {
+        psa_fail_key_creation(output_slot, output_driver);
+    }
+
     return status;
 }
 
-psa_status_t psa_decapsulate(mbedtls_svc_key_id_t key,
+psa_status_t psa_decapsulate(psa_key_id_t key,
                              psa_algorithm_t alg,
-                             uint8_t *ciphertext,
-                             size_t ciphertext_len,
-                             uint8_t *shared_secret,
-                             size_t *shared_secret_len)
+                             const uint8_t * ciphertext,
+                             size_t ciphertext_length,
+                             const psa_key_attributes_t * attributes,
+                             psa_key_id_t * output_key)
 {
     psa_status_t status = PSA_ERROR_NOT_SUPPORTED;
     psa_key_slot_t *slot = NULL;
     psa_key_usage_t usage = PSA_KEY_USAGE_DECAPSULATE;
+    psa_key_slot_t *output_slot = NULL;
+    psa_se_drv_table_entry_t *output_driver = NULL;
+    size_t output_key_buffer_size = PSA_MLKEM_SHARED_SECRET_SIZE;
     
     if (!PSA_ALG_IS_KEY_ENCAPSULATION(alg)) {
         status = PSA_ERROR_INVALID_ARGUMENT;
         goto exit;
     }
 
+    /* Look up the slot for the private key */
     status = psa_get_and_lock_key_slot_with_policy(key, &slot, usage, alg);
     if (status != PSA_SUCCESS) {
         goto exit;
     }
 
+    /* Set up a key slot for the new secret */
+    *output_key = MBEDTLS_SVC_KEY_ID_INIT;
+
+    /* Reject any attempt to create a zero-length key so that we don't
+     * risk tripping up later, e.g. on a malloc(0) that returns NULL. */
+    if (psa_get_key_bits(attributes) == 0) {
+        return PSA_ERROR_INVALID_ARGUMENT;
+    }
+
+    status = psa_start_key_creation(PSA_KEY_CREATION_GENERATE, attributes,
+                                    &output_slot, &output_driver);
+    if (status != PSA_SUCCESS) {
+        goto exit;
+    }
+
+    status = psa_allocate_buffer_to_slot(output_slot, output_key_buffer_size);
+    if (status != PSA_SUCCESS) {
+        goto exit;
+    }
+
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE)
-    status = mbedtls_psa_mlkem_decapsulate(&slot->attr,
+    status = mbedtls_psa_mlkem_decapsulate(slot->attr.bits,
                                            slot->key.data,
                                            slot->key.bytes,
                                            ciphertext,
-                                           ciphertext_len,
-                                           shared_secret,
-                                           shared_secret_len);
+                                           ciphertext_length,
+                                           output_slot->key.data,
+                                           &output_slot->key.bytes);
 #else
     status = PSA_ERROR_NOT_SUPPORTED;
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE */
 
+    if (status != PSA_SUCCESS) {
+        psa_remove_key_data_from_memory(output_slot);
+    }
+
 exit:
+    if (status == PSA_SUCCESS) {
+        status = psa_finish_key_creation(output_slot, output_driver, output_key);
+    }
+    if (status != PSA_SUCCESS) {
+        psa_fail_key_creation(output_slot, output_driver);
+    }
+
     return status;
 }
 

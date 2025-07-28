@@ -38,14 +38,15 @@ psa_status_t mbedtls_psa_mlkem_generate_key(
 /**
  * \brief Encapsulate an MLKEM key.
  *
- * \param[in]  attributes         The attributes of the MLKEM encapsulation key.
- * \param[in]  key_buffer         Buffer holding the key data.
- * \param[in]  key_buffer_size    Size of \p key_buffer in bytes.
- * \param[out] ciphertext         Buffer where the ciphertext is to be written.
- * \param[out] ciphertext_len     Size of \p ciphertext in bytes.
- * \param[out] shared_secret      Buffer where the shared secret is to be written.
- * \param[out] shared_secret_len  On success, the number of bytes written in
- *                                \p shared_secret.
+ * \param[in]  bits                     The algorithm strength in bits.
+ * \param[in]  key_buffer               Buffer holding the key data.
+ * \param[in]  key_buffer_size          Size of \p key_buffer in bytes.
+ * \param[out] output_key_buffer        Buffer holding the key data.
+ * \param[out] output_key_buffer_size   Size of \p output_key_buffer in bytes.
+ * \param[out] ciphertext               Buffer where the ciphertext is to be written.
+ * \param[in]  ciphertext_size          Size of \p ciphertext in bytes.
+ * \param[out] ciphertext_length        On success, the number of bytes written in
+ *                                      \p ciphertext.
  *
  * \retval #PSA_SUCCESS
  *         The key was successfully generated.
@@ -55,18 +56,19 @@ psa_status_t mbedtls_psa_mlkem_generate_key(
  *         The size of \p ciphertext is too small.
  */
 psa_status_t mbedtls_psa_mlkem_encapsulate(
-    const psa_key_attributes_t *attributes,
+    const psa_key_bits_t bits,
     uint8_t *key_buffer,
     size_t key_buffer_size,
+    uint8_t *output_key_buffer,
+    size_t output_key_buffer_size,
     uint8_t *ciphertext,
-    size_t ciphertext_len,
-    uint8_t *shared_secret,
-    size_t *shared_secret_len);
+    size_t ciphertext_size,
+    size_t *ciphertext_length);
 
 /**
  * \brief Decapsulate MLKEM ciphertext.
  *
- * \param[in]  attributes         The attributes of the MLKEM decapsulation key.
+ * \param[in]  bits               The algorithm strength in bits.
  * \param[in]  key_buffer         Buffer holding the key data.
  * \param[in]  key_buffer_size    Size of \p key_buffer in bytes.
  * \param[in]  ciphertext         Buffer holding the ciphertext data.
@@ -81,10 +83,10 @@ psa_status_t mbedtls_psa_mlkem_encapsulate(
  *         Key length or type not supported.
  */
 psa_status_t mbedtls_psa_mlkem_decapsulate(
-    const psa_key_attributes_t *attributes,
+    const psa_key_bits_t bits,
     uint8_t *key_buffer,
     size_t key_buffer_size,
-    uint8_t *ciphertext,
+    const uint8_t *ciphertext,
     size_t ciphertext_len,
     uint8_t *shared_secret,
     size_t *shared_secret_len);

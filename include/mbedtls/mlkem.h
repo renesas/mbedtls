@@ -32,8 +32,9 @@ typedef struct mbedtls_mlkem_data {
  * \brief   The MLKEM context structure.
  */
 typedef struct mbedtls_mlkem_context {
-    mbedtls_mlkem_data_t encaps_key;  /*!< The encapsulated key data. */
     mbedtls_mlkem_data_t decaps_key;  /*!< The decapsulated key data  */
+    mbedtls_mlkem_data_t d;  /*!< d seed data. */
+    mbedtls_mlkem_data_t z;  /*!< z seed data. */
 } mbedtls_mlkem_context;
 
 typedef enum mbedtls_mlkem_bits {

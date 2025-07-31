@@ -7991,7 +7991,7 @@ psa_status_t psa_generate_key_internal(
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
     if (PSA_KEY_TYPE_IS_MLKEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
-        return mbedtls_psa_mlkem_generate_key(attributes,
+        return mbedtls_psa_mlkem_generate_key(attributes->bits,
                                               key_buffer,
                                               key_buffer_size,
                                               key_buffer_length);

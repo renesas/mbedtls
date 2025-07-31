@@ -18,7 +18,7 @@
  * \note The signature of the function is that of a PSA driver generate_key
  *       entry point.
  *
- * \param[in]  attributes         The attributes for the MLKEM key to generate.
+ * \param[in]  bits               The algorithm strength in bits.
  * \param[out] key_buffer         Buffer where the key data is to be written.
  * \param[in]  key_buffer_size    Size of \p key_buffer in bytes.
  * \param[out] key_buffer_length  On success, the number of bytes written in
@@ -32,7 +32,7 @@
  *         The size of \p key_buffer is too small.
  */
 psa_status_t mbedtls_psa_mlkem_generate_key(
-    const psa_key_attributes_t *attributes,
+    const psa_key_bits_t bits,
     uint8_t *key_buffer, size_t key_buffer_size, size_t *key_buffer_length);
 
 /**

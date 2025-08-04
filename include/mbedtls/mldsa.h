@@ -38,26 +38,23 @@ typedef struct mbedtls_mldsa_context {
 
 typedef enum mbedtls_mldsa_bits {
     MBEDTLS_MLDSA_44 = 44,
-    MBEDTLS_MLDSA_65 =65
+    MBEDTLS_MLDSA_65 = 65
 } mbedtls_mldsa_bits_t;
 
 void mbedtls_mldsa_init(mbedtls_mldsa_context * ctx);
 
 int mbedtls_mldsa_generate_key(mbedtls_mldsa_context * ctx, 
-                               mbedtls_mldsa_bits_t bits,
-                               uint32_t (*f_rng)(uint32_t, uint32_t *));
+                               mbedtls_mldsa_bits_t bits);
 
 int mbedtls_mldsa_sign(mbedtls_mldsa_context * ctx,
                               mbedtls_mldsa_bits_t bits,
-                              mbedtls_mldsa_data_t * cipher,
-                              mbedtls_mldsa_data_t * shared_key,
-                              uint32_t (*f_rng)(uint32_t, uint32_t *));
+                              mbedtls_mldsa_data_t * msg,
+                              mbedtls_mldsa_data_t * signature);
 
 int mbedtls_mldsa_verify(mbedtls_mldsa_context * ctx,
                               mbedtls_mldsa_bits_t bits,
-                              mbedtls_mldsa_data_t * cipher,
-                              mbedtls_mldsa_data_t * shared_key,
-                              uint32_t (*f_rng)(uint32_t, uint32_t *));
+                              mbedtls_mldsa_data_t * signature,
+                              mbedtls_mldsa_data_t * msg);
 
 #ifdef __cplusplus
 }

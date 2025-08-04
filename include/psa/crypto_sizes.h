@@ -880,6 +880,8 @@
 #define PSA_MLKEM_768_ENC_KEY_SIZE 1184U
 #define PSA_MLKEM_768_DEC_KEY_SIZE 2400U
 
+#define PSA_MLKEM_SEED_SIZE 32U
+
 /* Maximum size of the MLKEM Encap Key.
  */
 #define PSA_KEY_EXPORT_MLKEM_PUBLIC_KEY_MAX_SIZE(key_bits)      \
@@ -895,8 +897,7 @@
 /* Maximum size of the export encoding of an MLKEM key pair.
  */
 #define PSA_KEY_EXPORT_MLKEM_KEY_PAIR_MAX_SIZE(key_bits)      \
-    (PSA_KEY_EXPORT_MLKEM_PUBLIC_KEY_MAX_SIZE(key_bits) + \
-     PSA_KEY_EXPORT_MLKEM_PRIVATE_KEY_SIZE(key_bits))
+    (PSA_KEY_EXPORT_MLKEM_PRIVATE_KEY_SIZE(key_bits) + (2 * PSA_MLKEM_SEED_SIZE))
 
 #define PSA_MLKEM_512_CIPHERTEXT_SIZE 768U
 #define PSA_MLKEM_768_CIPHERTEXT_SIZE 1088U
@@ -906,7 +907,6 @@
      (key_bits) == PSA_KEY_BITS_MLKEM_768 ? PSA_MLKEM_768_CIPHERTEXT_SIZE : 0U)
 
 #define PSA_MLKEM_SHARED_SECRET_SIZE 32U
-#define PSA_MLKEM_SEED_SIZE 32U
 
 /** Sufficient output buffer size for psa_export_key() or
  * psa_export_public_key().

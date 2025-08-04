@@ -44,6 +44,15 @@ typedef enum mbedtls_mlkem_bits {
 
 void mbedtls_mlkem_init(mbedtls_mlkem_context * ctx);
 
+int mbedtls_mlkem_export_keypair(const mbedtls_mlkem_context * ctx,
+                                 uint8_t * key_buffer,
+                                 size_t * key_buffer_length);
+
+int mbedtls_mlkem_export_public_key(const mbedtls_mlkem_context * ctx,
+                                    mbedtls_mlkem_bits_t bits,
+                                    uint8_t * key_buffer,
+                                    size_t * key_buffer_length);
+
 int mbedtls_mlkem_generate_key(mbedtls_mlkem_context * ctx, 
                                mbedtls_mlkem_bits_t bits,
                                uint32_t (*f_rng)(uint32_t, uint32_t *));

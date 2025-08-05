@@ -392,7 +392,23 @@
 #define MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE 1
 #endif /* PSA_WANT_KEY_TYPE_MLKEM_KEY_DECAPSULATE */
 
-/* End of MLKEM section */
+/* End of ML_DSA section */
+
+/* ML_DSA: key types: enable built-ins as needed.
+ */
+#if defined(PSA_WANT_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE)
+#define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE 1
+#endif /* PSA_WANT_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE */
+
+#if defined(PSA_WANT_KEY_TYPE_ML_DSA_SIGN)
+#define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN 1
+#endif /* PSA_WANT_KEY_TYPE_ML_DSA_SIGN */
+
+#if defined(PSA_WANT_KEY_TYPE_ML_DSA_VERIFY)
+#define MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY 1
+#endif /* PSA_WANT_KEY_TYPE_ML_DSA_VERIFY */
+
+/* End of ML_DSA section */
 
 /*
  * DH key types follow the same pattern used above for EC keys. They are defined

@@ -872,6 +872,7 @@
 #define PSA_KEY_EXPORT_FFDH_PUBLIC_KEY_MAX_SIZE(key_bits)   \
     (PSA_BITS_TO_BYTES(key_bits))
 
+
 #define PSA_KEY_BITS_MLKEM_512 512U
 #define PSA_KEY_BITS_MLKEM_768 768U
 
@@ -908,38 +909,38 @@
 #define PSA_MLKEM_SHARED_SECRET_SIZE 32U
 
 
-#define PSA_KEY_BITS_MLDSA_44 44U
-#define PSA_KEY_BITS_MLDSA_65 65U
+#define PSA_KEY_BITS_ML_DSA_44 44U
+#define PSA_KEY_BITS_ML_DSA_65 65U
 
-#define PSA_MLDSA_44_PRIV_KEY_SIZE  2560U
-#define PSA_MLDSA_44_PUB_KEY_SIZE   1312U
-#define PSA_MLDSA_65_PRIV_KEY_SIZE  4032U
-#define PSA_MLDSA_65_PUB_KEY_SIZE   1952U
+#define PSA_ML_DSA_44_PRIV_KEY_SIZE  2560U
+#define PSA_ML_DSA_44_PUB_KEY_SIZE   1312U
+#define PSA_ML_DSA_65_PRIV_KEY_SIZE  4032U
+#define PSA_ML_DSA_65_PUB_KEY_SIZE   1952U
 
-/* Maximum size of the MLDSA Private Key.
+/* Maximum size of the ML_DSA Private Key.
  */
-#define PSA_KEY_EXPORT_MLDSA_PRIV_KEY_SIZE(key_bits)      \
-    ((key_bits) == PSA_KEY_BITS_MLDSA_44 ? PSA_MLDSA_44_PRIV_KEY_SIZE : \
-     (key_bits) == PSA_KEY_BITS_MLDSA_65 ? PSA_MLDSA_65_PRIV_KEY_SIZE : 0U)
+#define PSA_KEY_EXPORT_ML_DSA_PRIV_KEY_SIZE(key_bits)      \
+    ((key_bits) == PSA_KEY_BITS_ML_DSA_44 ? PSA_ML_DSA_44_PRIV_KEY_SIZE : \
+     (key_bits) == PSA_KEY_BITS_ML_DSA_65 ? PSA_ML_DSA_65_PRIV_KEY_SIZE : 0U)
      
-/* Maximum size of the MLDSA Public Key.
+/* Maximum size of the ML_DSA Public Key.
  */
-#define PSA_KEY_EXPORT_MLDSA_PUB_KEY_SIZE(key_bits)      \
-    ((key_bits) == PSA_KEY_BITS_MLDSA_44 ? PSA_MLDSA_44_PUB_KEY_SIZE : \
-     (key_bits) == PSA_KEY_BITS_MLDSA_65 ? PSA_MLDSA_65_PUB_KEY_SIZE : 0U)
+#define PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(key_bits)      \
+    ((key_bits) == PSA_KEY_BITS_ML_DSA_44 ? PSA_ML_DSA_44_PUB_KEY_SIZE : \
+     (key_bits) == PSA_KEY_BITS_ML_DSA_65 ? PSA_ML_DSA_65_PUB_KEY_SIZE : 0U)
 
-/* Maximum size of the export encoding of an MLDSA key pair.
+/* Maximum size of the export encoding of an ML_DSA key pair.
  */
-#define PSA_KEY_EXPORT_MLDSA_KEY_PAIR_MAX_SIZE(key_bits)      \
-    (PSA_KEY_EXPORT_MLDSA_PRIV_KEY_SIZE(key_bits) + \
-     PSA_KEY_EXPORT_MLDSA_PUB_KEY_SIZE(key_bits))
+#define PSA_KEY_EXPORT_ML_DSA_KEY_PAIR_MAX_SIZE(key_bits)      \
+    (PSA_KEY_EXPORT_ML_DSA_PRIV_KEY_SIZE(key_bits) + \
+     PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(key_bits))
 
-#define PSA_MLDSA_44_SIGNATURE_SIZE 2420U
-#define PSA_MLDSA_65_SIGNATURE_SIZE 3309U
+#define PSA_ML_DSA_44_SIGNATURE_SIZE 2420U
+#define PSA_ML_DSA_65_SIGNATURE_SIZE 3309U
 
-#define PSA_MLDSA_SIGNATURE_SIZE(key_bits)      \
-    ((key_bits) == PSA_KEY_BITS_MLDSA_44 ? PSA_MLDSA_44_SIGNATURE_SIZE : \
-     (key_bits) == PSA_KEY_BITS_MLDSA_65 ? PSA_MLDSA_65_SIGNATURE_SIZE : 0U)
+#define PSA_ML_DSA_SIGNATURE_SIZE(key_bits)      \
+    ((key_bits) == PSA_KEY_BITS_ML_DSA_44 ? PSA_ML_DSA_44_SIGNATURE_SIZE : \
+     (key_bits) == PSA_KEY_BITS_ML_DSA_65 ? PSA_ML_DSA_65_SIGNATURE_SIZE : 0U)
 
      
 /** Sufficient output buffer size for psa_export_key() or

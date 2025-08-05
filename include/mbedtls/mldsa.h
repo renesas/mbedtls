@@ -1,7 +1,7 @@
 /**
  * \file mldsa.h
  *
- * \brief This file provides an API for Post Quantum Cryptography Module Lattice Keys(MLDSA).
+ * \brief This file provides an API for Post Quantum Cryptography Module Lattice Keys(ML_DSA).
  *
  */
 
@@ -10,8 +10,8 @@
  *  SPDX-License-Identifier: Apache-2.0 OR GPL-2.0-or-later
  */
 
-#ifndef MBEDTLS_MLDSA_H
-#define MBEDTLS_MLDSA_H
+#ifndef MBEDTLS_ML_DSA_H
+#define MBEDTLS_ML_DSA_H
 #include "mbedtls/private_access.h"
 
 #include "mbedtls/build_info.h"
@@ -29,7 +29,7 @@ typedef struct mbedtls_mldsa_data {
 } mbedtls_mldsa_data_t;
 
 /**
- * \brief   The MLDSA context structure.
+ * \brief   The ML_DSA context structure.
  */
 typedef struct mbedtls_mldsa_context {
     mbedtls_mldsa_data_t private_key;  /*!< The private key data. */
@@ -37,8 +37,8 @@ typedef struct mbedtls_mldsa_context {
 } mbedtls_mldsa_context;
 
 typedef enum mbedtls_mldsa_bits {
-    MBEDTLS_MLDSA_44 = 44,
-    MBEDTLS_MLDSA_65 = 65
+    MBEDTLS_ML_DSA_44 = 44,
+    MBEDTLS_ML_DSA_65 = 65
 } mbedtls_mldsa_bits_t;
 
 void mbedtls_mldsa_init(mbedtls_mldsa_context * ctx);

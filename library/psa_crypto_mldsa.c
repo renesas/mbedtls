@@ -38,7 +38,7 @@ const uint8_t  d[32] = {   /* d */
     0x1E, 0xB4, 0x40, 0x0A, 0x01, 0x62, 0x9D, 0x51, 0x79, 0x74, 0xE2, 0xCD, 0x85, 0xB9, 0xDE, 0xF5,
     0x90, 0x82, 0xDE, 0x50, 0x8E, 0x6F, 0x9C, 0x2B, 0x0E, 0x34, 0x1E, 0x12, 0x96, 0x59, 0x55, 0xCA,
 };
-// Used by mbedtls_mldsa_encapsulate() and mbedtls_mldsa_decapsulate()
+// Used by mbedtls_mldsa_verify() and mbedtls_mldsa_sign()
 const uint8_t  m[32] = { /* m */
     0xAF, 0x9B, 0x6C, 0xAE, 0x18, 0x7C, 0x40, 0x72, 0x56, 0xFC, 0x9D, 0x3F, 0x3B, 0xE3, 0x70, 0x10,
     0xFF, 0xAF, 0x55, 0xD0, 0xE6, 0x87, 0xA1, 0x28, 0xF1, 0x7C, 0x7F, 0x62, 0xEB, 0x68, 0x84, 0xD3,
@@ -115,7 +115,7 @@ psa_status_t mbedtls_psa_mldsa_generate_key(
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
-psa_status_t mbedtls_psa_mlkem_encapsulate(
+psa_status_t mbedtls_psa_mlkem_verify(
     const psa_key_bits_t bits,
     uint8_t *key_buffer,
     size_t key_buffer_size,
@@ -141,7 +141,7 @@ psa_status_t mbedtls_psa_mlkem_encapsulate(
     shared_key.key_data = (uint32_t *)output_key_buffer;
     shared_key.key_len = output_key_buffer_size;
 
-    ret = mbedtls_mlkem_encapsulate(&mlkem, bits, &cipher, &shared_key, mbedtls_mlkem_get_random);
+    ret = mbedtls_mlkem_verify(&mlkem, bits, &cipher, &shared_key, mbedtls_mlkem_get_random);
     if (ret != 0) {
         return mbedtls_to_psa_error(ret);
     }
@@ -158,7 +158,7 @@ psa_status_t mbedtls_psa_mlkem_encapsulate(
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
-psa_status_t mbedtls_psa_mlkem_decapsulate(
+psa_status_t mbedtls_psa_mlkem_sign(
     const psa_key_bits_t bits,
     uint8_t *key_buffer,
     size_t key_buffer_size,
@@ -183,7 +183,7 @@ psa_status_t mbedtls_psa_mlkem_decapsulate(
     shared_key.key_data = (uint32_t *)shared_secret;
     shared_key.key_len = *shared_secret_len;
 
-    ret = mbedtls_mlkem_decapsulate(&mlkem, bits, &cipher, &shared_key, mbedtls_mlkem_get_random);
+    ret = mbedtls_mlkem_sign(&mlkem, bits, &cipher, &shared_key, mbedtls_mlkem_get_random);
     if (ret != 0) {
         return mbedtls_to_psa_error(ret);
     }

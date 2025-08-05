@@ -1,5 +1,5 @@
 /*
- *  PSA MLKEM layer on top of Mbed TLS crypto
+ *  PSA ML DSA layer on top of Mbed TLS crypto
  */
 /*
  *  Copyright The Mbed TLS Contributors
@@ -12,7 +12,7 @@
 
 #include <psa/crypto.h>
 #include "psa_crypto_core.h"
-#include "psa_crypto_mlkem.h"
+#include "psa_crypto_mldsa.h"
 #include "psa_crypto_random_impl.h"
 #include "mbedtls/psa_util.h"
 
@@ -27,8 +27,8 @@
     defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
 
 uint32_t mbedtls_mlkem_get_random(const uint32_t rand_len, uint32_t * const p_random);
-#define MBEDTLS_MLKEM_TEST_FIXED_TRNG
-#if defined(MBEDTLS_MLKEM_TEST_FIXED_TRNG)
+#define MBEDTLS_MLDSA_TEST_FIXED_TRNG
+#if defined(MBEDTLS_MLDSA_TEST_FIXED_TRNG)
 // Used by mbedtls_mldsa_generate_key()
 const uint8_t  z[32] = {   /* z */
     0x1A, 0x39, 0x41, 0x11, 0x16, 0x38, 0x03, 0xFE, 0x2E, 0x85, 0x19, 0xC3, 0x35, 0xA6, 0x86, 0x75,
@@ -89,7 +89,7 @@ psa_status_t mbedtls_psa_mldsa_generate_key(
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     mbedtls_mldsa_context mldsa;
-#if defined(MBEDTLS_MLKEM_TEST_FIXED_TRNG)
+#if defined(MBEDTLS_MLDSA_TEST_FIXED_TRNG)
     random_call_count = 0;
 #endif
    
@@ -115,82 +115,79 @@ psa_status_t mbedtls_psa_mldsa_generate_key(
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
-psa_status_t mbedtls_psa_mlkem_verify(
+psa_status_t mbedtls_psa_mldsa_verify(
     const psa_key_bits_t bits,
     uint8_t *key_buffer,
     size_t key_buffer_size,
-    uint8_t *output_key_buffer,
-    size_t output_key_buffer_size,
-    uint8_t *ciphertext,
-    size_t ciphertext_size,
-    size_t *ciphertext_length)
+    uint8_t *signature,
+    size_t signature_len,
+    uint8_t *message,
+    size_t message_len)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
-    mbedtls_mlkem_context mlkem;
-    mbedtls_mlkem_data_t cipher;
-    mbedtls_mlkem_data_t shared_key;
-#if defined(MBEDTLS_MLKEM_TEST_FIXED_TRNG)
+    mbedtls_mldsa_context mldsa;
+    mbedtls_mldsa_data_t msg;
+    mbedtls_mldsa_data_t sign;
+#if defined(MBEDTLS_MLDSA_TEST_FIXED_TRNG)
     random_call_count = 3;
 #endif
    
-    mbedtls_mlkem_init(&mlkem);
-    mlkem.public_key.key_data = (uint32_t *)key_buffer;
-    mlkem.public_key.key_len = PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits);
-    cipher.key_data = (uint32_t *)ciphertext;
-    cipher.key_len = ciphertext_size;
-    shared_key.key_data = (uint32_t *)output_key_buffer;
-    shared_key.key_len = output_key_buffer_size;
+    mbedtls_mldsa_init(&mldsa);
+    mldsa.public_key.key_data = (uint32_t *)key_buffer;
+    mldsa.public_key.key_len = PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits);
+    msg.key_data = (uint32_t *)message;
+    msg.key_len = message_len;
+    sign.key_data = (uint32_t *)signature;
+    sign.key_len = signature_len;
 
-    ret = mbedtls_mlkem_verify(&mlkem, bits, &cipher, &shared_key, mbedtls_mlkem_get_random);
+    ret = mbedtls_mldsa_verify(&mldsa, bits, &sign, &msg);
     if (ret != 0) {
         return mbedtls_to_psa_error(ret);
     }
-    if (shared_key.key_len > output_key_buffer_size) {
+    if (sign.key_len > signature_len) {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
-    if (cipher.key_len > ciphertext_size) {
+    if (msg.key_len > message_len) {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
-    *ciphertext_length = cipher.key_len;
 
     return mbedtls_to_psa_error(ret);
 }
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
-psa_status_t mbedtls_psa_mlkem_sign(
+psa_status_t mbedtls_psa_mldsa_sign(
     const psa_key_bits_t bits,
     uint8_t *key_buffer,
     size_t key_buffer_size,
-    const uint8_t *ciphertext,
-    size_t ciphertext_len,
-    uint8_t *shared_secret,
-    size_t *shared_secret_len)
+    const uint8_t *message,
+    size_t message_len,
+    uint8_t *signature,
+    size_t signature_len)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
-    mbedtls_mlkem_context mlkem;
-    mbedtls_mlkem_data_t cipher;
-    mbedtls_mlkem_data_t shared_key;
-#if defined(MBEDTLS_MLKEM_TEST_FIXED_TRNG)
+    mbedtls_mldsa_context mldsa;
+    mbedtls_mldsa_data_t msg;
+    mbedtls_mldsa_data_t sign;
+#if defined(MBEDTLS_MLDSA_TEST_FIXED_TRNG)
     random_call_count = 3;
 #endif
    
-    mbedtls_mlkem_init(&mlkem);
-    mlkem.private_key.key_data = (uint32_t *)(key_buffer + PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits));
-    mlkem.private_key.key_len = PSA_KEY_EXPORT_ML_DSA_PRIV_KEY_SIZE(bits);
-    cipher.key_data = (uint32_t *)ciphertext;
-    cipher.key_len = ciphertext_len;
-    shared_key.key_data = (uint32_t *)shared_secret;
-    shared_key.key_len = *shared_secret_len;
+    mbedtls_mldsa_init(&mldsa);
+    mldsa.private_key.key_data = (uint32_t *)(key_buffer + PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits));
+    mldsa.private_key.key_len = PSA_KEY_EXPORT_ML_DSA_PRIV_KEY_SIZE(bits);
+    msg.key_data = (uint32_t *)message;
+    msg.key_len = message_len;
+    sign.key_data = (uint32_t *)signature;
+    sign.key_len = signature_len;
 
-    ret = mbedtls_mlkem_sign(&mlkem, bits, &cipher, &shared_key, mbedtls_mlkem_get_random);
+    ret = mbedtls_mldsa_sign(&mldsa, bits, &msg, &sign);
     if (ret != 0) {
         return mbedtls_to_psa_error(ret);
     }
-    if (shared_key.key_len > *shared_secret_len) {
+    if (sign.key_len > signature_len) {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
-    *shared_secret_len = shared_key.key_len;
 
     return mbedtls_to_psa_error(ret);
 }

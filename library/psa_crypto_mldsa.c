@@ -78,11 +78,11 @@ uint32_t mbedtls_mldsa_get_random(const uint32_t rand_len, uint32_t * const p_ra
     return (status == PSA_SUCCESS) ? 0x55555555U : 0xAAAAAAAAU;
 }
 #endif
-#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE ||
-          * MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE ||
-          * MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE */
+#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE ||
+          * MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN ||
+          * MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY */
 
-#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE)
 psa_status_t mbedtls_psa_mldsa_generate_key(
     const psa_key_attributes_t *attributes,
     uint8_t *key_buffer,  size_t key_buffer_size, size_t *key_buffer_length)
@@ -94,12 +94,12 @@ psa_status_t mbedtls_psa_mldsa_generate_key(
 #endif
    
     mbedtls_mldsa_init(&mldsa);
-    mldsa.encaps_key.key_data = (uint32_t *)key_buffer;
-    mldsa.encaps_key.key_len = PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(attributes->bits);
-    mldsa.decaps_key.key_data = (uint32_t *)(key_buffer + mldsa.encaps_key.key_len);
-    mldsa.decaps_key.key_len = PSA_KEY_EXPORT_MLKEM_DEC_KEY_SIZE(attributes->bits);
+    mldsa.public_key.key_data = (uint32_t *)key_buffer;
+    mldsa.public_key.key_len = PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(attributes->bits);
+    mldsa.private_key.key_data = (uint32_t *)(key_buffer + mldsa.public_key.key_len);
+    mldsa.private_key.key_len = PSA_KEY_EXPORT_ML_DSA_PRIV_KEY_SIZE(attributes->bits);
      
-    if (key_buffer_size < mldsa.encaps_key.key_len + mldsa.decaps_key.key_len) {
+    if (key_buffer_size < mldsa.public_key.key_len + mldsa.private_key.key_len) {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
 
@@ -108,13 +108,13 @@ psa_status_t mbedtls_psa_mldsa_generate_key(
         return mbedtls_to_psa_error(ret);
     }
 
-    *key_buffer_length = mldsa.encaps_key.key_len + mldsa.decaps_key.key_len;
+    *key_buffer_length = mldsa.public_key.key_len + mldsa.private_key.key_len;
 
     return mbedtls_to_psa_error(ret);
 }
-#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE */
+#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE */
 
-#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_ENCAPSULATE)
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
 psa_status_t mbedtls_psa_mlkem_encapsulate(
     const psa_key_bits_t bits,
     uint8_t *key_buffer,
@@ -134,8 +134,8 @@ psa_status_t mbedtls_psa_mlkem_encapsulate(
 #endif
    
     mbedtls_mlkem_init(&mlkem);
-    mlkem.encaps_key.key_data = (uint32_t *)key_buffer;
-    mlkem.encaps_key.key_len = PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(bits);
+    mlkem.public_key.key_data = (uint32_t *)key_buffer;
+    mlkem.public_key.key_len = PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits);
     cipher.key_data = (uint32_t *)ciphertext;
     cipher.key_len = ciphertext_size;
     shared_key.key_data = (uint32_t *)output_key_buffer;
@@ -155,9 +155,9 @@ psa_status_t mbedtls_psa_mlkem_encapsulate(
 
     return mbedtls_to_psa_error(ret);
 }
-#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE */
+#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY */
 
-#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE)
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
 psa_status_t mbedtls_psa_mlkem_decapsulate(
     const psa_key_bits_t bits,
     uint8_t *key_buffer,
@@ -176,8 +176,8 @@ psa_status_t mbedtls_psa_mlkem_decapsulate(
 #endif
    
     mbedtls_mlkem_init(&mlkem);
-    mlkem.decaps_key.key_data = (uint32_t *)(key_buffer + PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(bits));
-    mlkem.decaps_key.key_len = PSA_KEY_EXPORT_MLKEM_DEC_KEY_SIZE(bits);
+    mlkem.private_key.key_data = (uint32_t *)(key_buffer + PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits));
+    mlkem.private_key.key_len = PSA_KEY_EXPORT_ML_DSA_PRIV_KEY_SIZE(bits);
     cipher.key_data = (uint32_t *)ciphertext;
     cipher.key_len = ciphertext_len;
     shared_key.key_data = (uint32_t *)shared_secret;
@@ -194,6 +194,6 @@ psa_status_t mbedtls_psa_mlkem_decapsulate(
 
     return mbedtls_to_psa_error(ret);
 }
-#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE */
+#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN */
 
 #endif /* MBEDTLS_PSA_CRYPTO_C */

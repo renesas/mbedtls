@@ -1499,7 +1499,8 @@ psa_status_t psa_export_key_internal(
     if (key_type_is_raw_bytes(type) ||
         PSA_KEY_TYPE_IS_RSA(type)   ||
         PSA_KEY_TYPE_IS_ECC(type)   ||
-        PSA_KEY_TYPE_IS_DH(type)) {
+        PSA_KEY_TYPE_IS_DH(type)    ||
+        PSA_KEY_TYPE_IS_MLKEM(type)) {
         return psa_export_key_buffer_internal(
             key_buffer, key_buffer_size,
             data, data_size, data_length);
@@ -8223,7 +8224,7 @@ psa_status_t psa_encapsulate(psa_key_id_t key,
     }
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE)
-    status = mbedtls_psa_mlkem_encapsulate(slot->attr.bits,
+    status = mbedtls_psa_mlkem_encapsulate(&slot->attr,
                                            slot->key.data,
                                            slot->key.bytes,
                                            output_slot->key.data,

@@ -35,6 +35,7 @@ typedef struct mbedtls_mlkem_context {
     mbedtls_mlkem_data_t decaps_key;  /*!< The decapsulated key data  */
     mbedtls_mlkem_data_t d;  /*!< d seed data. */
     mbedtls_mlkem_data_t z;  /*!< z seed data. */
+    mbedtls_mlkem_data_t encaps_key;  /*!< The encapsulated key data  */
 } mbedtls_mlkem_context;
 
 typedef enum mbedtls_mlkem_bits {
@@ -44,14 +45,18 @@ typedef enum mbedtls_mlkem_bits {
 
 void mbedtls_mlkem_init(mbedtls_mlkem_context * ctx);
 
-int mbedtls_mlkem_export_keypair(const mbedtls_mlkem_context * ctx,
+int mbedtls_mlkem_export_keypair(mbedtls_mlkem_context * ctx,
                                  uint8_t * key_buffer,
                                  size_t * key_buffer_length);
 
-int mbedtls_mlkem_export_public_key(const mbedtls_mlkem_context * ctx,
-                                    mbedtls_mlkem_bits_t bits,
-                                    uint8_t * key_buffer,
-                                    size_t * key_buffer_length);
+int mbedtls_mlkem_export_public_key(mbedtls_mlkem_context * ctx,
+                                    mbedtls_mlkem_bits_t bits);
+
+int mbedtls_mlkem_expand_key_pair(mbedtls_mlkem_context *ctx,
+                               mbedtls_mlkem_bits_t bits,
+                               mbedtls_mlkem_data_t *random_d,
+                               mbedtls_mlkem_data_t *random_z,
+                               uint32_t (*f_rng)(uint32_t, uint32_t *));
 
 int mbedtls_mlkem_generate_key(mbedtls_mlkem_context * ctx, 
                                mbedtls_mlkem_bits_t bits,

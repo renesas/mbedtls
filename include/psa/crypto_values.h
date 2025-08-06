@@ -784,9 +784,9 @@
 /** ML-DSA key pair.
  *
  */
-#define PSA_KEY_TYPE_ML_DSA_KEY_PAIR ((psa_key_type_t)0x7002)
+#define PSA_KEY_TYPE_ML_DSA_KEY_PAIR ((psa_key_type_t)0x7006)
 
-#define PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY ((psa_key_type_t)0x4002)
+#define PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY ((psa_key_type_t)0x4006)
 
 #define PSA_KEY_TYPE_IS_ML_DSA(type) \
     (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY)

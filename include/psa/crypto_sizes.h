@@ -894,10 +894,14 @@
     ((key_bits) == PSA_KEY_BITS_MLKEM_512 ? PSA_MLKEM_512_DEC_KEY_SIZE : \
      (key_bits) == PSA_KEY_BITS_MLKEM_768 ? PSA_MLKEM_768_DEC_KEY_SIZE : 0U)
 
+/* Maximum size of the generation encoding of an MLKEM key pair.
+ */
+#define PSA_KEY_GEN_MLKEM_KEY_PAIR_MAX_SIZE(key_bits)      \
+    (PSA_KEY_EXPORT_MLKEM_PRIVATE_KEY_SIZE(key_bits) + (2 * PSA_MLKEM_SEED_SIZE))
+    
 /* Maximum size of the export encoding of an MLKEM key pair.
  */
-#define PSA_KEY_EXPORT_MLKEM_KEY_PAIR_MAX_SIZE(key_bits)      \
-    (PSA_KEY_EXPORT_MLKEM_PRIVATE_KEY_SIZE(key_bits) + (2 * PSA_MLKEM_SEED_SIZE))
+#define PSA_KEY_EXPORT_MLKEM_KEY_PAIR_MAX_SIZE (2 * PSA_MLKEM_SEED_SIZE)
 
 #define PSA_MLKEM_512_CIPHERTEXT_SIZE 768U
 #define PSA_MLKEM_768_CIPHERTEXT_SIZE 1088U
@@ -957,7 +961,7 @@
      PSA_KEY_TYPE_IS_ECC_KEY_PAIR(key_type) ? PSA_KEY_EXPORT_ECC_KEY_PAIR_MAX_SIZE(key_bits) :      \
      PSA_KEY_TYPE_IS_ECC_PUBLIC_KEY(key_type) ? PSA_KEY_EXPORT_ECC_PUBLIC_KEY_MAX_SIZE(key_bits) :  \
      (key_type) == PSA_KEY_TYPE_MLKEM_PUBLIC_KEY ? PSA_KEY_EXPORT_MLKEM_PUBLIC_KEY_MAX_SIZE(key_bits) :  \
-     PSA_KEY_TYPE_IS_MLKEM(key_type) ? PSA_KEY_EXPORT_MLKEM_KEY_PAIR_MAX_SIZE(key_bits) :  \
+     PSA_KEY_TYPE_IS_MLKEM(key_type) ? PSA_KEY_GEN_MLKEM_KEY_PAIR_MAX_SIZE(key_bits) :  \
      0U)
 
 /** Sufficient output buffer size for psa_export_public_key().

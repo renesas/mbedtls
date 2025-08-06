@@ -26,7 +26,7 @@
     defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE) || \
     defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE)
 
-#define MBEDTLS_MLKEM_TEST_FIXED_TRNG
+// #define MBEDTLS_MLKEM_TEST_FIXED_TRNG
 
 uint32_t mbedtls_mlkem_get_random(const uint32_t rand_len, uint32_t * const p_random);
 #define MBEDTLS_MLKEM_TEST_FIXED_TRNG
@@ -149,12 +149,12 @@ psa_status_t mbedtls_psa_mlkem_import_key(
         }
         *bits = attributes->bits;
 
-        random_d.key_data = data;
+        random_d.key_data = (uint32_t*)data;
         random_d.key_len = PSA_MLKEM_SEED_SIZE;
-        random_z.key_data = (data + random_d.key_len);
+        random_z.key_data = (uint32_t*)(data + random_d.key_len);
         random_d.key_len = PSA_MLKEM_SEED_SIZE;
 
-        ret = mbedtls_mlkem_expand_key_pair(&mlkem, *bits, &random_d, &random_d, mbedtls_mlkem_get_random);
+        ret = mbedtls_mlkem_expand_key_pair(mlkem, *bits, &random_d, &random_z, mbedtls_mlkem_get_random);
         if (ret != 0) {
             status = mbedtls_to_psa_error(ret);
             goto exit;

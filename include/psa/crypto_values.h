@@ -753,19 +753,19 @@
 /** ML-KEM key pair.
  *
  */
-#define PSA_KEY_TYPE_MLKEM_KEY_PAIR ((psa_key_type_t)0x7004)
+#define PSA_KEY_TYPE_ML_KEM_KEY_PAIR ((psa_key_type_t)0x7004)
 
-#define PSA_KEY_TYPE_MLKEM_PUBLIC_KEY ((psa_key_type_t)0x4004)
+#define PSA_KEY_TYPE_ML_KEM_PUBLIC_KEY ((psa_key_type_t)0x4004)
 
-#define PSA_KEY_TYPE_IS_MLKEM(type) \
-    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_MLKEM_PUBLIC_KEY)
+#define PSA_KEY_TYPE_IS_ML_KEM(type) \
+    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_ML_KEM_PUBLIC_KEY)
 
 /** The ML-KEM algorithm.
  *
  */
-#define PSA_ALG_MLKEM                            ((psa_algorithm_t) 0x0c000200)
+#define PSA_ALG_ML_KEM                            ((psa_algorithm_t) 0x0c000200)
 
-#define PSA_ALG_IS_MLKEM(alg) \
+#define PSA_ALG_IS_ML_KEM(alg) \
     (((alg) & ~0x00000100) == 0x0c000200) 
 
 /** Whether the specified algorithm is an encapsulation algorithm that can be used
@@ -779,7 +779,7 @@
  *         if \p alg is not a supported algorithm identifier.
  */
 #define PSA_ALG_IS_KEY_ENCAPSULATION(alg)                               \
-    PSA_ALG_IS_MLKEM(alg)   
+    PSA_ALG_IS_ML_KEM(alg)   
 
 /** ML-DSA key pair.
  *

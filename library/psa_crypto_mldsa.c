@@ -189,7 +189,7 @@ psa_status_t mbedtls_psa_mldsa_sign(
     if (sign.key_len > signature_size) {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
-    signature_len = sign.key_len;
+    *signature_len = sign.key_len;
     return mbedtls_to_psa_error(ret);
 }
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN */

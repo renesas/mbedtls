@@ -992,6 +992,7 @@
      PSA_KEY_TYPE_IS_ECC_KEY_PAIR(key_type) ? PSA_KEY_EXPORT_ECC_KEY_PAIR_MAX_SIZE(key_bits) :      \
      PSA_KEY_TYPE_IS_ECC_PUBLIC_KEY(key_type) ? PSA_KEY_EXPORT_ECC_PUBLIC_KEY_MAX_SIZE(key_bits) :  \
      PSA_KEY_TYPE_IS_MLKEM(key_type) ? PSA_KEY_EXPORT_MLKEM_KEY_PAIR_MAX_SIZE(key_bits) :  \
+     PSA_KEY_TYPE_IS_ML_DSA(key_type) ? PSA_KEY_EXPORT_ML_DSA_KEY_PAIR_MAX_SIZE(key_bits) :  \
      0U)
 
 /** Sufficient output buffer size for psa_export_public_key().

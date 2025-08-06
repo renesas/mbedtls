@@ -182,7 +182,7 @@ psa_status_t mbedtls_psa_mldsa_sign(
     sign.key_data = (uint32_t *)signature;
     sign.key_len = signature_size;
 
-    ret = mbedtls_mldsa_sign(&mldsa, bits, &msg, &sign);
+    ret = mbedtls_mldsa_sign(&mldsa, bits, &msg, &sign, mbedtls_mldsa_get_random);
     if (ret != 0) {
         return mbedtls_to_psa_error(ret);
     }

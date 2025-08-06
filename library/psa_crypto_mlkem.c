@@ -29,7 +29,6 @@
 // #define MBEDTLS_MLKEM_TEST_FIXED_TRNG
 
 uint32_t mbedtls_mlkem_get_random(const uint32_t rand_len, uint32_t * const p_random);
-#define MBEDTLS_MLKEM_TEST_FIXED_TRNG
 #if defined(MBEDTLS_MLKEM_TEST_FIXED_TRNG)
 // Used by mbedtls_mlkem_generate_key()
 const uint8_t  z[32] = {   /* z */
@@ -102,11 +101,11 @@ psa_status_t mbedtls_psa_mlkem_load_representation(
     }
     else {
         (*p_mlkem)->decaps_key.key_data = (uint32_t *)data;
-        (*p_mlkem)->decaps_key.key_len = PSA_KEY_EXPORT_MLKEM_PRIVATE_KEY_SIZE(bits);
+        (*p_mlkem)->decaps_key.key_len = PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(bits);
         (*p_mlkem)->d.key_data = (uint32_t *)(data + (*p_mlkem)->decaps_key.key_len);
-        (*p_mlkem)->d.key_len = PSA_MLKEM_SEED_SIZE;
+        (*p_mlkem)->d.key_len = PSA_ML_KEM_SEED_SIZE;
         (*p_mlkem)->z.key_data = (uint32_t *)(data + (*p_mlkem)->decaps_key.key_len + (*p_mlkem)->d.key_len);
-        (*p_mlkem)->z.key_len = PSA_MLKEM_SEED_SIZE;
+        (*p_mlkem)->z.key_len = PSA_ML_KEM_SEED_SIZE;
     }
 
 
@@ -150,16 +149,16 @@ psa_status_t mbedtls_psa_mlkem_import_key(
         *bits = attributes->bits;
 
         random_d.key_data = (uint32_t*)data;
-        random_d.key_len = PSA_MLKEM_SEED_SIZE;
+        random_d.key_len = PSA_ML_KEM_SEED_SIZE;
         random_z.key_data = (uint32_t*)(data + random_d.key_len);
-        random_d.key_len = PSA_MLKEM_SEED_SIZE;
+        random_d.key_len = PSA_ML_KEM_SEED_SIZE;
 
         ret = mbedtls_mlkem_expand_key_pair(mlkem, *bits, &random_d, &random_z, mbedtls_mlkem_get_random);
         if (ret != 0) {
             status = mbedtls_to_psa_error(ret);
             goto exit;
         }
-        *key_buffer_length = PSA_MLKEM_SEED_SIZE + PSA_MLKEM_SEED_SIZE + mlkem->decaps_key.key_len;
+        *key_buffer_length = PSA_ML_KEM_SEED_SIZE + PSA_ML_KEM_SEED_SIZE + mlkem->decaps_key.key_len;
 exit:
         if (status != PSA_SUCCESS) {
             //mbedtls_mlkem_free(mlkem);
@@ -184,7 +183,7 @@ psa_status_t mbedtls_psa_mlkem_export_key(psa_key_type_t type,
         ret = mbedtls_mlkem_export_keypair(mlkem, data, data_length);
     }
     else {
-        if (data_size < PSA_KEY_EXPORT_MLKEM_PUBLIC_KEY_MAX_SIZE(bits)) {
+        if (data_size < PSA_KEY_EXPORT_ML_KEM_PUBLIC_KEY_MAX_SIZE(bits)) {
             return PSA_ERROR_BUFFER_TOO_SMALL;
         }
         ret = mbedtls_mlkem_export_public_key(mlkem, bits);
@@ -215,7 +214,7 @@ psa_status_t mbedtls_psa_mlkem_export_public_key(
         goto exit;
     }
 
-    status = mbedtls_psa_mlkem_export_key(PSA_KEY_TYPE_MLKEM_PUBLIC_KEY, attributes->bits, mlkem, data, data_size, data_length);
+    status = mbedtls_psa_mlkem_export_key(PSA_KEY_TYPE_ML_KEM_PUBLIC_KEY, attributes->bits, mlkem, data, data_size, data_length);
 
 exit:
     if (status != PSA_SUCCESS) {
@@ -241,11 +240,11 @@ psa_status_t mbedtls_psa_mlkem_generate_key(
    
     mbedtls_mlkem_init(&mlkem);
     mlkem.decaps_key.key_data = (uint32_t *)key_buffer;
-    mlkem.decaps_key.key_len = PSA_KEY_EXPORT_MLKEM_PRIVATE_KEY_SIZE(bits);
+    mlkem.decaps_key.key_len = PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(bits);
     mlkem.d.key_data = (uint32_t *)(key_buffer + mlkem.decaps_key.key_len);
-    mlkem.d.key_len = PSA_MLKEM_SEED_SIZE;
+    mlkem.d.key_len = PSA_ML_KEM_SEED_SIZE;
     mlkem.z.key_data = (uint32_t *)(key_buffer + mlkem.decaps_key.key_len + mlkem.d.key_len);
-    mlkem.z.key_len = PSA_MLKEM_SEED_SIZE;
+    mlkem.z.key_len = PSA_ML_KEM_SEED_SIZE;
 
     if (key_buffer_size < mlkem.decaps_key.key_len + mlkem.d.key_len + mlkem.z.key_len) {
         return PSA_ERROR_BUFFER_TOO_SMALL;
@@ -256,7 +255,7 @@ psa_status_t mbedtls_psa_mlkem_generate_key(
         return mbedtls_to_psa_error(ret);
     }
 
-    *key_buffer_length = PSA_MLKEM_SEED_SIZE + PSA_MLKEM_SEED_SIZE + mlkem.decaps_key.key_len;
+    *key_buffer_length = PSA_ML_KEM_SEED_SIZE + PSA_ML_KEM_SEED_SIZE + mlkem.decaps_key.key_len;
 
     return mbedtls_to_psa_error(ret);
 }
@@ -289,7 +288,7 @@ psa_status_t mbedtls_psa_mlkem_encapsulate(
     else
     {
         mlkem.decaps_key.key_data = (uint32_t *)key_buffer;
-        mlkem.decaps_key.key_len = PSA_KEY_EXPORT_MLKEM_PRIVATE_KEY_SIZE(attributes->bits);
+        mlkem.decaps_key.key_len = PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(attributes->bits);
         mbedtls_mlkem_export_public_key(&mlkem, attributes->bits);
     }
 
@@ -338,7 +337,7 @@ psa_status_t mbedtls_psa_mlkem_decapsulate(
    
     mbedtls_mlkem_init(&mlkem);
     mlkem.decaps_key.key_data = (uint32_t *)key_buffer;
-    mlkem.decaps_key.key_len = PSA_KEY_EXPORT_MLKEM_PRIVATE_KEY_SIZE(bits);
+    mlkem.decaps_key.key_len = PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(bits);
     cipher.key_data = (uint32_t *)ciphertext;
     cipher.key_len = ciphertext_len;
     shared_key.key_data = (uint32_t *)shared_secret;

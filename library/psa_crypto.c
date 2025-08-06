@@ -809,7 +809,7 @@ psa_status_t psa_import_key_into_slot(
         * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_PUBLIC_KEY) */
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_IMPORT) || \
         defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY)
-        if (PSA_KEY_TYPE_IS_MLKEM(type)) {
+        if (PSA_KEY_TYPE_IS_ML_KEM(type)) {
             return mbedtls_psa_mlkem_import_key(attributes,
                                                 data, data_length,
                                                 key_buffer, key_buffer_size,
@@ -1500,11 +1500,11 @@ psa_status_t psa_export_key_internal(
         PSA_KEY_TYPE_IS_RSA(type)   ||
         PSA_KEY_TYPE_IS_ECC(type)   ||
         PSA_KEY_TYPE_IS_DH(type)    ||
-        PSA_KEY_TYPE_IS_MLKEM(type)) {
+        PSA_KEY_TYPE_IS_ML_KEM(type)) {
         return psa_export_key_buffer_internal(
             key_buffer, key_buffer_size,
             data, data_size, data_length);
-    } else if (PSA_KEY_TYPE_IS_MLKEM(type)) {
+    } else if (PSA_KEY_TYPE_IS_ML_KEM(type)) {
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT)
         psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
         mbedtls_mlkem_context *mlkem = NULL;
@@ -1589,7 +1589,7 @@ psa_status_t psa_export_public_key_internal(
 
     if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type) &&
         (PSA_KEY_TYPE_IS_RSA(type) || PSA_KEY_TYPE_IS_ECC(type) ||
-         PSA_KEY_TYPE_IS_DH(type) || PSA_KEY_TYPE_IS_MLKEM(type))) {
+         PSA_KEY_TYPE_IS_DH(type) || PSA_KEY_TYPE_IS_ML_KEM(type))) {
         /* Exporting public -> public */
         return psa_export_key_buffer_internal(
             key_buffer, key_buffer_size,
@@ -1634,7 +1634,7 @@ psa_status_t psa_export_public_key_internal(
         return PSA_ERROR_NOT_SUPPORTED;
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_EXPORT) ||
         * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_PUBLIC_KEY) */
-    } else if (PSA_KEY_TYPE_IS_MLKEM(type)) {
+    } else if (PSA_KEY_TYPE_IS_ML_KEM(type)) {
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT) || \
         defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY)
         return mbedtls_psa_mlkem_export_public_key(attributes,
@@ -7963,7 +7963,7 @@ static psa_status_t psa_validate_key_type_and_size_for_key_generation(
 #endif /* defined(PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_GENERATE) */
 
 #if defined(PSA_WANT_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
-    if (PSA_KEY_TYPE_IS_MLKEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+    if (PSA_KEY_TYPE_IS_ML_KEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
         /* To avoid empty block, return successfully here. */
         // REVISIT: KF do we want logic here?
         return PSA_SUCCESS;
@@ -8032,7 +8032,7 @@ psa_status_t psa_generate_key_internal(
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_GENERATE) */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
-    if (PSA_KEY_TYPE_IS_MLKEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+    if (PSA_KEY_TYPE_IS_ML_KEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
         return mbedtls_psa_mlkem_generate_key(attributes->bits,
                                               key_buffer,
                                               key_buffer_size,
@@ -8190,7 +8190,7 @@ psa_status_t psa_encapsulate(psa_key_id_t key,
     psa_key_usage_t usage = PSA_KEY_USAGE_ENCAPSULATE;
     psa_key_slot_t *output_slot = NULL;
     psa_se_drv_table_entry_t *output_driver = NULL;
-    size_t output_key_buffer_size = PSA_MLKEM_SHARED_SECRET_SIZE;
+    size_t output_key_buffer_size = PSA_ML_KEM_SHARED_SECRET_SIZE;
     
     if (!PSA_ALG_IS_KEY_ENCAPSULATION(alg)) {
         status = PSA_ERROR_INVALID_ARGUMENT;
@@ -8263,7 +8263,7 @@ psa_status_t psa_decapsulate(psa_key_id_t key,
     psa_key_usage_t usage = PSA_KEY_USAGE_DECAPSULATE;
     psa_key_slot_t *output_slot = NULL;
     psa_se_drv_table_entry_t *output_driver = NULL;
-    size_t output_key_buffer_size = PSA_MLKEM_SHARED_SECRET_SIZE;
+    size_t output_key_buffer_size = PSA_ML_KEM_SHARED_SECRET_SIZE;
     
     if (!PSA_ALG_IS_KEY_ENCAPSULATION(alg)) {
         status = PSA_ERROR_INVALID_ARGUMENT;

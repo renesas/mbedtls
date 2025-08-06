@@ -3135,6 +3135,18 @@ psa_status_t psa_sign_message_builtin(
             alg, hash, hash_length,
             signature, signature_size, signature_length);
     }
+    else if (PSA_ALG_IS_ML_DSA(alg))
+    {
+        status = mbedtls_psa_mldsa_sign(psa_get_key_bits(attributes),
+                                        key_buffer,
+                                        key_buffer_size,
+                                        input,
+                                        input_length,
+                                        signature,
+                                        signature_size,
+                                        signature_length);
+        return status;  
+    }
 
     return PSA_ERROR_NOT_SUPPORTED;
 }
@@ -7997,6 +8009,15 @@ psa_status_t psa_generate_key_internal(
                                               key_buffer_length);
     } else
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE) */
+
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE)
+    if (PSA_KEY_TYPE_IS_ML_DSA(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+        return mbedtls_psa_mldsa_generate_key(attributes,
+                                              key_buffer,
+                                              key_buffer_size,
+                                              key_buffer_length);
+    } else
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE) */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_GENERATE)
     if (PSA_KEY_TYPE_IS_DH(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {

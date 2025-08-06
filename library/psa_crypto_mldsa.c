@@ -163,7 +163,8 @@ psa_status_t mbedtls_psa_mldsa_sign(
     const uint8_t *message,
     size_t message_len,
     uint8_t *signature,
-    size_t signature_len)
+    size_t signature_size,
+    size_t *signature_len)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     mbedtls_mldsa_context mldsa;
@@ -179,16 +180,16 @@ psa_status_t mbedtls_psa_mldsa_sign(
     msg.key_data = (uint32_t *)message;
     msg.key_len = message_len;
     sign.key_data = (uint32_t *)signature;
-    sign.key_len = signature_len;
+    sign.key_len = signature_size;
 
     ret = mbedtls_mldsa_sign(&mldsa, bits, &msg, &sign);
     if (ret != 0) {
         return mbedtls_to_psa_error(ret);
     }
-    if (sign.key_len > signature_len) {
+    if (sign.key_len > signature_size) {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
-
+    signature_len = sign.key_len;
     return mbedtls_to_psa_error(ret);
 }
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN */

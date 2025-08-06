@@ -71,7 +71,9 @@ psa_status_t mbedtls_psa_mldsa_verify(
  * \param[in]  message              Buffer holding the message  data.
  * \param[in]  message_len          Size of \p message in bytes.
  * \param[out] signature            Buffer where the signature is to be written.
- * \param[out] signature_len        Size of \p signature in bytes.
+ * \param[out] signature_size       Size of \p signature buffer in bytes.
+ * \param[out] signature_len        On success, the number of bytes written in
+ *                                  \p signature.
  *
  * \retval #PSA_SUCCESS
  *         The signature  was successfully generated.
@@ -85,6 +87,7 @@ psa_status_t mbedtls_psa_mldsa_sign(
     const uint8_t *message,
     size_t message_len,
     uint8_t *signature,
-    size_t signature_len);
+    size_t signature_size,
+    size_t *signature_len);
 
 #endif /* PSA_CRYPTO_MLDSA_H */

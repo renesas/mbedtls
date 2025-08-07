@@ -151,7 +151,7 @@ psa_status_t mbedtls_psa_mlkem_import_key(
         random_d.key_data = (uint32_t*)data;
         random_d.key_len = PSA_ML_KEM_SEED_SIZE;
         random_z.key_data = (uint32_t*)(data + random_d.key_len);
-        random_d.key_len = PSA_ML_KEM_SEED_SIZE;
+        random_z.key_len = PSA_ML_KEM_SEED_SIZE;
 
         ret = mbedtls_mlkem_expand_key_pair(mlkem, *bits, &random_d, &random_z, mbedtls_mlkem_get_random);
         if (ret != 0) {

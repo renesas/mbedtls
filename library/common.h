@@ -386,7 +386,7 @@ static inline void mbedtls_xor_no_simd(unsigned char *r,
  * which can result in smaller code-size. */
 #if MBEDTLS_HAS_BUILTIN(__builtin_assume)
 /* clang provides __builtin_assume */
-#define MBEDTLS_ASSUME(x)       do { } while (0)  /* Modified this macro, as MbedTLS 3.6.0 has bug in optimization which is not tested on their repository. */
+#define MBEDTLS_ASSUME(x)       __builtin_assume(x)
 #elif MBEDTLS_HAS_BUILTIN(__builtin_unreachable)
 /* gcc and IAR can use __builtin_unreachable */
 #define MBEDTLS_ASSUME(x)       do { if (!(x)) __builtin_unreachable(); } while (0)

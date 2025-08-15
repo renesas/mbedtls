@@ -1,7 +1,7 @@
 /**
  * \file mlkem.h
  *
- * \brief   This file contains the definition of data structures and enumerations
+ * \brief   This file contains the definition of data structures, enumerations, and APIs
  *          for MLKEM (Module-Lattice Key Encapsulation Mechanism) support in mbedtls.
  *
  */

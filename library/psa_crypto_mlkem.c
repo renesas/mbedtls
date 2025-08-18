@@ -161,7 +161,6 @@ psa_status_t mbedtls_psa_mlkem_import_key(
         *key_buffer_length = PSA_ML_KEM_SEED_SIZE + PSA_ML_KEM_SEED_SIZE + mlkem->decaps_key.key_len;
 exit:
         if (status != PSA_SUCCESS) {
-            //mbedtls_mlkem_free(mlkem);
             mbedtls_free(mlkem);
         }
     }
@@ -218,7 +217,6 @@ psa_status_t mbedtls_psa_mlkem_export_public_key(
 
 exit:
     if (status != PSA_SUCCESS) {
-        //mbedtls_mlkem_free(mlkem);
         mbedtls_free(mlkem);
     }
     return status;

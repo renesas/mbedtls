@@ -1500,7 +1500,7 @@ psa_status_t psa_export_key_internal(
         PSA_KEY_TYPE_IS_RSA(type)   ||
         PSA_KEY_TYPE_IS_ECC(type)   ||
         PSA_KEY_TYPE_IS_DH(type)    ||
-        PSA_KEY_TYPE_IS_ML_KEM(type)) {
+        (PSA_KEY_TYPE_IS_ML_KEM(type) && PSA_KEY_TYPE_IS_PUBLIC_KEY(type))) {
         return psa_export_key_buffer_internal(
             key_buffer, key_buffer_size,
             data, data_size, data_length);
@@ -1510,13 +1510,18 @@ psa_status_t psa_export_key_internal(
         mbedtls_mlkem_context *mlkem = NULL;
 
         status = mbedtls_psa_mlkem_load_representation(
-            attributes->type, attributes->bits,
+            type, attributes->bits,
             key_buffer, key_buffer_size, &mlkem);
         if (status != PSA_SUCCESS) {
-            return status;
+            goto exit;
         }
 
-        return mbedtls_psa_mlkem_export_key(attributes->type, attributes->bits, mlkem, data, data_size, data_length);
+        status = mbedtls_psa_mlkem_export_key(PSA_KEY_TYPE_ML_KEM_KEY_PAIR, attributes->bits, mlkem, data, data_size, data_length);
+exit:
+        if (status != PSA_SUCCESS) {
+            mbedtls_free(mlkem);
+        }
+        return status;
 #else
         /* We don't know how to export a MLKEM key. */
         return PSA_ERROR_NOT_SUPPORTED;

@@ -112,7 +112,7 @@ psa_status_t mbedtls_psa_mlkem_export_public_key(
  * \note The signature of the function is that of a PSA driver generate_key
  *       entry point.
  *
- * \param[in]  bits               The algorithm strength in bits.
+ * \param[in]  attributes         The attributes for the key to generate.
  * \param[out] key_buffer         Buffer where the key data is to be written.
  * \param[in]  key_buffer_size    Size of \p key_buffer in bytes.
  * \param[out] key_buffer_length  On success, the number of bytes written in
@@ -126,7 +126,7 @@ psa_status_t mbedtls_psa_mlkem_export_public_key(
  *         The size of \p key_buffer is too small.
  */
 psa_status_t mbedtls_psa_mlkem_generate_key(
-    const psa_key_bits_t bits,
+    const psa_key_attributes_t *attributes,
     uint8_t *key_buffer, size_t key_buffer_size, size_t *key_buffer_length);
 
 /**
@@ -162,7 +162,7 @@ psa_status_t mbedtls_psa_mlkem_encapsulate(
 /**
  * \brief Decapsulate MLKEM ciphertext.
  *
- * \param[in]  bits               The algorithm strength in bits.
+ * \param[in]  attributes         The attributes for the key to decapsulate.
  * \param[in]  key_buffer         Buffer holding the key data.
  * \param[in]  key_buffer_size    Size of \p key_buffer in bytes.
  * \param[in]  ciphertext         Buffer holding the ciphertext data.
@@ -177,7 +177,7 @@ psa_status_t mbedtls_psa_mlkem_encapsulate(
  *         Key length or type not supported.
  */
 psa_status_t mbedtls_psa_mlkem_decapsulate(
-    const psa_key_bits_t bits,
+    const psa_key_attributes_t *attributes,
     uint8_t *key_buffer,
     size_t key_buffer_size,
     const uint8_t *ciphertext,

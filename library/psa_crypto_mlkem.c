@@ -26,8 +26,9 @@
     defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE) || \
     defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE)
 
+// #define MBEDTLS_MLKEM_TEST_FIXED_TRNG
+
 uint32_t mbedtls_mlkem_get_random(const uint32_t rand_len, uint32_t * const p_random);
-#define MBEDTLS_MLKEM_TEST_FIXED_TRNG
 #if defined(MBEDTLS_MLKEM_TEST_FIXED_TRNG)
 // Used by mbedtls_mlkem_generate_key()
 const uint8_t  z[32] = {   /* z */
@@ -82,9 +83,151 @@ uint32_t mbedtls_mlkem_get_random(const uint32_t rand_len, uint32_t * const p_ra
           * MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE ||
           * MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_DECAPSULATE */
 
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_BASIC)
+psa_status_t mbedtls_psa_mlkem_load_representation(
+    psa_key_type_t type, psa_key_bits_t bits,
+    const uint8_t *data, size_t data_length,
+    mbedtls_mlkem_context **p_mlkem)
+{
+
+    *p_mlkem = mbedtls_calloc(1, sizeof(mbedtls_mlkem_context));
+    if (*p_mlkem == NULL) {
+        return PSA_ERROR_INSUFFICIENT_MEMORY;
+    }
+    mbedtls_mlkem_init(*p_mlkem);
+    
+    if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type)) {
+        return PSA_ERROR_NOT_SUPPORTED;
+    }
+    else {
+        (*p_mlkem)->decaps_key.key_data = (uint32_t *)data;
+        (*p_mlkem)->decaps_key.key_len = PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(bits);
+        (*p_mlkem)->d.key_data = (uint32_t *)(data + (*p_mlkem)->decaps_key.key_len);
+        (*p_mlkem)->d.key_len = PSA_ML_KEM_SEED_SIZE;
+        (*p_mlkem)->z.key_data = (uint32_t *)(data + (*p_mlkem)->decaps_key.key_len + (*p_mlkem)->d.key_len);
+        (*p_mlkem)->z.key_len = PSA_ML_KEM_SEED_SIZE;
+    }
+
+
+    return PSA_SUCCESS;
+}
+#endif
+         
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_IMPORT) || \
+    defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT) || \
+    defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY)
+
+psa_status_t mbedtls_psa_mlkem_import_key(
+    const psa_key_attributes_t *attributes,
+    const uint8_t *data, size_t data_length,
+    uint8_t *key_buffer, size_t key_buffer_size,
+    size_t *key_buffer_length, size_t *bits)
+{
+    psa_status_t status;
+
+    if (PSA_KEY_TYPE_IS_PUBLIC_KEY(attributes->type)) {
+        /* Until ASN.1 encoding is implemented, the public key is just raw bytes */
+        memcpy(key_buffer, data, data_length);
+        *key_buffer_length = data_length;
+        (void)key_buffer_size;
+        status = PSA_SUCCESS;
+    } else {
+        int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+        mbedtls_mlkem_context *mlkem = NULL;
+        mbedtls_mlkem_data_t random_d;
+        mbedtls_mlkem_data_t random_z;
+        
+        /* Parse input */
+        status = mbedtls_psa_mlkem_load_representation(attributes->type,
+                                                       attributes->bits,
+                                                       key_buffer,
+                                                       key_buffer_size,
+                                                       &mlkem);
+        if (status != PSA_SUCCESS) {
+            goto exit;
+        }
+        *bits = attributes->bits;
+
+        random_d.key_data = (uint32_t*)data;
+        random_d.key_len = PSA_ML_KEM_SEED_SIZE;
+        random_z.key_data = (uint32_t*)(data + random_d.key_len);
+        random_z.key_len = PSA_ML_KEM_SEED_SIZE;
+
+        ret = mbedtls_mlkem_expand_key_pair(mlkem, *bits, &random_d, &random_z, mbedtls_mlkem_get_random);
+        if (ret != 0) {
+            status = mbedtls_to_psa_error(ret);
+            goto exit;
+        }
+        *key_buffer_length = PSA_ML_KEM_SEED_SIZE + PSA_ML_KEM_SEED_SIZE + mlkem->decaps_key.key_len;
+exit:
+        if (status != PSA_SUCCESS) {
+            mbedtls_free(mlkem);
+        }
+    }
+    return status;
+}
+
+psa_status_t mbedtls_psa_mlkem_export_key(psa_key_type_t type,
+                                          psa_key_bits_t bits,
+                                          mbedtls_mlkem_context *mlkem,
+                                          uint8_t *data,
+                                          size_t data_size,
+                                          size_t *data_length)
+{
+    int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+    if (PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+        if (data_size < mlkem->d.key_len + mlkem->z.key_len) {
+            return PSA_ERROR_BUFFER_TOO_SMALL;
+        }
+        ret = mbedtls_mlkem_export_keypair(mlkem, data, data_length);
+    }
+    else {
+        if (data_size < PSA_KEY_EXPORT_ML_KEM_PUBLIC_KEY_MAX_SIZE(bits)) {
+            return PSA_ERROR_BUFFER_TOO_SMALL;
+        }
+        ret = mbedtls_mlkem_export_public_key(mlkem, bits);
+        if (ret == 0) {
+            memcpy(data, mlkem->encaps_key.key_data, mlkem->encaps_key.key_len);
+            *data_length = mlkem->encaps_key.key_len;
+        }
+    }
+
+    if (ret != 0) {
+        return mbedtls_to_psa_error(ret);
+    }
+    return PSA_SUCCESS;
+}
+
+psa_status_t mbedtls_psa_mlkem_export_public_key(
+    const psa_key_attributes_t *attributes,
+    const uint8_t *key_buffer, size_t key_buffer_size,
+    uint8_t *data, size_t data_size, size_t *data_length)
+{
+    psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
+    mbedtls_mlkem_context *mlkem = NULL;
+
+    status = mbedtls_psa_mlkem_load_representation(
+        attributes->type, attributes->bits,
+        key_buffer, key_buffer_size, &mlkem);
+    if (status != PSA_SUCCESS) {
+        goto exit;
+    }
+
+    status = mbedtls_psa_mlkem_export_key(PSA_KEY_TYPE_ML_KEM_PUBLIC_KEY, attributes->bits, mlkem, data, data_size, data_length);
+
+exit:
+    if (status != PSA_SUCCESS) {
+        mbedtls_free(mlkem);
+    }
+    return status;
+}
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_EXPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_PUBLIC_KEY) */
+
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
 psa_status_t mbedtls_psa_mlkem_generate_key(
-    const psa_key_attributes_t *attributes,
+    const psa_key_bits_t bits,
     uint8_t *key_buffer,  size_t key_buffer_size, size_t *key_buffer_length)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
@@ -94,21 +237,23 @@ psa_status_t mbedtls_psa_mlkem_generate_key(
 #endif
    
     mbedtls_mlkem_init(&mlkem);
-    mlkem.encaps_key.key_data = (uint32_t *)key_buffer;
-    mlkem.encaps_key.key_len = PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(attributes->bits);
-    mlkem.decaps_key.key_data = (uint32_t *)(key_buffer + mlkem.encaps_key.key_len);
-    mlkem.decaps_key.key_len = PSA_KEY_EXPORT_MLKEM_DEC_KEY_SIZE(attributes->bits);
-     
-    if (key_buffer_size < mlkem.encaps_key.key_len + mlkem.decaps_key.key_len) {
+    mlkem.decaps_key.key_data = (uint32_t *)key_buffer;
+    mlkem.decaps_key.key_len = PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(bits);
+    mlkem.d.key_data = (uint32_t *)(key_buffer + mlkem.decaps_key.key_len);
+    mlkem.d.key_len = PSA_ML_KEM_SEED_SIZE;
+    mlkem.z.key_data = (uint32_t *)(key_buffer + mlkem.decaps_key.key_len + mlkem.d.key_len);
+    mlkem.z.key_len = PSA_ML_KEM_SEED_SIZE;
+
+    if (key_buffer_size < mlkem.decaps_key.key_len + mlkem.d.key_len + mlkem.z.key_len) {
         return PSA_ERROR_BUFFER_TOO_SMALL;
     }
 
-    ret = mbedtls_mlkem_generate_key(&mlkem, attributes->bits, mbedtls_mlkem_get_random);
+    ret = mbedtls_mlkem_generate_key(&mlkem, bits, mbedtls_mlkem_get_random);
     if (ret != 0) {
         return mbedtls_to_psa_error(ret);
     }
 
-    *key_buffer_length = mlkem.encaps_key.key_len + mlkem.decaps_key.key_len;
+    *key_buffer_length = PSA_ML_KEM_SEED_SIZE + PSA_ML_KEM_SEED_SIZE + mlkem.decaps_key.key_len;
 
     return mbedtls_to_psa_error(ret);
 }
@@ -116,7 +261,7 @@ psa_status_t mbedtls_psa_mlkem_generate_key(
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE)
 psa_status_t mbedtls_psa_mlkem_encapsulate(
-    const psa_key_bits_t bits,
+    const psa_key_attributes_t *attributes,
     uint8_t *key_buffer,
     size_t key_buffer_size,
     uint8_t *output_key_buffer,
@@ -134,14 +279,27 @@ psa_status_t mbedtls_psa_mlkem_encapsulate(
 #endif
    
     mbedtls_mlkem_init(&mlkem);
-    mlkem.encaps_key.key_data = (uint32_t *)key_buffer;
-    mlkem.encaps_key.key_len = PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(bits);
+    if (PSA_KEY_TYPE_IS_PUBLIC_KEY(attributes->type)) {
+        mlkem.encaps_key.key_data = (uint32_t *)key_buffer;
+        mlkem.encaps_key.key_len = key_buffer_size;
+    }
+    else
+    {
+        mlkem.decaps_key.key_data = (uint32_t *)key_buffer;
+        mlkem.decaps_key.key_len = PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(attributes->bits);
+        mbedtls_mlkem_export_public_key(&mlkem, attributes->bits);
+    }
+
     cipher.key_data = (uint32_t *)ciphertext;
     cipher.key_len = ciphertext_size;
     shared_key.key_data = (uint32_t *)output_key_buffer;
     shared_key.key_len = output_key_buffer_size;
 
-    ret = mbedtls_mlkem_encapsulate(&mlkem, bits, &cipher, &shared_key, mbedtls_mlkem_get_random);
+    if (key_buffer_size < mlkem.decaps_key.key_len) {
+        return PSA_ERROR_BUFFER_TOO_SMALL;
+    }
+
+    ret = mbedtls_mlkem_encapsulate(&mlkem, attributes->bits, &cipher, &shared_key, mbedtls_mlkem_get_random);
     if (ret != 0) {
         return mbedtls_to_psa_error(ret);
     }
@@ -176,12 +334,20 @@ psa_status_t mbedtls_psa_mlkem_decapsulate(
 #endif
    
     mbedtls_mlkem_init(&mlkem);
-    mlkem.decaps_key.key_data = (uint32_t *)(key_buffer + PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(bits));
-    mlkem.decaps_key.key_len = PSA_KEY_EXPORT_MLKEM_DEC_KEY_SIZE(bits);
+    mlkem.decaps_key.key_data = (uint32_t *)key_buffer;
+    mlkem.decaps_key.key_len = PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(bits);
     cipher.key_data = (uint32_t *)ciphertext;
     cipher.key_len = ciphertext_len;
     shared_key.key_data = (uint32_t *)shared_secret;
     shared_key.key_len = *shared_secret_len;
+        
+    if (key_buffer_size < mlkem.decaps_key.key_len) {
+        return PSA_ERROR_BUFFER_TOO_SMALL;
+    }
+
+    if (key_buffer_size < mlkem.decaps_key.key_len) {
+        return PSA_ERROR_BUFFER_TOO_SMALL;
+    }
 
     ret = mbedtls_mlkem_decapsulate(&mlkem, bits, &cipher, &shared_key, mbedtls_mlkem_get_random);
     if (ret != 0) {

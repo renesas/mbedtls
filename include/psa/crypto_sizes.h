@@ -872,41 +872,45 @@
 #define PSA_KEY_EXPORT_FFDH_PUBLIC_KEY_MAX_SIZE(key_bits)   \
     (PSA_BITS_TO_BYTES(key_bits))
 
+#define PSA_KEY_BITS_ML_KEM_512 512U
+#define PSA_KEY_BITS_ML_KEM_768 768U
 
-#define PSA_KEY_BITS_MLKEM_512 512U
-#define PSA_KEY_BITS_MLKEM_768 768U
+#define PSA_ML_KEM_512_ENC_KEY_SIZE 800U
+#define PSA_ML_KEM_512_DEC_KEY_SIZE 1632U
+#define PSA_ML_KEM_768_ENC_KEY_SIZE 1184U
+#define PSA_ML_KEM_768_DEC_KEY_SIZE 2400U
 
-#define PSA_MLKEM_512_ENC_KEY_SIZE 800U
-#define PSA_MLKEM_512_DEC_KEY_SIZE 1632U
-#define PSA_MLKEM_768_ENC_KEY_SIZE 1184U
-#define PSA_MLKEM_768_DEC_KEY_SIZE 2400U
+#define PSA_ML_KEM_SEED_SIZE 32U
 
-/* Maximum size of the MLKEM Encap Key.
+/* Maximum size of the ML-KEM Encap Key.
  */
-#define PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(key_bits)      \
-    ((key_bits) == PSA_KEY_BITS_MLKEM_512 ? PSA_MLKEM_512_ENC_KEY_SIZE : \
-     (key_bits) == PSA_KEY_BITS_MLKEM_768 ? PSA_MLKEM_768_ENC_KEY_SIZE : 0U)
+#define PSA_KEY_EXPORT_ML_KEM_PUBLIC_KEY_MAX_SIZE(key_bits)      \
+    ((key_bits) == PSA_KEY_BITS_ML_KEM_512 ? PSA_ML_KEM_512_ENC_KEY_SIZE : \
+     (key_bits) == PSA_KEY_BITS_ML_KEM_768 ? PSA_ML_KEM_768_ENC_KEY_SIZE : 0U)
      
-/* Maximum size of the MLKEM Decap Key.
+/* Maximum size of the ML-KEM Decap Key.
  */
-#define PSA_KEY_EXPORT_MLKEM_DEC_KEY_SIZE(key_bits)      \
-    ((key_bits) == PSA_KEY_BITS_MLKEM_512 ? PSA_MLKEM_512_DEC_KEY_SIZE : \
-     (key_bits) == PSA_KEY_BITS_MLKEM_768 ? PSA_MLKEM_768_DEC_KEY_SIZE : 0U)
+#define PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(key_bits)      \
+    ((key_bits) == PSA_KEY_BITS_ML_KEM_512 ? PSA_ML_KEM_512_DEC_KEY_SIZE : \
+     (key_bits) == PSA_KEY_BITS_ML_KEM_768 ? PSA_ML_KEM_768_DEC_KEY_SIZE : 0U)
 
-/* Maximum size of the export encoding of an MLKEM key pair.
+/* Maximum size of the generation encoding of an ML-KEM key pair.
  */
-#define PSA_KEY_EXPORT_MLKEM_KEY_PAIR_MAX_SIZE(key_bits)      \
-    (PSA_KEY_EXPORT_MLKEM_ENC_KEY_SIZE(key_bits) + \
-     PSA_KEY_EXPORT_MLKEM_DEC_KEY_SIZE(key_bits))
+#define PSA_KEY_GEN_ML_KEM_KEY_PAIR_MAX_SIZE(key_bits)      \
+    (PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(key_bits) + (2 * PSA_ML_KEM_SEED_SIZE))
+    
+/* Maximum size of the export encoding of an ML-KEM key pair.
+ */
+#define PSA_KEY_EXPORT_ML_KEM_KEY_PAIR_MAX_SIZE (2 * PSA_ML_KEM_SEED_SIZE)
 
-#define PSA_MLKEM_512_CIPHERTEXT_SIZE 768U
-#define PSA_MLKEM_768_CIPHERTEXT_SIZE 1088U
+#define PSA_ML_KEM_512_CIPHERTEXT_SIZE 768U
+#define PSA_ML_KEM_768_CIPHERTEXT_SIZE 1088U
 
-#define PSA_MLKEM_CIPHERTEXT_SIZE(key_bits)      \
-    ((key_bits) == PSA_KEY_BITS_MLKEM_512 ? PSA_MLKEM_512_CIPHERTEXT_SIZE : \
-     (key_bits) == PSA_KEY_BITS_MLKEM_768 ? PSA_MLKEM_768_CIPHERTEXT_SIZE : 0U)
+#define PSA_ML_KEM_CIPHERTEXT_SIZE(key_bits)      \
+    ((key_bits) == PSA_KEY_BITS_ML_KEM_512 ? PSA_ML_KEM_512_CIPHERTEXT_SIZE : \
+     (key_bits) == PSA_KEY_BITS_ML_KEM_768 ? PSA_ML_KEM_768_CIPHERTEXT_SIZE : 0U)
 
-#define PSA_MLKEM_SHARED_SECRET_SIZE 32U
+#define PSA_ML_KEM_SHARED_SECRET_SIZE 32U
 
 
 #define PSA_KEY_BITS_ML_DSA_44 44U
@@ -991,7 +995,8 @@
      (key_type) == PSA_KEY_TYPE_DSA_PUBLIC_KEY ? PSA_KEY_EXPORT_DSA_PUBLIC_KEY_MAX_SIZE(key_bits) : \
      PSA_KEY_TYPE_IS_ECC_KEY_PAIR(key_type) ? PSA_KEY_EXPORT_ECC_KEY_PAIR_MAX_SIZE(key_bits) :      \
      PSA_KEY_TYPE_IS_ECC_PUBLIC_KEY(key_type) ? PSA_KEY_EXPORT_ECC_PUBLIC_KEY_MAX_SIZE(key_bits) :  \
-     PSA_KEY_TYPE_IS_MLKEM(key_type) ? PSA_KEY_EXPORT_MLKEM_KEY_PAIR_MAX_SIZE(key_bits) :  \
+     (key_type) == PSA_KEY_TYPE_ML_KEM_PUBLIC_KEY ? PSA_KEY_EXPORT_ML_KEM_PUBLIC_KEY_MAX_SIZE(key_bits) :  \
+     PSA_KEY_TYPE_IS_ML_KEM(key_type) ? PSA_KEY_GEN_ML_KEM_KEY_PAIR_MAX_SIZE(key_bits) :  \
      PSA_KEY_TYPE_IS_ML_DSA(key_type) ? PSA_KEY_EXPORT_ML_DSA_KEY_PAIR_MAX_SIZE(key_bits) :  \
      0U)
 
@@ -1043,6 +1048,7 @@
 #define PSA_EXPORT_PUBLIC_KEY_OUTPUT_SIZE(key_type, key_bits)                           \
     (PSA_KEY_TYPE_IS_RSA(key_type) ? PSA_KEY_EXPORT_RSA_PUBLIC_KEY_MAX_SIZE(key_bits) : \
      PSA_KEY_TYPE_IS_ECC(key_type) ? PSA_KEY_EXPORT_ECC_PUBLIC_KEY_MAX_SIZE(key_bits) : \
+     PSA_KEY_TYPE_IS_ML_KEM(key_type) ? PSA_KEY_EXPORT_ML_KEM_PUBLIC_KEY_MAX_SIZE(key_bits) : \
      PSA_KEY_TYPE_IS_DH(key_type) ? PSA_BITS_TO_BYTES(key_bits) : \
      0U)
 

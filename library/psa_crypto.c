@@ -807,6 +807,17 @@ psa_status_t psa_import_key_into_slot(
 #endif /* (defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_KEY_PAIR_IMPORT) &&
            defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_KEY_PAIR_EXPORT)) ||
         * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_RSA_PUBLIC_KEY) */
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_IMPORT) || \
+        defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY)
+        if (PSA_KEY_TYPE_IS_ML_KEM(type)) {
+            return mbedtls_psa_mlkem_import_key(attributes,
+                                                data, data_length,
+                                                key_buffer, key_buffer_size,
+                                                key_buffer_length,
+                                                bits);
+        }
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_PUBLIC_KEY) */
     }
 
     return PSA_ERROR_NOT_SUPPORTED;
@@ -1488,10 +1499,33 @@ psa_status_t psa_export_key_internal(
     if (key_type_is_raw_bytes(type) ||
         PSA_KEY_TYPE_IS_RSA(type)   ||
         PSA_KEY_TYPE_IS_ECC(type)   ||
-        PSA_KEY_TYPE_IS_DH(type)) {
+        PSA_KEY_TYPE_IS_DH(type)    ||
+        (PSA_KEY_TYPE_IS_ML_KEM(type) && PSA_KEY_TYPE_IS_PUBLIC_KEY(type))) {
         return psa_export_key_buffer_internal(
             key_buffer, key_buffer_size,
             data, data_size, data_length);
+    } else if (PSA_KEY_TYPE_IS_ML_KEM(type)) {
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT)
+        psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
+        mbedtls_mlkem_context *mlkem = NULL;
+
+        status = mbedtls_psa_mlkem_load_representation(
+            type, attributes->bits,
+            key_buffer, key_buffer_size, &mlkem);
+        if (status != PSA_SUCCESS) {
+            goto exit;
+        }
+
+        status = mbedtls_psa_mlkem_export_key(PSA_KEY_TYPE_ML_KEM_KEY_PAIR, attributes->bits, mlkem, data, data_size, data_length);
+exit:
+        if (status != PSA_SUCCESS) {
+            mbedtls_free(mlkem);
+        }
+        return status;
+#else
+        /* We don't know how to export a MLKEM key. */
+        return PSA_ERROR_NOT_SUPPORTED;
+#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT */
     } else {
         /* This shouldn't happen in the reference implementation, but
            it is valid for a special-purpose implementation to omit
@@ -1560,7 +1594,7 @@ psa_status_t psa_export_public_key_internal(
 
     if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type) &&
         (PSA_KEY_TYPE_IS_RSA(type) || PSA_KEY_TYPE_IS_ECC(type) ||
-         PSA_KEY_TYPE_IS_DH(type))) {
+         PSA_KEY_TYPE_IS_DH(type) || PSA_KEY_TYPE_IS_ML_KEM(type))) {
         /* Exporting public -> public */
         return psa_export_key_buffer_internal(
             key_buffer, key_buffer_size,
@@ -1605,6 +1639,19 @@ psa_status_t psa_export_public_key_internal(
         return PSA_ERROR_NOT_SUPPORTED;
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_EXPORT) ||
         * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_PUBLIC_KEY) */
+    } else if (PSA_KEY_TYPE_IS_ML_KEM(type)) {
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT) || \
+        defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY)
+        return mbedtls_psa_mlkem_export_public_key(attributes,
+                                                  key_buffer,
+                                                  key_buffer_size,
+                                                  data, data_size,
+                                                  data_length);
+#else
+        /* We don't know how to convert a private MLKEM key to public */
+        return PSA_ERROR_NOT_SUPPORTED;
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY) */
     } else {
         (void) key_buffer;
         (void) key_buffer_size;
@@ -7933,7 +7980,7 @@ static psa_status_t psa_validate_key_type_and_size_for_key_generation(
 #endif /* defined(PSA_WANT_KEY_TYPE_ECC_KEY_PAIR_GENERATE) */
 
 #if defined(PSA_WANT_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
-    if (PSA_KEY_TYPE_IS_MLKEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+    if (PSA_KEY_TYPE_IS_ML_KEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
         /* To avoid empty block, return successfully here. */
         // REVISIT: KF do we want logic here?
         return PSA_SUCCESS;
@@ -8010,8 +8057,8 @@ psa_status_t psa_generate_key_internal(
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_GENERATE) */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
-    if (PSA_KEY_TYPE_IS_MLKEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
-        return mbedtls_psa_mlkem_generate_key(attributes,
+    if (PSA_KEY_TYPE_IS_ML_KEM(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+        return mbedtls_psa_mlkem_generate_key(attributes->bits,
                                               key_buffer,
                                               key_buffer_size,
                                               key_buffer_length);
@@ -8177,7 +8224,7 @@ psa_status_t psa_encapsulate(psa_key_id_t key,
     psa_key_usage_t usage = PSA_KEY_USAGE_ENCAPSULATE;
     psa_key_slot_t *output_slot = NULL;
     psa_se_drv_table_entry_t *output_driver = NULL;
-    size_t output_key_buffer_size = PSA_MLKEM_SHARED_SECRET_SIZE;
+    size_t output_key_buffer_size = PSA_ML_KEM_SHARED_SECRET_SIZE;
     
     if (!PSA_ALG_IS_KEY_ENCAPSULATION(alg)) {
         status = PSA_ERROR_INVALID_ARGUMENT;
@@ -8211,7 +8258,7 @@ psa_status_t psa_encapsulate(psa_key_id_t key,
     }
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_ENCAPSULATE)
-    status = mbedtls_psa_mlkem_encapsulate(slot->attr.bits,
+    status = mbedtls_psa_mlkem_encapsulate(&slot->attr,
                                            slot->key.data,
                                            slot->key.bytes,
                                            output_slot->key.data,
@@ -8250,7 +8297,7 @@ psa_status_t psa_decapsulate(psa_key_id_t key,
     psa_key_usage_t usage = PSA_KEY_USAGE_DECAPSULATE;
     psa_key_slot_t *output_slot = NULL;
     psa_se_drv_table_entry_t *output_driver = NULL;
-    size_t output_key_buffer_size = PSA_MLKEM_SHARED_SECRET_SIZE;
+    size_t output_key_buffer_size = PSA_ML_KEM_SHARED_SECRET_SIZE;
     
     if (!PSA_ALG_IS_KEY_ENCAPSULATION(alg)) {
         status = PSA_ERROR_INVALID_ARGUMENT;

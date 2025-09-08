@@ -3253,6 +3253,17 @@ psa_status_t psa_verify_message_builtin(
             alg, hash, hash_length,
             signature, signature_length);
     }
+    else if (PSA_ALG_IS_ML_DSA(alg))
+    {
+        status = mbedtls_psa_mldsa_verify(psa_get_key_bits(attributes),
+                                          key_buffer,
+                                          key_buffer_size,
+                                          signature,
+                                          signature_length,
+                                          input,
+                                          input_length);
+        return status;  
+    }
 
     return PSA_ERROR_NOT_SUPPORTED;
 }

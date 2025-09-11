@@ -921,6 +921,8 @@
 #define PSA_ML_DSA_65_PRIV_KEY_SIZE  4032U
 #define PSA_ML_DSA_65_PUB_KEY_SIZE   1952U
 
+#define PSA_ML_DSA_SEED_SIZE 32U
+
 /* Maximum size of the ML_DSA Private Key.
  */
 #define PSA_KEY_EXPORT_ML_DSA_PRIV_KEY_SIZE(key_bits)      \
@@ -935,7 +937,10 @@
 
 /* Maximum size of the export encoding of an ML_DSA key pair.
  */
-#define PSA_KEY_EXPORT_ML_DSA_KEY_PAIR_MAX_SIZE(key_bits)      \
+
+#define PSA_KEY_EXPORT_ML_DSA_KEY_PAIR_MAX_SIZE (PSA_ML_DSA_SEED_SIZE)
+
+#define PSA_KEY_GEN_ML_DSA_KEY_PAIR_MAX_SIZE(key_bits)      \
     (PSA_KEY_EXPORT_ML_DSA_PRIV_KEY_SIZE(key_bits) + \
      PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(key_bits))
 
@@ -997,7 +1002,7 @@
      PSA_KEY_TYPE_IS_ECC_PUBLIC_KEY(key_type) ? PSA_KEY_EXPORT_ECC_PUBLIC_KEY_MAX_SIZE(key_bits) :  \
      (key_type) == PSA_KEY_TYPE_ML_KEM_PUBLIC_KEY ? PSA_KEY_EXPORT_ML_KEM_PUBLIC_KEY_MAX_SIZE(key_bits) :  \
      PSA_KEY_TYPE_IS_ML_KEM(key_type) ? PSA_KEY_GEN_ML_KEM_KEY_PAIR_MAX_SIZE(key_bits) :  \
-     PSA_KEY_TYPE_IS_ML_DSA(key_type) ? PSA_KEY_EXPORT_ML_DSA_KEY_PAIR_MAX_SIZE(key_bits) :  \
+     PSA_KEY_TYPE_IS_ML_DSA(key_type) ? PSA_KEY_GEN_ML_DSA_KEY_PAIR_MAX_SIZE(key_bits) :  \
      0U)
 
 /** Sufficient output buffer size for psa_export_public_key().

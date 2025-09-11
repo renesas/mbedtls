@@ -27,57 +27,12 @@
     defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
 
 uint32_t mbedtls_mlkem_get_random(const uint32_t rand_len, uint32_t * const p_random);
-#define MBEDTLS_MLDSA_TEST_FIXED_TRNG
-#if defined(MBEDTLS_MLDSA_TEST_FIXED_TRNG)
-// Used by mbedtls_mldsa_generate_key()
-const uint8_t  z[32] = {   /* z */
-    0x1A, 0x39, 0x41, 0x11, 0x16, 0x38, 0x03, 0xFE, 0x2E, 0x85, 0x19, 0xC3, 0x35, 0xA6, 0x86, 0x75,
-    0x56, 0x33, 0x8E, 0xAD, 0xAF, 0xA2, 0x2B, 0x5F, 0xC5, 0x57, 0x43, 0x05, 0x60, 0xCC, 0xD6, 0x93,
-};
-const uint8_t  d[32] = {   /* d */
-    0x1E, 0xB4, 0x40, 0x0A, 0x01, 0x62, 0x9D, 0x51, 0x79, 0x74, 0xE2, 0xCD, 0x85, 0xB9, 0xDE, 0xF5,
-    0x90, 0x82, 0xDE, 0x50, 0x8E, 0x6F, 0x9C, 0x2B, 0x0E, 0x34, 0x1E, 0x12, 0x96, 0x59, 0x55, 0xCA,
-};
-// Used by mbedtls_mldsa_verify() and mbedtls_mldsa_sign()
-const uint8_t  m[32] = { /* m */
-    0xAF, 0x9B, 0x6C, 0xAE, 0x18, 0x7C, 0x40, 0x72, 0x56, 0xFC, 0x9D, 0x3F, 0x3B, 0xE3, 0x70, 0x10,
-    0xFF, 0xAF, 0x55, 0xD0, 0xE6, 0x87, 0xA1, 0x28, 0xF1, 0x7C, 0x7F, 0x62, 0xEB, 0x68, 0x84, 0xD3,
-};
-static int random_call_count = 0;
 
-uint32_t mbedtls_mldsa_get_random(const uint32_t rand_len, uint32_t * const p_random)
-{
-    if (0 == random_call_count)
-    {
-        /* d */
-        memcpy(p_random, d, rand_len);
-    }
-    else if (1 == random_call_count)
-    {
-        /* z */
-        memcpy(p_random, z, rand_len);
-    }
-    else if (2 == random_call_count)
-    {
-        /* fixed data */
-        memcpy(p_random, z, rand_len);
-    }
-    else
-    {
-        memcpy(p_random, m, rand_len);
-    }
-
-    random_call_count++;
-
-    return 0x55555555;
-}
-#else
 uint32_t mbedtls_mldsa_get_random(const uint32_t rand_len, uint32_t * const p_random)
 {
     psa_status_t status = mbedtls_psa_get_random(MBEDTLS_PSA_RANDOM_STATE, (unsigned char *)p_random, rand_len);
     return (status == PSA_SUCCESS) ? 0x55555555U : 0xAAAAAAAAU;
 }
-#endif
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE ||
           * MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN ||
           * MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY */
@@ -89,9 +44,6 @@ psa_status_t mbedtls_psa_mldsa_generate_key(
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     mbedtls_mldsa_context mldsa;
-#if defined(MBEDTLS_MLDSA_TEST_FIXED_TRNG)
-    random_call_count = 0;
-#endif
    
     mbedtls_mldsa_init(&mldsa);
     mldsa.public_key.key_data = (uint32_t *)key_buffer;
@@ -128,9 +80,6 @@ psa_status_t mbedtls_psa_mldsa_verify(
     mbedtls_mldsa_context mldsa;
     mbedtls_mldsa_data_t msg;
     mbedtls_mldsa_data_t sign;
-#if defined(MBEDTLS_MLDSA_TEST_FIXED_TRNG)
-    random_call_count = 3;
-#endif
    
     mbedtls_mldsa_init(&mldsa);
     mldsa.public_key.key_data = (uint32_t *)key_buffer;
@@ -170,9 +119,6 @@ psa_status_t mbedtls_psa_mldsa_sign(
     mbedtls_mldsa_context mldsa;
     mbedtls_mldsa_data_t msg;
     mbedtls_mldsa_data_t sign;
-#if defined(MBEDTLS_MLDSA_TEST_FIXED_TRNG)
-    random_call_count = 3;
-#endif
    
     mbedtls_mldsa_init(&mldsa);
     mldsa.private_key.key_data = (uint32_t *)(key_buffer + PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits));

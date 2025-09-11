@@ -1008,6 +1008,8 @@
 #define PSA_ALG_SHA3_384                        ((psa_algorithm_t) 0x02000012)
 /** SHA3-512 */
 #define PSA_ALG_SHA3_512                        ((psa_algorithm_t) 0x02000013)
+/** SHAKE-256 */
+#define PSA_ALG_SHAKE256                        ((psa_algorithm_t) 0x02000014)
 /** The first 512 bits (64 bytes) of the SHAKE256 output.
  *
  * This is the prehashing for Ed448ph (see #PSA_ALG_ED448PH). For other

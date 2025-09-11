@@ -1500,7 +1500,8 @@ psa_status_t psa_export_key_internal(
         PSA_KEY_TYPE_IS_RSA(type)   ||
         PSA_KEY_TYPE_IS_ECC(type)   ||
         PSA_KEY_TYPE_IS_DH(type)    ||
-        (PSA_KEY_TYPE_IS_ML_KEM(type) && PSA_KEY_TYPE_IS_PUBLIC_KEY(type))) {
+        (PSA_KEY_TYPE_IS_ML_KEM(type) && PSA_KEY_TYPE_IS_PUBLIC_KEY(type)) ||
+        (PSA_KEY_TYPE_IS_ML_DSA(type) && PSA_KEY_TYPE_IS_PUBLIC_KEY(type))) {
         return psa_export_key_buffer_internal(
             key_buffer, key_buffer_size,
             data, data_size, data_length);
@@ -1526,6 +1527,28 @@ exit:
         /* We don't know how to export a MLKEM key. */
         return PSA_ERROR_NOT_SUPPORTED;
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT */
+//     } else if (PSA_KEY_TYPE_IS_ML_DSA(type)) {
+// #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLDSA_KEY_PAIR_EXPORT)
+//         psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
+//         mbedtls_mldsa_context *mldsa = NULL;
+
+//         status = mbedtls_psa_mldsa_load_representation(
+//             type, attributes->bits,
+//             key_buffer, key_buffer_size, &mldsa);
+//         if (status != PSA_SUCCESS) {
+//             goto exit;
+//         }
+
+//         status = mbedtls_psa_mldsa_export_key(PSA_KEY_TYPE_ML_DSA_KEY_PAIR, attributes->bits, mldsa, data, data_size, data_length);
+// exit:
+//         if (status != PSA_SUCCESS) {
+//             mbedtls_free(mldsa);
+//         }
+//         return status;
+// #else
+//         /* We don't know how to export a MLDSA key. */
+//         return PSA_ERROR_NOT_SUPPORTED;
+// #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLDSA_KEY_PAIR_EXPORT */
     } else {
         /* This shouldn't happen in the reference implementation, but
            it is valid for a special-purpose implementation to omit
@@ -3164,7 +3187,21 @@ psa_status_t psa_sign_message_builtin(
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
-    if (PSA_ALG_IS_SIGN_HASH(alg)) {
+    if (PSA_ALG_IS_ML_DSA(alg)) {
+        /* PSA does not support SHAKE yet, so there is not way to pre-hash the message */
+        return PSA_ERROR_NOT_SUPPORTED;
+
+    } else if (PSA_ALG_IS_HASH_ML_DSA(alg)) {
+        return mbedtls_psa_mldsa_sign(psa_get_key_bits(attributes),
+                                      key_buffer,
+                                      key_buffer_size,
+                                      input,
+                                      input_length,
+                                      signature,
+                                      signature_size,
+                                      signature_length);
+
+    } else if (PSA_ALG_IS_SIGN_HASH(alg)) {
         size_t hash_length;
         uint8_t hash[PSA_HASH_MAX_SIZE];
 
@@ -3181,18 +3218,6 @@ psa_status_t psa_sign_message_builtin(
             attributes, key_buffer, key_buffer_size,
             alg, hash, hash_length,
             signature, signature_size, signature_length);
-    }
-    else if (PSA_ALG_IS_ML_DSA(alg))
-    {
-        status = mbedtls_psa_mldsa_sign(psa_get_key_bits(attributes),
-                                        key_buffer,
-                                        key_buffer_size,
-                                        input,
-                                        input_length,
-                                        signature,
-                                        signature_size,
-                                        signature_length);
-        return status;  
     }
 
     return PSA_ERROR_NOT_SUPPORTED;
@@ -3235,7 +3260,21 @@ psa_status_t psa_verify_message_builtin(
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
-    if (PSA_ALG_IS_SIGN_HASH(alg)) {
+    
+    if (PSA_ALG_IS_ML_DSA(alg)) {
+        /* PSA does not support SHAKE yet, so there is not way to pre-hash the message */
+        return PSA_ERROR_NOT_SUPPORTED;
+
+    } else if (PSA_ALG_IS_HASH_ML_DSA(alg)) {
+        return mbedtls_psa_mldsa_verify(psa_get_key_bits(attributes),
+                                        key_buffer,
+                                        key_buffer_size,
+                                        signature,
+                                        signature_length,
+                                        input,
+                                        input_length);
+
+    } else if (PSA_ALG_IS_SIGN_HASH(alg)) {
         size_t hash_length;
         uint8_t hash[PSA_HASH_MAX_SIZE];
 
@@ -3252,17 +3291,6 @@ psa_status_t psa_verify_message_builtin(
             attributes, key_buffer, key_buffer_size,
             alg, hash, hash_length,
             signature, signature_length);
-    }
-    else if (PSA_ALG_IS_ML_DSA(alg))
-    {
-        status = mbedtls_psa_mldsa_verify(psa_get_key_bits(attributes),
-                                          key_buffer,
-                                          key_buffer_size,
-                                          signature,
-                                          signature_length,
-                                          input,
-                                          input_length);
-        return status;  
     }
 
     return PSA_ERROR_NOT_SUPPORTED;

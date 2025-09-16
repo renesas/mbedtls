@@ -56,15 +56,18 @@ psa_status_t mbedtls_psa_mldsa_load_representation(psa_key_type_t type,
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY \emptydescription
  * \retval #PSA_ERROR_CORRUPTION_DETECTED \emptydescription
  */
-psa_status_t mbedtls_psa_mldsa_import_key(
-    const psa_key_attributes_t *attributes,
-    const uint8_t *data, size_t data_length,
-    uint8_t *key_buffer, size_t key_buffer_size,
-    size_t *key_buffer_length, size_t *bits);
+psa_status_t mbedtls_psa_mldsa_import_key(const psa_key_attributes_t *attributes,
+                                          const uint8_t *data,
+                                          size_t data_length,
+                                          uint8_t *key_buffer,
+                                          size_t key_buffer_size,
+                                          size_t *key_buffer_length,
+                                          size_t *bits);
 
 /** Export an MLDSA key to export representation
  *
  * \param[in] type          The type of key (public/private) to export
+ * \param[in] bits          The algorithm strength in bits.
  * \param[in] mldsa         The internal MLDSA representation from which to export
  * \param[out] data         The buffer to export to
  * \param[in] data_size     The length of the buffer to export to
@@ -101,10 +104,12 @@ psa_status_t mbedtls_psa_mldsa_export_key(psa_key_type_t type,
  * \retval #PSA_ERROR_STORAGE_FAILURE \emptydescription
  * \retval #PSA_ERROR_INSUFFICIENT_MEMORY \emptydescription
  */
-psa_status_t mbedtls_psa_mldsa_export_public_key(
-    const psa_key_attributes_t *attributes,
-    const uint8_t *key_buffer, size_t key_buffer_size,
-    uint8_t *data, size_t data_size, size_t *data_length);                                         
+psa_status_t mbedtls_psa_mldsa_export_public_key(const psa_key_attributes_t *attributes,
+                                                 const uint8_t *key_buffer,
+                                                 size_t key_buffer_size,
+                                                 uint8_t *data,
+                                                 size_t data_size,
+                                                 size_t *data_length);                                         
 
 /**
  * \brief Generate an MLDSA key.
@@ -125,14 +130,15 @@ psa_status_t mbedtls_psa_mldsa_export_public_key(
  * \retval #PSA_ERROR_BUFFER_TOO_SMALL
  *         The size of \p key_buffer is too small.
  */
-psa_status_t mbedtls_psa_mldsa_generate_key(
-    const psa_key_attributes_t *attributes,
-    uint8_t *key_buffer, size_t key_buffer_size, size_t *key_buffer_length);
+psa_status_t mbedtls_psa_mldsa_generate_key(const psa_key_attributes_t *attributes,
+                                            uint8_t *key_buffer,
+                                            size_t key_buffer_size,
+                                            size_t *key_buffer_length);
 
 /**
  * \brief Verify the signature over the input message.
  *
- * \param[in]  bits                 The algorithm strength in bits.
+ * \param[in]  attributes         The attributes for the MLDSA key to generate.
  * \param[in]  key_buffer           Buffer holding the key data.
  * \param[in]  key_buffer_size      Size of \p key_buffer in bytes.
  * \param[in]  signature            Buffer holding the signature data.
@@ -147,19 +153,18 @@ psa_status_t mbedtls_psa_mldsa_generate_key(
  * \retval #PSA_ERROR_BUFFER_TOO_SMALL
  *         The size of \p ciphertext is too small.
  */
-psa_status_t mbedtls_psa_mldsa_verify(
-    const psa_key_bits_t bits,
-    const uint8_t *key_buffer,
-    size_t key_buffer_size,
-    const uint8_t *signature,
-    size_t signature_len,
-    const uint8_t *message,
-    size_t message_len);
+psa_status_t mbedtls_psa_mldsa_verify(const psa_key_attributes_t *attributes,
+                                      const uint8_t *key_buffer,
+                                      size_t key_buffer_size,
+                                      const uint8_t *signature,
+                                      size_t signature_len,
+                                      const uint8_t *message,
+                                      size_t message_len);
 
 /**
  * \brief Generate a signature for the input message.
  *
- * \param[in]  bits                 The algorithm strength in bits.
+ * \param[in]  attributes         The attributes for the MLDSA key to generate.
  * \param[in]  key_buffer           Buffer holding the key data.
  * \param[in]  key_buffer_size      Size of \p key_buffer in bytes.
  * \param[in]  message              Buffer holding the message  data.
@@ -174,14 +179,13 @@ psa_status_t mbedtls_psa_mldsa_verify(
  * \retval #PSA_ERROR_NOT_SUPPORTED
  *         Key length or type not supported.
  */
-psa_status_t mbedtls_psa_mldsa_sign(
-    const psa_key_bits_t bits,
-    const uint8_t *key_buffer,
-    size_t key_buffer_size,
-    const uint8_t *message,
-    size_t message_len,
-    uint8_t *signature,
-    size_t signature_size,
-    size_t *signature_len);
+psa_status_t mbedtls_psa_mldsa_sign(const psa_key_attributes_t *attributes,
+                                    const uint8_t *key_buffer,
+                                    size_t key_buffer_size,
+                                    const uint8_t *message,
+                                    size_t message_len,
+                                    uint8_t *signature,
+                                    size_t signature_size,
+                                    size_t *signature_len);
 
 #endif /* PSA_CRYPTO_MLDSA_H */

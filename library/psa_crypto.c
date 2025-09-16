@@ -1533,9 +1533,7 @@ exit:
         psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
         mbedtls_mldsa_context *mldsa = NULL;
 
-        status = mbedtls_psa_mldsa_load_representation(
-            type, attributes->bits,
-            key_buffer, key_buffer_size, &mldsa);
+        status = mbedtls_psa_mldsa_load_representation(type, attributes->bits, key_buffer, key_buffer_size, &mldsa);
         if (status != PSA_SUCCESS) {
             goto exit;
         }
@@ -3194,7 +3192,7 @@ psa_status_t psa_sign_message_builtin(
         return PSA_ERROR_NOT_SUPPORTED;
 
     } else if (PSA_ALG_IS_HASH_ML_DSA(alg)) {
-        return mbedtls_psa_mldsa_sign(psa_get_key_bits(attributes),
+        return mbedtls_psa_mldsa_sign(attributes,
                                       key_buffer,
                                       key_buffer_size,
                                       input,
@@ -3271,7 +3269,7 @@ psa_status_t psa_verify_message_builtin(
         return PSA_ERROR_NOT_SUPPORTED;
 
     } else if (PSA_ALG_IS_HASH_ML_DSA(alg)) {
-        return mbedtls_psa_mldsa_verify(psa_get_key_bits(attributes),
+        return mbedtls_psa_mldsa_verify(attributes,
                                         key_buffer,
                                         key_buffer_size,
                                         signature,

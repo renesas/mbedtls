@@ -27,6 +27,7 @@
 #include "psa_crypto_ffdh.h"
 #include "psa_crypto_hash.h"
 #include "psa_crypto_mac.h"
+#include "psa_crypto_mldsa.h"
 #include "psa_crypto_mlkem.h"
 #include "psa_crypto_rsa.h"
 #include "psa_crypto_ecp.h"
@@ -3187,6 +3188,7 @@ psa_status_t psa_sign_message_builtin(
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
     if (PSA_ALG_IS_ML_DSA(alg)) {
         /* PSA does not support SHAKE yet, so there is not way to pre-hash the message */
         return PSA_ERROR_NOT_SUPPORTED;
@@ -3201,7 +3203,10 @@ psa_status_t psa_sign_message_builtin(
                                       signature_size,
                                       signature_length);
 
-    } else if (PSA_ALG_IS_SIGN_HASH(alg)) {
+    } else
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN) */
+
+    if (PSA_ALG_IS_SIGN_HASH(alg)) {
         size_t hash_length;
         uint8_t hash[PSA_HASH_MAX_SIZE];
 
@@ -3260,7 +3265,7 @@ psa_status_t psa_verify_message_builtin(
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
-    
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
     if (PSA_ALG_IS_ML_DSA(alg)) {
         /* PSA does not support SHAKE yet, so there is not way to pre-hash the message */
         return PSA_ERROR_NOT_SUPPORTED;
@@ -3274,7 +3279,10 @@ psa_status_t psa_verify_message_builtin(
                                         input,
                                         input_length);
 
-    } else if (PSA_ALG_IS_SIGN_HASH(alg)) {
+    } else
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY) */
+
+    if (PSA_ALG_IS_SIGN_HASH(alg)) {
         size_t hash_length;
         uint8_t hash[PSA_HASH_MAX_SIZE];
 

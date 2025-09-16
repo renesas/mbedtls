@@ -175,9 +175,9 @@ exit:
     }
     return status;
 }
-#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT) ||
-        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_EXPORT) ||
-        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_PUBLIC_KEY) */
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_IMPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY) */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE)
 psa_status_t mbedtls_psa_mlkem_generate_key(

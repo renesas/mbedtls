@@ -39,7 +39,7 @@ typedef struct mbedtls_mldsa_context {
     mbedtls_mldsa_data_t private_key;  /*!< The private key data. */
     mbedtls_mldsa_data_t public_key;   /*!< The public key data  */
     mbedtls_mldsa_data_t seed;         /*!< Seed key data  */
-    mbedtls_mldsa_data_t ctx;          /*!< ML-DSA context data  */
+    // mbedtls_mldsa_data_t ctx;          /*!< ML-DSA context data  */
 } mbedtls_mldsa_context;
 
 /**
@@ -58,6 +58,46 @@ typedef enum mbedtls_mldsa_bits {
  * @param ctx Pointer to the ML-DSA context to initialize.
  */
 void mbedtls_mldsa_init(mbedtls_mldsa_context * ctx);
+
+/**
+ * @brief Export the keypair from the ML-DSA context.
+ *
+ * @param ctx Pointer to the ML-DSA context.
+ * @param key_buffer Buffer to hold the exported keypair.
+ * @param key_buffer_length Pointer to the length of the key buffer. Will be updated with the actual length.
+ *
+ * @return 0 on success, or a negative error code.
+ */
+int mbedtls_mldsa_export_keypair(mbedtls_mldsa_context * ctx,
+                                 uint8_t * key_buffer,
+                                 size_t * key_buffer_length);
+
+/**
+ * @brief Export the public key from the ML-DSA context.
+ *
+ * @param ctx Pointer to the ML-DSA context.
+ * @param bits Security parameter specifying the key size.
+ *
+ * @return 0 on success, or a negative error code.
+ */
+int mbedtls_mldsa_export_public_key(mbedtls_mldsa_context * ctx,
+                                    uint8_t * key_buffer,
+                                    size_t * key_buffer_length);
+
+/**
+ * @brief Expand a key pair using provided random values.
+ *
+ * @param ctx Pointer to the ML-DSA context.
+ * @param bits Security parameter specifying the key size.
+ * @param seed Pointer to random data seed.
+ * @param f_rng Random number generator function.
+ *
+ * @return 0 on success, or a negative error code.
+ */
+int mbedtls_mldsa_expand_key_pair(mbedtls_mldsa_context *ctx,
+                               mbedtls_mldsa_bits_t bits,
+                               mbedtls_mldsa_data_t *seed,
+                               uint32_t (*f_rng)(uint32_t, uint32_t *));
 
 /**
  * @brief Generate a new ML-DSA key pair.

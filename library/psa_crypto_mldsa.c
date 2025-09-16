@@ -132,7 +132,7 @@ psa_status_t mbedtls_psa_mldsa_export_key(psa_key_type_t type,
         ret = mbedtls_mldsa_export_keypair(mldsa, data, data_length);
     }
     else {
-        if (data_size < PSA_KEY_EXPORT_ML_DSA_PUB_KEY_MAX_SIZE(bits)) {
+        if (data_size < PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits)) {
             return PSA_ERROR_BUFFER_TOO_SMALL;
         }
         ret = mbedtls_mldsa_export_public_key(mldsa, data, data_length);
@@ -213,11 +213,11 @@ exit:
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
 psa_status_t mbedtls_psa_mldsa_verify(
     const psa_key_bits_t bits,
-    uint8_t *key_buffer,
+    const uint8_t *key_buffer,
     size_t key_buffer_size,
-    uint8_t *signature,
+    const uint8_t *signature,
     size_t signature_len,
-    uint8_t *message,
+    const uint8_t *message,
     size_t message_len)
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
@@ -252,7 +252,7 @@ psa_status_t mbedtls_psa_mldsa_verify(
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
 psa_status_t mbedtls_psa_mldsa_sign(
     const psa_key_bits_t bits,
-    uint8_t *key_buffer,
+    const uint8_t *key_buffer,
     size_t key_buffer_size,
     const uint8_t *message,
     size_t message_len,

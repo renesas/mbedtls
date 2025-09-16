@@ -149,11 +149,11 @@ psa_status_t mbedtls_psa_mldsa_generate_key(
  */
 psa_status_t mbedtls_psa_mldsa_verify(
     const psa_key_bits_t bits,
-    uint8_t *key_buffer,
+    const uint8_t *key_buffer,
     size_t key_buffer_size,
-    uint8_t *signature,
+    const uint8_t *signature,
     size_t signature_len,
-    uint8_t *message,
+    const uint8_t *message,
     size_t message_len);
 
 /**
@@ -176,7 +176,7 @@ psa_status_t mbedtls_psa_mldsa_verify(
  */
 psa_status_t mbedtls_psa_mldsa_sign(
     const psa_key_bits_t bits,
-    uint8_t *key_buffer,
+    const uint8_t *key_buffer,
     size_t key_buffer_size,
     const uint8_t *message,
     size_t message_len,

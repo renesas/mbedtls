@@ -38,10 +38,11 @@ uint32_t mbedtls_mldsa_get_random(const uint32_t rand_len, uint32_t * const p_ra
           * MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY */
          
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_BASIC)
-psa_status_t mbedtls_psa_mldsa_load_representation(
-    psa_key_type_t type, psa_key_bits_t bits,
-    const uint8_t *data, size_t data_length,
-    mbedtls_mldsa_context **p_mldsa)
+psa_status_t mbedtls_psa_mldsa_load_representation(psa_key_type_t type,
+                                                  psa_key_bits_t bits,
+                                                  const uint8_t *data,
+                                                  size_t data_length,
+                                                  mbedtls_mldsa_context **p_mldsa)
 {
 
     *p_mldsa = mbedtls_calloc(1, sizeof(mbedtls_mldsa_context));
@@ -51,7 +52,8 @@ psa_status_t mbedtls_psa_mldsa_load_representation(
     mbedtls_mldsa_init(*p_mldsa);
     
     if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type)) {
-        return PSA_ERROR_NOT_SUPPORTED;
+        (*p_mldsa)->public_key.key_data = (uint32_t*)data;
+        (*p_mldsa)->public_key.key_len = PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits);
     }
     else {
         (*p_mldsa)->private_key.key_data = (uint32_t *)data;
@@ -70,11 +72,13 @@ psa_status_t mbedtls_psa_mldsa_load_representation(
     defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_EXPORT) || \
     defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_PUBLIC_KEY)
 
-psa_status_t mbedtls_psa_mldsa_import_key(
-    const psa_key_attributes_t *attributes,
-    const uint8_t *data, size_t data_length,
-    uint8_t *key_buffer, size_t key_buffer_size,
-    size_t *key_buffer_length, size_t *bits)
+psa_status_t mbedtls_psa_mldsa_import_key(const psa_key_attributes_t *attributes,
+                                          const uint8_t *data,
+                                          size_t data_length,
+                                          uint8_t *key_buffer,
+                                          size_t key_buffer_size,
+                                          size_t *key_buffer_length,
+                                          size_t *bits)
 {
     psa_status_t status;
 
@@ -110,9 +114,7 @@ psa_status_t mbedtls_psa_mldsa_import_key(
         }
         *key_buffer_length = mldsa->private_key.key_len; + mldsa->public_key.key_len + PSA_ML_DSA_SEED_SIZE;
 exit:
-        if (status != PSA_SUCCESS) {
-            mbedtls_free(mldsa);
-        }
+        mbedtls_free(mldsa);
     }
     return status;
 }
@@ -152,9 +154,11 @@ psa_status_t mbedtls_psa_mldsa_export_public_key(
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
     mbedtls_mldsa_context *mldsa = NULL;
 
-    status = mbedtls_psa_mldsa_load_representation(
-        attributes->type, attributes->bits,
-        key_buffer, key_buffer_size, &mldsa);
+    status = mbedtls_psa_mldsa_load_representation(attributes->type,
+                                                   attributes->bits,
+                                                   key_buffer,
+                                                   key_buffer_size,
+                                                   &mldsa);
     if (status != PSA_SUCCESS) {
         goto exit;
     }
@@ -162,9 +166,7 @@ psa_status_t mbedtls_psa_mldsa_export_public_key(
     status = mbedtls_psa_mldsa_export_key(PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY, attributes->bits, mldsa, data, data_size, data_length);
 
 exit:
-    if (status != PSA_SUCCESS) {
-        mbedtls_free(mldsa);
-    }
+    mbedtls_free(mldsa);
     return status;
 }
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_IMPORT) ||
@@ -204,9 +206,7 @@ psa_status_t mbedtls_psa_mldsa_generate_key(const psa_key_attributes_t *attribut
     *key_buffer_length = mldsa->public_key.key_len + mldsa->private_key.key_len + mldsa->seed.key_len;
 
 exit:
-    if (status != PSA_SUCCESS) {
-        mbedtls_free(mldsa);
-    }
+    mbedtls_free(mldsa);
     return status;
 }
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE */
@@ -227,13 +227,11 @@ psa_status_t mbedtls_psa_mldsa_verify(const psa_key_attributes_t *attributes,
     mbedtls_mldsa_data_t msg;
     mbedtls_mldsa_data_t sign;
    
-    // Probably need to do some special handling depending on if the key is just a public one like MLKEM 
-    /* Parse input */
     status = mbedtls_psa_mldsa_load_representation(attributes->type,
-                                                   bits,
-                                                   key_buffer,
-                                                   key_buffer_size,
-                                                   &mldsa);
+                                                    bits,
+                                                    key_buffer,
+                                                    key_buffer_size,
+                                                    &mldsa);
     if (status != PSA_SUCCESS) {
         goto exit;
     }
@@ -254,9 +252,7 @@ psa_status_t mbedtls_psa_mldsa_verify(const psa_key_attributes_t *attributes,
     }
 
 exit:
-        if (status != PSA_SUCCESS) {
-            mbedtls_free(mldsa);
-        }
+    mbedtls_free(mldsa);
     return status;
 }
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY */
@@ -304,9 +300,7 @@ psa_status_t mbedtls_psa_mldsa_sign(const psa_key_attributes_t *attributes,
     }
     *signature_len = sign.key_len;
 exit:
-    if (status != PSA_SUCCESS) {
-        mbedtls_free(mldsa);
-    }
+    mbedtls_free(mldsa);
 
     return status;
 }

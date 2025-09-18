@@ -817,8 +817,19 @@ psa_status_t psa_import_key_into_slot(
                                                 key_buffer_length,
                                                 bits);
         }
-#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT) ||
-        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_PUBLIC_KEY) */
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_IMPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_IMPORT) */
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_IMPORT) || \
+        defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_PUBLIC_KEY)
+        if (PSA_KEY_TYPE_IS_ML_DSA(type)) {
+            return mbedtls_psa_mldsa_import_key(attributes,
+                                                data, data_length,
+                                                key_buffer, key_buffer_size,
+                                                key_buffer_length,
+                                                bits);
+        }
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_IMPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_PUBLIC_KEY) */
     }
 
     return PSA_ERROR_NOT_SUPPORTED;
@@ -1529,7 +1540,7 @@ exit:
         return PSA_ERROR_NOT_SUPPORTED;
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT */
     } else if (PSA_KEY_TYPE_IS_ML_DSA(type)) {
-#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLDSA_KEY_PAIR_EXPORT)
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_EXPORT)
         psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
         mbedtls_mldsa_context *mldsa = NULL;
 
@@ -1547,7 +1558,7 @@ exit:
 #else
         /* We don't know how to export a MLDSA key. */
         return PSA_ERROR_NOT_SUPPORTED;
-#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLDSA_KEY_PAIR_EXPORT */
+#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_EXPORT */
     } else {
         /* This shouldn't happen in the reference implementation, but
            it is valid for a special-purpose implementation to omit

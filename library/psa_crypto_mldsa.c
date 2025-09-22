@@ -53,13 +53,13 @@ psa_status_t mbedtls_psa_mldsa_load_representation(psa_key_type_t type,
     
     if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type)) {
         (*p_mldsa)->public_key.key_data = (uint32_t*)data;
-        (*p_mldsa)->public_key.key_len = PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits);
+        (*p_mldsa)->public_key.key_len = PSA_KEY_GEN_ML_DSA_PUB_KEY_SIZE(bits);
     }
     else {
         (*p_mldsa)->private_key.key_data = (uint32_t *)data;
-        (*p_mldsa)->private_key.key_len = PSA_KEY_EXPORT_ML_DSA_PRIV_KEY_SIZE(bits);
+        (*p_mldsa)->private_key.key_len = PSA_KEY_GEN_ML_DSA_PRIV_KEY_SIZE(bits);
         (*p_mldsa)->public_key.key_data = (uint32_t *)(data + (*p_mldsa)->private_key.key_len);
-        (*p_mldsa)->public_key.key_len = PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits);
+        (*p_mldsa)->public_key.key_len = PSA_KEY_GEN_ML_DSA_PUB_KEY_SIZE(bits);
         (*p_mldsa)->seed.key_data = (uint32_t *)(data + (*p_mldsa)->private_key.key_len + (*p_mldsa)->public_key.key_len);
         (*p_mldsa)->seed.key_len = PSA_ML_DSA_SEED_SIZE;
     }
@@ -134,7 +134,7 @@ psa_status_t mbedtls_psa_mldsa_export_key(psa_key_type_t type,
         ret = mbedtls_mldsa_export_keypair(mldsa, data, data_length);
     }
     else {
-        if (data_size < PSA_KEY_EXPORT_ML_DSA_PUB_KEY_SIZE(bits)) {
+        if (data_size < PSA_KEY_GEN_ML_DSA_PUB_KEY_SIZE(bits)) {
             return PSA_ERROR_BUFFER_TOO_SMALL;
         }
         ret = mbedtls_mldsa_export_public_key(mldsa, data, data_length);

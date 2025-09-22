@@ -56,7 +56,7 @@ psa_status_t mbedtls_psa_mlkem_load_representation(
     }
     else {
         (*p_mlkem)->decaps_key.key_data = (uint32_t *)data;
-        (*p_mlkem)->decaps_key.key_len = PSA_KEY_EXPORT_ML_KEM_PRIVATE_KEY_SIZE(bits);
+        (*p_mlkem)->decaps_key.key_len = PSA_KEY_GEN_ML_KEM_PRIVATE_KEY_SIZE(bits);
         (*p_mlkem)->d.key_data = (uint32_t *)(data + (*p_mlkem)->decaps_key.key_len);
         (*p_mlkem)->d.key_len = PSA_ML_KEM_SEED_SIZE;
         (*p_mlkem)->z.key_data = (uint32_t *)(data + (*p_mlkem)->decaps_key.key_len + (*p_mlkem)->d.key_len);
@@ -137,7 +137,7 @@ psa_status_t mbedtls_psa_mlkem_export_key(psa_key_type_t type,
         ret = mbedtls_mlkem_export_keypair(mlkem, data, data_length);
     }
     else {
-        if (data_size < PSA_KEY_EXPORT_ML_KEM_PUBLIC_KEY_MAX_SIZE(bits)) {
+        if (data_size < PSA_KEY_GEN_ML_KEM_PUBLIC_KEY_MAX_SIZE(bits)) {
             return PSA_ERROR_BUFFER_TOO_SMALL;
         }
         ret = mbedtls_mlkem_export_public_key(mlkem, bits);

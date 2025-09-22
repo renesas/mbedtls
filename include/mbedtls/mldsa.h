@@ -39,7 +39,6 @@ typedef struct mbedtls_mldsa_context {
     mbedtls_mldsa_data_t private_key;  /*!< The private key data. */
     mbedtls_mldsa_data_t public_key;   /*!< The public key data  */
     mbedtls_mldsa_data_t seed;         /*!< Seed key data  */
-    // mbedtls_mldsa_data_t ctx;          /*!< ML-DSA context data  */
 } mbedtls_mldsa_context;
 
 /**

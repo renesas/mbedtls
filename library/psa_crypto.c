@@ -1676,15 +1676,28 @@ psa_status_t psa_export_public_key_internal(
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT) || \
         defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY)
         return mbedtls_psa_mlkem_export_public_key(attributes,
-                                                  key_buffer,
-                                                  key_buffer_size,
-                                                  data, data_size,
-                                                  data_length);
+                                                   key_buffer,
+                                                   key_buffer_size,
+                                                   data, data_size,
+                                                   data_length);
 #else
         /* We don't know how to convert a private MLKEM key to public */
         return PSA_ERROR_NOT_SUPPORTED;
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT) ||
         * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY) */
+    } else if (PSA_KEY_TYPE_IS_ML_DSA(type)) {
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_EXPORT) || \
+        defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_PUBLIC_KEY)
+        return mbedtls_psa_mldsa_export_public_key(attributes,
+                                                   key_buffer,
+                                                   key_buffer_size,
+                                                   data, data_size,
+                                                   data_length);
+#else
+        /* We don't know how to convert a private MLKEM key to public */
+        return PSA_ERROR_NOT_SUPPORTED;
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_EXPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_PUBLIC_KEY) */
     } else {
         (void) key_buffer;
         (void) key_buffer_size;

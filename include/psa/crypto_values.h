@@ -543,7 +543,7 @@
  *
  * The size of an RSA key is the bit size of the modulus.
  */
-#define PSA_KEY_TYPE_RSA_KEY_PAIR                   ((psa_key_type_t)0x7001)
+#define PSA_KEY_TYPE_RSA_KEY_PAIR                   ((psa_key_type_t) 0x7001)
 
 /** Whether a key type is an RSA key pair; standard or vendor. */
 #define PSA_KEY_TYPE_IS_RSA_KEY_PAIR(type)  							\
@@ -784,22 +784,23 @@
 /** ML-DSA key pair.
  *
  */
-#define PSA_KEY_TYPE_MLDSA_KEY_PAIR ((psa_key_type_t)0x7002)
+#define PSA_KEY_TYPE_ML_DSA_KEY_PAIR ((psa_key_type_t)0x7006)
 
-#define PSA_KEY_TYPE_MLDSA_PUBLIC_KEY ((psa_key_type_t)0x4002)
+#define PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY ((psa_key_type_t)0x4006)
 
-#define PSA_KEY_TYPE_IS_MLDSA(type) \
-    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_MLDSA_PUBLIC_KEY)
+#define PSA_KEY_TYPE_IS_ML_DSA(type) \
+    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY)
     
 /** The ML-DSA algorithm.
  *
  */
-#define PSA_ALG_MLDSA                            ((psa_algorithm_t) 0x06004400)
+#define PSA_ALG_ML_DSA                            ((psa_algorithm_t) 0x06004400)
+#define PSA_ALG_HASH_ML_DSA(hash_alg)             ((psa_algorithm_t) (0x06004600 | ((hash_alg) & 0x000000ff)))
 
-#define PSA_ALG_IS_MLDSA(alg) \
+#define PSA_ALG_IS_ML_DSA(alg) \
     (((alg) & ~0x00000100) == 0x06004400)
 
-#define PSA_ALG_IS_HASH_MLDSA(alg) \
+#define PSA_ALG_IS_HASH_ML_DSA(alg) \
     (((alg) & ~0x000001ff) == 0x06004600)
 
 /** Diffie-Hellman groups defined in RFC 7919 Appendix A.
@@ -1007,6 +1008,8 @@
 #define PSA_ALG_SHA3_384                        ((psa_algorithm_t) 0x02000012)
 /** SHA3-512 */
 #define PSA_ALG_SHA3_512                        ((psa_algorithm_t) 0x02000013)
+/** SHAKE-256 */
+#define PSA_ALG_SHAKE256                        ((psa_algorithm_t) 0x02000014)
 /** The first 512 bits (64 bytes) of the SHAKE256 output.
  *
  * This is the prehashing for Ed448ph (see #PSA_ALG_ED448PH). For other
@@ -1755,7 +1758,7 @@
 #define PSA_ALG_IS_SIGN_HASH(alg)                                       \
     (PSA_ALG_IS_RSA_PSS(alg) || PSA_ALG_IS_RSA_PKCS1V15_SIGN(alg) ||    \
      PSA_ALG_IS_ECDSA(alg) || PSA_ALG_IS_HASH_EDDSA(alg) ||             \
-     PSA_ALG_IS_HASH_MLDSA(alg) || PSA_ALG_IS_VENDOR_HASH_AND_SIGN(alg))
+     PSA_ALG_IS_HASH_ML_DSA(alg) || PSA_ALG_IS_VENDOR_HASH_AND_SIGN(alg))
 
 /** Whether the specified algorithm is a signature algorithm that can be used
  * with psa_sign_message() and psa_verify_message().
@@ -1769,7 +1772,7 @@
  *         supported algorithm identifier.
  */
 #define PSA_ALG_IS_SIGN_MESSAGE(alg)                                    \
-    (PSA_ALG_IS_SIGN_HASH(alg) || (alg) == PSA_ALG_PURE_EDDSA)
+    (PSA_ALG_IS_SIGN_HASH(alg) || (alg) == PSA_ALG_PURE_EDDSA || (alg) == PSA_ALG_ML_DSA)
 
 /** Whether the specified algorithm is a hash-and-sign algorithm.
  *

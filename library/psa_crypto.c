@@ -27,6 +27,7 @@
 #include "psa_crypto_ffdh.h"
 #include "psa_crypto_hash.h"
 #include "psa_crypto_mac.h"
+#include "psa_crypto_mldsa.h"
 #include "psa_crypto_mlkem.h"
 #include "psa_crypto_rsa.h"
 #include "psa_crypto_ecp.h"
@@ -822,8 +823,19 @@ psa_status_t psa_import_key_into_slot(
                                                 key_buffer_length,
                                                 bits);
         }
-#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_KEY_PAIR_IMPORT) ||
-        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ECC_PUBLIC_KEY) */
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_IMPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_IMPORT) */
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_IMPORT) || \
+        defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_PUBLIC_KEY)
+        if (PSA_KEY_TYPE_IS_ML_DSA(type)) {
+            return mbedtls_psa_mldsa_import_key(attributes,
+                                                data, data_length,
+                                                key_buffer, key_buffer_size,
+                                                key_buffer_length,
+                                                bits);
+        }
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_IMPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_PUBLIC_KEY) */
     }
 
     return PSA_ERROR_NOT_SUPPORTED;
@@ -1513,7 +1525,8 @@ psa_status_t psa_export_key_internal(
         PSA_KEY_TYPE_IS_RSA(type)   ||
         PSA_KEY_TYPE_IS_ECC(type)   ||
         PSA_KEY_TYPE_IS_DH(type)    ||
-        (PSA_KEY_TYPE_IS_ML_KEM(type) && PSA_KEY_TYPE_IS_PUBLIC_KEY(type))) {
+        (PSA_KEY_TYPE_IS_ML_KEM(type) && PSA_KEY_TYPE_IS_PUBLIC_KEY(type)) ||
+        (PSA_KEY_TYPE_IS_ML_DSA(type) && PSA_KEY_TYPE_IS_PUBLIC_KEY(type))) {
         return psa_export_key_buffer_internal(
             key_buffer, key_buffer_size,
             data, data_size, data_length);
@@ -1539,6 +1552,26 @@ exit:
         /* We don't know how to export a MLKEM key. */
         return PSA_ERROR_NOT_SUPPORTED;
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT */
+    } else if (PSA_KEY_TYPE_IS_ML_DSA(type)) {
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_EXPORT)
+        psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
+        mbedtls_mldsa_context *mldsa = NULL;
+
+        status = mbedtls_psa_mldsa_load_representation(type, attributes->bits, key_buffer, key_buffer_size, &mldsa);
+        if (status != PSA_SUCCESS) {
+            goto exit;
+        }
+
+        status = mbedtls_psa_mldsa_export_key(PSA_KEY_TYPE_ML_DSA_KEY_PAIR, attributes->bits, mldsa, data, data_size, data_length);
+exit:
+        if (status != PSA_SUCCESS) {
+            mbedtls_free(mldsa);
+        }
+        return status;
+#else
+        /* We don't know how to export a MLDSA key. */
+        return PSA_ERROR_NOT_SUPPORTED;
+#endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_EXPORT */
     } else {
         /* This shouldn't happen in the reference implementation, but
            it is valid for a special-purpose implementation to omit
@@ -1656,15 +1689,28 @@ psa_status_t psa_export_public_key_internal(
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT) || \
         defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY)
         return mbedtls_psa_mlkem_export_public_key(attributes,
-                                                  key_buffer,
-                                                  key_buffer_size,
-                                                  data, data_size,
-                                                  data_length);
+                                                   key_buffer,
+                                                   key_buffer_size,
+                                                   data, data_size,
+                                                   data_length);
 #else
         /* We don't know how to convert a private MLKEM key to public */
         return PSA_ERROR_NOT_SUPPORTED;
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_EXPORT) ||
         * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_PUBLIC_KEY) */
+    } else if (PSA_KEY_TYPE_IS_ML_DSA(type)) {
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_EXPORT) || \
+        defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_PUBLIC_KEY)
+        return mbedtls_psa_mldsa_export_public_key(attributes,
+                                                   key_buffer,
+                                                   key_buffer_size,
+                                                   data, data_size,
+                                                   data_length);
+#else
+        /* We don't know how to convert a private MLKEM key to public */
+        return PSA_ERROR_NOT_SUPPORTED;
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_EXPORT) ||
+        * defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_PUBLIC_KEY) */
     } else {
         (void) key_buffer;
         (void) key_buffer_size;
@@ -3274,6 +3320,24 @@ psa_status_t psa_sign_message_builtin(
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
+    if (PSA_ALG_IS_ML_DSA(alg)) {
+        /* PSA does not support SHAKE yet, so there is not way to pre-hash the message */
+        return PSA_ERROR_NOT_SUPPORTED;
+
+    } else if (PSA_ALG_IS_HASH_ML_DSA(alg)) {
+        return mbedtls_psa_mldsa_sign(attributes,
+                                      key_buffer,
+                                      key_buffer_size,
+                                      input,
+                                      input_length,
+                                      signature,
+                                      signature_size,
+                                      signature_length);
+
+    } else
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN) */
+
     if (PSA_ALG_IS_SIGN_HASH(alg)) {
         size_t hash_length;
         uint8_t hash[PSA_HASH_MAX_SIZE];
@@ -3332,6 +3396,23 @@ psa_status_t psa_verify_message_builtin(
     size_t signature_length)
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
+
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
+    if (PSA_ALG_IS_ML_DSA(alg)) {
+        /* PSA does not support SHAKE yet, so there is not way to pre-hash the message */
+        return PSA_ERROR_NOT_SUPPORTED;
+
+    } else if (PSA_ALG_IS_HASH_ML_DSA(alg)) {
+        return mbedtls_psa_mldsa_verify(attributes,
+                                        key_buffer,
+                                        key_buffer_size,
+                                        signature,
+                                        signature_length,
+                                        input,
+                                        input_length);
+
+    } else
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY) */
 
     if (PSA_ALG_IS_SIGN_HASH(alg)) {
         size_t hash_length;
@@ -8189,6 +8270,14 @@ static psa_status_t psa_validate_key_type_and_size_for_key_generation(
     } else
 #endif /* defined(PSA_WANT_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE) */
 
+#if defined(PSA_WANT_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE)
+    if (PSA_KEY_TYPE_IS_ML_DSA(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+        /* To avoid empty block, return successfully here. */
+        // REVISIT: KF do we want logic here?
+        return PSA_SUCCESS;
+    } else
+#endif /* defined(PSA_WANT_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE) */
+
 #if defined(PSA_WANT_KEY_TYPE_DH_KEY_PAIR_GENERATE)
     if (PSA_KEY_TYPE_IS_DH(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
         if (psa_is_dh_key_size_valid(bits) == 0) {
@@ -8258,6 +8347,15 @@ psa_status_t psa_generate_key_internal(
                                               key_buffer_length);
     } else
 #endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_MLKEM_KEY_PAIR_GENERATE) */
+
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE)
+    if (PSA_KEY_TYPE_IS_ML_DSA(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
+        return mbedtls_psa_mldsa_generate_key(attributes,
+                                              key_buffer,
+                                              key_buffer_size,
+                                              key_buffer_length);
+    } else
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE) */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_DH_KEY_PAIR_GENERATE)
     if (PSA_KEY_TYPE_IS_DH(type) && PSA_KEY_TYPE_IS_KEY_PAIR(type)) {

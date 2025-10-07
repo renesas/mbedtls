@@ -32,6 +32,10 @@ extern "C" {
 #define MBEDTLS_PSA_KEY_SLOT_COUNT 32
 #endif
 
+ /* Functions to support vendor defined format */
+psa_status_t vendor_bitlength_to_raw_bitlength(psa_key_type_t type, size_t vendor_bits, size_t * raw_bits);
+void psa_aead_setup_vendor (void * ctx);
+
 /* If the size of static key slots is not explicitly defined by the user, then
  * set it to the maximum between PSA_EXPORT_KEY_PAIR_OR_PUBLIC_MAX_SIZE and
  * PSA_CIPHER_MAX_KEY_LENGTH.

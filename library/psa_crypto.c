@@ -1559,11 +1559,11 @@ exit:
 
         status = mbedtls_psa_mldsa_load_representation(type, attributes->bits, key_buffer, key_buffer_size, &mldsa);
         if (status != PSA_SUCCESS) {
-            goto exit;
+            goto exit2;
         }
 
         status = mbedtls_psa_mldsa_export_key(PSA_KEY_TYPE_ML_DSA_KEY_PAIR, attributes->bits, mldsa, data, data_size, data_length);
-exit:
+exit2:
         if (status != PSA_SUCCESS) {
             mbedtls_free(mldsa);
         }

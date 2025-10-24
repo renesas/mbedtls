@@ -18,6 +18,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "mbedtls/oid.h"
 #include "mbedtls/platform.h"
 #include <mbedtls/mldsa.h>
 #include <mbedtls/error.h>
@@ -52,16 +53,16 @@ psa_status_t mbedtls_psa_mldsa_load_representation(psa_key_type_t type,
     mbedtls_mldsa_init(*p_mldsa);
     
     if (PSA_KEY_TYPE_IS_PUBLIC_KEY(type)) {
-        (*p_mldsa)->public_key.key_data = (uint32_t*)data;
-        (*p_mldsa)->public_key.key_len = PSA_KEY_GEN_ML_DSA_PUB_KEY_SIZE(bits);
+        (*p_mldsa)->public_key.p_data = (uint32_t*)data;
+        (*p_mldsa)->public_key.len = PSA_KEY_GEN_ML_DSA_PUB_KEY_SIZE(bits);
     }
     else {
-        (*p_mldsa)->private_key.key_data = (uint32_t *)data;
-        (*p_mldsa)->private_key.key_len = PSA_KEY_GEN_ML_DSA_PRIV_KEY_SIZE(bits);
-        (*p_mldsa)->public_key.key_data = (uint32_t *)(data + (*p_mldsa)->private_key.key_len);
-        (*p_mldsa)->public_key.key_len = PSA_KEY_GEN_ML_DSA_PUB_KEY_SIZE(bits);
-        (*p_mldsa)->seed.key_data = (uint32_t *)(data + (*p_mldsa)->private_key.key_len + (*p_mldsa)->public_key.key_len);
-        (*p_mldsa)->seed.key_len = PSA_ML_DSA_SEED_SIZE;
+        (*p_mldsa)->private_key.p_data = (uint32_t *)data;
+        (*p_mldsa)->private_key.len = PSA_KEY_GEN_ML_DSA_PRIV_KEY_SIZE(bits);
+        (*p_mldsa)->public_key.p_data = (uint32_t *)(data + (*p_mldsa)->private_key.len);
+        (*p_mldsa)->public_key.len = PSA_KEY_GEN_ML_DSA_PUB_KEY_SIZE(bits);
+        (*p_mldsa)->seed.p_data = (uint32_t *)(data + (*p_mldsa)->private_key.len + (*p_mldsa)->public_key.len);
+        (*p_mldsa)->seed.len = PSA_ML_DSA_SEED_SIZE;
     }
 
     return PSA_SUCCESS;
@@ -104,15 +105,15 @@ psa_status_t mbedtls_psa_mldsa_import_key(const psa_key_attributes_t *attributes
         }
         *bits = attributes->bits;
 
-        random_seed.key_data = (uint32_t*)data;
-        random_seed.key_len = PSA_ML_DSA_SEED_SIZE;
+        random_seed.p_data = (uint32_t*)data;
+        random_seed.len = PSA_ML_DSA_SEED_SIZE;
 
         ret = mbedtls_mldsa_expand_key_pair(mldsa, *bits, &random_seed, mbedtls_mldsa_get_random);
         if (ret != 0) {
             status = mbedtls_to_psa_error(ret);
             goto exit;
         }
-        *key_buffer_length = mldsa->private_key.key_len; + mldsa->public_key.key_len + PSA_ML_DSA_SEED_SIZE;
+        *key_buffer_length = mldsa->private_key.len; + mldsa->public_key.len + PSA_ML_DSA_SEED_SIZE;
 exit:
         mbedtls_free(mldsa);
     }
@@ -128,7 +129,7 @@ psa_status_t mbedtls_psa_mldsa_export_key(psa_key_type_t type,
 {
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     if (PSA_KEY_TYPE_IS_KEY_PAIR(type)) {
-        if (data_size < mldsa->seed.key_len) {
+        if (data_size < mldsa->seed.len) {
             return PSA_ERROR_BUFFER_TOO_SMALL;
         }
         ret = mbedtls_mldsa_export_keypair(mldsa, data, data_length);
@@ -192,7 +193,7 @@ psa_status_t mbedtls_psa_mldsa_generate_key(const psa_key_attributes_t *attribut
         goto exit;
     }
      
-    if (key_buffer_size < mldsa->public_key.key_len + mldsa->private_key.key_len + mldsa->seed.key_len) {
+    if (key_buffer_size < mldsa->public_key.len + mldsa->private_key.len + mldsa->seed.len) {
         status = PSA_ERROR_BUFFER_TOO_SMALL;
         goto exit;
     }
@@ -203,7 +204,7 @@ psa_status_t mbedtls_psa_mldsa_generate_key(const psa_key_attributes_t *attribut
         goto exit;
     }
 
-    *key_buffer_length = mldsa->public_key.key_len + mldsa->private_key.key_len + mldsa->seed.key_len;
+    *key_buffer_length = mldsa->public_key.len + mldsa->private_key.len + mldsa->seed.len;
 
 exit:
     mbedtls_free(mldsa);
@@ -212,20 +213,22 @@ exit:
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_KEY_PAIR_GENERATE */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
-psa_status_t mbedtls_psa_mldsa_verify(const psa_key_attributes_t *attributes,
-                                      const uint8_t *key_buffer,
-                                      size_t key_buffer_size,
-                                      const uint8_t *signature,
-                                      size_t signature_len,
-                                      const uint8_t *message,
-                                      size_t message_len)
+psa_status_t mbedtls_psa_mldsa_verify_hash(const psa_key_attributes_t *attributes,
+                                           const uint8_t *key_buffer,
+                                           size_t key_buffer_size,
+                                           psa_algorithm_t alg,
+                                           const uint8_t *hash,
+                                           size_t hash_len,
+                                           const uint8_t *signature,
+                                           size_t signature_len)
 {
     psa_status_t status;
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     const psa_key_bits_t bits = attributes->bits;
     mbedtls_mldsa_context *mldsa = NULL;
-    mbedtls_mldsa_data_t msg;
-    mbedtls_mldsa_data_t sign;
+    mbedtls_mldsa_data_t hash_data;
+    mbedtls_mldsa_data_t sign_data;
+    mbedtls_md_type_t md_alg;
    
     status = mbedtls_psa_mldsa_load_representation(attributes->type,
                                                     bits,
@@ -235,18 +238,20 @@ psa_status_t mbedtls_psa_mldsa_verify(const psa_key_attributes_t *attributes,
     if (status != PSA_SUCCESS) {
         goto exit;
     }
-   
-    msg.key_data = (uint32_t *)message;
-    msg.key_len = message_len;
-    sign.key_data = (uint32_t *)signature;
-    sign.key_len = signature_len;
 
-    ret = mbedtls_mldsa_verify(mldsa, bits, &sign, &msg, mbedtls_mldsa_get_random);
+    hash_data.p_data = (uint32_t *)hash;
+    hash_data.len = hash_len;
+    sign_data.p_data = (uint32_t *)signature;
+    sign_data.len = signature_len;
+
+    md_alg = mbedtls_md_type_from_psa_alg(PSA_ALG_SIGN_GET_HASH(alg));
+
+    ret = mbedtls_mldsa_verify(mldsa, bits, md_alg, &sign_data, &hash_data, mbedtls_mldsa_get_random);
     if (ret != 0) {
         status = mbedtls_to_psa_error(ret);
         goto exit;
     }
-    if ((sign.key_len > signature_len) || (msg.key_len > message_len)) {
+    if ((sign_data.len > signature_len) || (hash_data.len > hash_len)) {
         status = PSA_ERROR_BUFFER_TOO_SMALL;
         goto exit;
     }
@@ -258,21 +263,23 @@ exit:
 #endif /* MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY */
 
 #if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
-psa_status_t mbedtls_psa_mldsa_sign(const psa_key_attributes_t *attributes,
-                                    const uint8_t *key_buffer,
-                                    size_t key_buffer_size,
-                                    const uint8_t *message,
-                                    size_t message_len,
-                                    uint8_t *signature,
-                                    size_t signature_size,
-                                    size_t *signature_len)
+psa_status_t mbedtls_psa_mldsa_sign_hash(const psa_key_attributes_t *attributes,
+                                        const uint8_t *key_buffer,
+                                        size_t key_buffer_size,
+                                        psa_algorithm_t alg,
+                                        const uint8_t *hash,
+                                        size_t hash_len,
+                                        uint8_t *signature,
+                                        size_t signature_size,
+                                        size_t *signature_len)
 {
     psa_status_t status;
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
     const psa_key_bits_t bits = attributes->bits;
     mbedtls_mldsa_context *mldsa = NULL;
-    mbedtls_mldsa_data_t msg;
-    mbedtls_mldsa_data_t sign;
+    mbedtls_mldsa_data_t hash_data;
+    mbedtls_mldsa_data_t sign_data;
+    mbedtls_md_type_t md_alg;
 
     /* Parse input */
     status = mbedtls_psa_mldsa_load_representation(attributes->type,
@@ -283,22 +290,24 @@ psa_status_t mbedtls_psa_mldsa_sign(const psa_key_attributes_t *attributes,
     if (status != PSA_SUCCESS) {
         goto exit;
     }
-   
-    msg.key_data = (uint32_t *)message;
-    msg.key_len = message_len;
-    sign.key_data = (uint32_t *)signature;
-    sign.key_len = signature_size;
 
-    ret = mbedtls_mldsa_sign(mldsa, bits, &msg, &sign, mbedtls_mldsa_get_random);
+    hash_data.p_data = (uint32_t *)hash;
+    hash_data.len = hash_len;
+    sign_data.p_data = (uint32_t *)signature;
+    sign_data.len = signature_size;
+
+    md_alg = mbedtls_md_type_from_psa_alg(PSA_ALG_SIGN_GET_HASH(alg));
+
+    ret = mbedtls_mldsa_sign(mldsa, bits, md_alg, &hash_data, &sign_data, mbedtls_mldsa_get_random);
     if (ret != 0) {
         status = mbedtls_to_psa_error(ret);
         goto exit;
     }
-    if (sign.key_len > signature_size) {
+    if (sign_data.len > signature_size) {
         status = PSA_ERROR_BUFFER_TOO_SMALL;
         goto exit;
     }
-    *signature_len = sign.key_len;
+    *signature_len = sign_data.len;
 exit:
     mbedtls_free(mldsa);
 

@@ -3328,24 +3328,6 @@ psa_status_t psa_sign_message_builtin(
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
-#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
-    if (PSA_ALG_IS_ML_DSA(alg)) {
-        /* PSA does not support SHAKE yet, so there is not way to pre-hash the message */
-        return PSA_ERROR_NOT_SUPPORTED;
-
-    } else if (PSA_ALG_IS_HASH_ML_DSA(alg)) {
-        return mbedtls_psa_mldsa_sign(attributes,
-                                      key_buffer,
-                                      key_buffer_size,
-                                      input,
-                                      input_length,
-                                      signature,
-                                      signature_size,
-                                      signature_length);
-
-    } else
-#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN) */
-
     if (PSA_ALG_IS_SIGN_HASH(alg)) {
         size_t hash_length;
         uint8_t hash[PSA_HASH_MAX_SIZE];
@@ -3404,23 +3386,6 @@ psa_status_t psa_verify_message_builtin(
     size_t signature_length)
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
-
-#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
-    if (PSA_ALG_IS_ML_DSA(alg)) {
-        /* PSA does not support SHAKE yet, so there is not way to pre-hash the message */
-        return PSA_ERROR_NOT_SUPPORTED;
-
-    } else if (PSA_ALG_IS_HASH_ML_DSA(alg)) {
-        return mbedtls_psa_mldsa_verify(attributes,
-                                        key_buffer,
-                                        key_buffer_size,
-                                        signature,
-                                        signature_length,
-                                        input,
-                                        input_length);
-
-    } else
-#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY) */
 
     if (PSA_ALG_IS_SIGN_HASH(alg)) {
         size_t hash_length;
@@ -3504,6 +3469,14 @@ psa_status_t psa_sign_hash_builtin(
         } else {
             return PSA_ERROR_INVALID_ARGUMENT;
         }
+    } else if (PSA_ALG_IS_ML_DSA(alg) || (PSA_ALG_IS_HASH_ML_DSA(alg))) {
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
+        return mbedtls_psa_mldsa_sign_hash(
+            attributes,
+            key_buffer, key_buffer_size,
+            alg, hash, hash_length,
+            signature, signature_size, signature_length);
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN) */
     }
 
     (void) key_buffer;
@@ -3578,6 +3551,14 @@ psa_status_t psa_verify_hash_builtin(
         } else {
             return PSA_ERROR_INVALID_ARGUMENT;
         }
+    } else if (PSA_ALG_IS_ML_DSA(alg) || PSA_ALG_IS_HASH_ML_DSA(alg)) {
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY)
+        return mbedtls_psa_mldsa_verify_hash(
+            attributes,
+            key_buffer, key_buffer_size,
+            alg, hash, hash_length,
+            signature, signature_length);
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_VERIFY) */
     }
 
     (void) key_buffer;

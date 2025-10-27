@@ -127,7 +127,7 @@ int mbedtls_mldsa_generate_key(mbedtls_mldsa_context * ctx,
 int mbedtls_mldsa_sign(mbedtls_mldsa_context * ctx,
                        mbedtls_mldsa_bits_t bits,
                        mbedtls_md_type_t md_alg,
-                       mbedtls_mldsa_data_t * msg,
+                       mbedtls_mldsa_data_t * hash,
                        mbedtls_mldsa_data_t * signature,
                        uint32_t (*f_rng)(uint32_t, uint32_t *));
 

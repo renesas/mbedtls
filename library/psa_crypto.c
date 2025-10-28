@@ -3161,6 +3161,10 @@ static psa_status_t psa_sign_verify_check_alg(int input_is_message,
         if (!PSA_ALG_IS_SIGN_MESSAGE(alg)) {
             return PSA_ERROR_INVALID_ARGUMENT;
         }
+
+        if (PSA_ALG_IS_ML_DSA(alg)) {
+            return PSA_SUCCESS;
+        }
     }
 
     psa_algorithm_t hash_alg = 0;
@@ -3328,7 +3332,19 @@ psa_status_t psa_sign_message_builtin(
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
-    if (PSA_ALG_IS_SIGN_HASH(alg)) {
+    if (PSA_ALG_IS_ML_DSA(alg)) {
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
+        return mbedtls_psa_mldsa_sign_hash(attributes,
+                                           key_buffer,
+                                           key_buffer_size,
+                                           alg,
+                                           input,
+                                           input_length,
+                                           signature,
+                                           signature_size,
+                                           signature_length);
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN) */
+    } else if (PSA_ALG_IS_SIGN_HASH(alg)) {
         size_t hash_length;
         uint8_t hash[PSA_HASH_MAX_SIZE];
 
@@ -3387,7 +3403,18 @@ psa_status_t psa_verify_message_builtin(
 {
     psa_status_t status = PSA_ERROR_CORRUPTION_DETECTED;
 
-    if (PSA_ALG_IS_SIGN_HASH(alg)) {
+    if (PSA_ALG_IS_ML_DSA(alg)) {
+#if defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN)
+        return mbedtls_psa_mldsa_verify_hash(attributes,
+                                            key_buffer,
+                                            key_buffer_size,
+                                            alg,
+                                            input,
+                                            input_length,
+                                            signature,
+                                            signature_length);
+#endif /* defined(MBEDTLS_PSA_BUILTIN_KEY_TYPE_ML_DSA_SIGN) */
+    } else if (PSA_ALG_IS_SIGN_HASH(alg)) {
         size_t hash_length;
         uint8_t hash[PSA_HASH_MAX_SIZE];
 

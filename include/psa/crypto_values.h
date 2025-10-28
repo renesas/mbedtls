@@ -1772,7 +1772,7 @@
  *         supported algorithm identifier.
  */
 #define PSA_ALG_IS_SIGN_MESSAGE(alg)                                    \
-    (PSA_ALG_IS_SIGN_HASH(alg) || (alg) == PSA_ALG_PURE_EDDSA || (alg) == PSA_ALG_ML_DSA)
+    (PSA_ALG_IS_SIGN_HASH(alg) || (alg) == PSA_ALG_PURE_EDDSA || PSA_ALG_IS_ML_DSA(alg))
 
 /** Whether the specified algorithm is a hash-and-sign algorithm.
  *

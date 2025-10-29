@@ -795,13 +795,13 @@
  *
  */
 #define PSA_ALG_ML_DSA                            ((psa_algorithm_t) 0x06004400)
-#define PSA_ALG_HASH_ML_DSA(hash_alg)             ((psa_algorithm_t) (0x06004600 | ((hash_alg) & 0x000000ff)))
+#define PSA_ALG_HASH_ML_DSA(hash_alg)             ((psa_algorithm_t) (0x06004600 | ((hash_alg) & PSA_ALG_HASH_MASK)))
 
 #define PSA_ALG_IS_ML_DSA(alg) \
     (((alg) & ~0x00000100) == 0x06004400)
 
 #define PSA_ALG_IS_HASH_ML_DSA(alg) \
-    (((alg) & ~0x000001ff) == 0x06004600)
+    (((alg) & ~PSA_ALG_HASH_MASK) == 0x06004600)
 
 /** Diffie-Hellman groups defined in RFC 7919 Appendix A.
  *
@@ -1772,7 +1772,7 @@
  *         supported algorithm identifier.
  */
 #define PSA_ALG_IS_SIGN_MESSAGE(alg)                                    \
-    (PSA_ALG_IS_SIGN_HASH(alg) || (alg) == PSA_ALG_PURE_EDDSA || PSA_ALG_IS_ML_DSA(alg))
+    (PSA_ALG_IS_SIGN_HASH(alg) || (alg) == PSA_ALG_PURE_EDDSA || (alg) == PSA_ALG_ML_DSA)
 
 /** Whether the specified algorithm is a hash-and-sign algorithm.
  *

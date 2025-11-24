@@ -49,7 +49,8 @@ typedef struct mbedtls_mldsa_context {
  */
 typedef enum mbedtls_mldsa_bits {
     MBEDTLS_ML_DSA_44 = 44,
-    MBEDTLS_ML_DSA_65 = 65
+    MBEDTLS_ML_DSA_65 = 65,
+    MBEDTLS_ML_DSA_87 = 87
 } mbedtls_mldsa_bits_t;
 
 /**

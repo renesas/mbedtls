@@ -51,7 +51,8 @@ typedef struct mbedtls_mlkem_context {
  */
 typedef enum mbedtls_mlkem_bits {
     MBEDTLS_MLKEM_512 = 512,
-    MBEDTLS_MLKEM_768 = 768
+    MBEDTLS_MLKEM_768 = 768,
+    MBEDTLS_MLKEM_1024 = 1024
 } mbedtls_mlkem_bits_t;
 
 /**

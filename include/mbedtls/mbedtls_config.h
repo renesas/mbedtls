@@ -45,7 +45,7 @@
  *
  * This module provides networking routines.
  */
-#define MBEDTLS_NET_C
+// #define MBEDTLS_NET_C
 
 /**
  * \def MBEDTLS_TIMING_ALT
@@ -82,7 +82,7 @@
  *
  * Module:  library/timing.c
  */
-#define MBEDTLS_TIMING_C
+// #define MBEDTLS_TIMING_C
 
 /** \} name SECTION: Platform abstraction layer */
 

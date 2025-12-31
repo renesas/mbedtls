@@ -3,4 +3,4 @@
 	url = https://github.com/Mbed-TLS/mbedtls-framework
 [submodule "tf-psa-crypto"]
 	path = tf-psa-crypto
-	url = https://github.com/hienthehuynh/TF-PSA-Crypto.git
+	url = https://github.com/renesas/TF-PSA-Crypto.git

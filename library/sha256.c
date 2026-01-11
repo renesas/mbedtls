@@ -579,6 +579,7 @@ int mbedtls_internal_sha256_process_c(mbedtls_sha256_context *ctx,
 
 #if !defined(MBEDTLS_SHA256_USE_ARMV8_A_CRYPTO_ONLY)
 
+MBEDTLS_MAYBE_UNUSED
 static size_t mbedtls_internal_sha256_process_many_c(
     mbedtls_sha256_context *ctx, const uint8_t *data, size_t len)
 {
@@ -616,6 +617,7 @@ static int mbedtls_a64_crypto_sha256_has_support(void)
     return supported;
 }
 
+MBEDTLS_MAYBE_UNUSED
 static size_t mbedtls_internal_sha256_process_many(mbedtls_sha256_context *ctx,
                                                    const uint8_t *msg, size_t len)
 {

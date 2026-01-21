@@ -412,7 +412,7 @@ static int convert_raw_to_der_single_int(const unsigned char *raw_buf, size_t ra
         return MBEDTLS_ERR_ASN1_BUF_TOO_SMALL;
     }
     p -= len;
-    memcpy(p, raw_buf, len);
+    memcpy(p, raw_buf, (unsigned int) len);
 
     /* If MSb is 1, ASN.1 requires that we prepend a 0. */
     if (*p & 0x80) {
@@ -424,7 +424,7 @@ static int convert_raw_to_der_single_int(const unsigned char *raw_buf, size_t ra
         ++len;
     }
 
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(&p, der_buf_start, len));
+    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(&p, der_buf_start, (size_t) len));
     MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_tag(&p, der_buf_start, MBEDTLS_ASN1_INTEGER));
 
     return len;
@@ -439,6 +439,7 @@ int mbedtls_ecdsa_raw_to_der(size_t bits, const unsigned char *raw, size_t raw_l
     size_t len = 0;
     unsigned char *p = der + der_size;
     int ret = MBEDTLS_ERR_ERROR_CORRUPTION_DETECTED;
+    int tmp_len;
 
     if (raw_len != (2 * coordinate_len)) {
         return MBEDTLS_ERR_ASN1_INVALID_DATA;
@@ -459,20 +460,22 @@ int mbedtls_ecdsa_raw_to_der(size_t bits, const unsigned char *raw, size_t raw_l
         return ret;
     }
     p -= ret;
-    len += ret;
+    len += (size_t) ret;
 
     ret = convert_raw_to_der_single_int(r, coordinate_len, der, p);
     if (ret < 0) {
         return ret;
     }
     p -= ret;
-    len += ret;
+    len += (size_t) ret;
+    tmp_len = (int) len;
 
     /* Add ASN.1 header (len + tag). */
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_len(&p, der, len));
-    MBEDTLS_ASN1_CHK_ADD(len, mbedtls_asn1_write_tag(&p, der,
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_len(&p, der, len));
+    MBEDTLS_ASN1_CHK_ADD(tmp_len, mbedtls_asn1_write_tag(&p, der,
                                                      MBEDTLS_ASN1_CONSTRUCTED |
                                                      MBEDTLS_ASN1_SEQUENCE));
+    len = (size_t) tmp_len;
 
     /* memmove the content of der buffer to its beginnig. */
     memmove(der, p, len);
@@ -583,7 +586,7 @@ int mbedtls_ecdsa_der_to_raw(size_t bits, const unsigned char *der, size_t der_l
         return ret;
     }
     p += ret;
-    data_len -= ret;
+    data_len -= (size_t) ret;
 
     /* Extract s */
     ret = convert_der_to_raw_single_int(p, data_len, raw_tmp + coordinate_size,
@@ -592,7 +595,7 @@ int mbedtls_ecdsa_der_to_raw(size_t bits, const unsigned char *der, size_t der_l
         return ret;
     }
     p += ret;
-    data_len -= ret;
+    data_len -= (size_t) ret;
 
     /* Check that we consumed all the input der data. */
     if ((size_t) (p - der) != der_len) {

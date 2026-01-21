@@ -188,14 +188,14 @@ psa_status_t mbedtls_psa_rsa_export_key(psa_key_type_t type,
      * Move the data to the beginning and erase remaining data
      * at the original location. */
     if (2 * (size_t) ret <= data_size) {
-        memcpy(data, data + data_size - ret, ret);
-        memset(data + data_size - ret, 0, ret);
+        memcpy(data, data + data_size - ret, (unsigned int) ret);
+        memset(data + data_size - ret, 0, (unsigned int) ret);
     } else if ((size_t) ret < data_size) {
-        memmove(data, data + data_size - ret, ret);
-        memset(data + ret, 0, data_size - ret);
+        memmove(data, data + data_size - ret, (unsigned int) ret);
+        memset(data + ret, 0, data_size - (unsigned int) ret);
     }
 
-    *data_length = ret;
+    *data_length = (size_t) ret;
     return PSA_SUCCESS;
 }
 
@@ -245,7 +245,7 @@ psa_status_t psa_rsa_read_exponent(const uint8_t *e_bytes,
     if (acc > INT_MAX) {
         return PSA_ERROR_NOT_SUPPORTED;
     }
-    *exponent = acc;
+    *exponent = (int) acc;
     return PSA_SUCCESS;
 }
 

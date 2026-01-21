@@ -189,7 +189,7 @@ int mbedtls_pkcs12_pbe_ext(mbedtls_asn1_buf *pbe_params, int mode,
 
     iv_len = mbedtls_cipher_info_get_iv_size(cipher_info);
     if ((ret = pkcs12_pbe_derive_key_iv(pbe_params, md_type, pwd, pwdlen,
-                                        key, keylen,
+                                        key, (size_t) keylen,
                                         iv, iv_len)) != 0) {
         return ret;
     }

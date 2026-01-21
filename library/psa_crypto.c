@@ -2702,7 +2702,7 @@ static psa_status_t psa_mac_finalize_alg_and_key_validation(
     }
 
     /* Get the output length for the algorithm and key combination */
-    *mac_size = PSA_MAC_LENGTH(key_type, key_bits, alg);
+    *mac_size = (uint8_t) PSA_MAC_LENGTH(key_type, key_bits, alg);
 
     if (*mac_size < 4) {
         /* A very short MAC is too short for security since it can be
@@ -2765,7 +2765,7 @@ static psa_status_t psa_mac_setup(psa_mac_operation_t *operation,
         goto exit;
     }
 
-    operation->is_sign = is_sign;
+    operation->is_sign = (unsigned int) is_sign;
     /* Dispatch the MAC setup call with validated input */
     if (is_sign) {
         status = psa_driver_wrapper_mac_sign_setup(operation,
@@ -4472,7 +4472,7 @@ static psa_status_t psa_cipher_setup(psa_cipher_operation_t *operation,
     } else {
         operation->iv_required = 1;
     }
-    operation->default_iv_length = PSA_CIPHER_IV_LENGTH(slot->attr.type, alg);
+    operation->default_iv_length = (uint8_t) PSA_CIPHER_IV_LENGTH(slot->attr.type, alg);
 
     /* Try doing the operation through a driver before using software fallback. */
     if (cipher_operation == MBEDTLS_ENCRYPT) {
@@ -5148,7 +5148,7 @@ exit:
     if (status == PSA_SUCCESS) {
         status = unlock_status;
         operation->alg = psa_aead_get_base_algorithm(alg);
-        operation->is_encrypt = is_encrypt;
+        operation->is_encrypt = (unsigned int) is_encrypt;
     } else {
         psa_aead_abort(operation);
     }
@@ -6393,7 +6393,8 @@ static psa_status_t psa_generate_derived_ecc_key_weierstrass_helper(
              * (8 * ceiling(m/8) - m) bits of the first byte in
              * the string to zero.
              */
-            uint8_t clear_bit_mask = (1 << (m % 8)) - 1;
+            uint8_t clear_bit_mask;
+            clear_bit_mask = (uint8_t) (1 << (m % 8)) - 1;
             (*data)[0] &= clear_bit_mask;
         }
 

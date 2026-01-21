@@ -210,7 +210,7 @@ int mbedtls_base64_decode(unsigned char *dst, size_t dlen, size_t *olen,
         if (*src == '=') {
             ++equals;
         } else {
-            x |= mbedtls_ct_base64_dec_value(*src);
+            x |= (uint32_t) mbedtls_ct_base64_dec_value(*src);
         }
 
         if (++accumulated_digits == 4) {

@@ -48,7 +48,7 @@
 static inline signed short mbedtls_ct_mpi_sign_if(mbedtls_ct_condition_t cond,
                                                   signed short sign1, signed short sign2)
 {
-    return (signed short) mbedtls_ct_uint_if(cond, sign1 + 1, sign2 + 1) - 1;
+    return (signed short) mbedtls_ct_uint_if(cond, (unsigned) sign1 + 1, (unsigned) sign2 + 1) - 1;
 }
 
 /*
@@ -164,7 +164,7 @@ int mbedtls_mpi_safe_cond_swap(mbedtls_mpi *X,
 
     s = X->s;
     X->s = mbedtls_ct_mpi_sign_if(do_swap, Y->s, X->s);
-    Y->s = mbedtls_ct_mpi_sign_if(do_swap, s, Y->s);
+    Y->s = mbedtls_ct_mpi_sign_if(do_swap, (signed short) s, Y->s);
 
     mbedtls_mpi_core_cond_swap(X->p, Y->p, X->n, do_swap);
 
@@ -358,7 +358,7 @@ void mbedtls_mpi_swap(mbedtls_mpi *X, mbedtls_mpi *Y)
 static inline mbedtls_mpi_uint mpi_sint_abs(mbedtls_mpi_sint z)
 {
     if (z >= 0) {
-        return z;
+        return (mbedtls_mpi_uint) z;
     }
     /* Take care to handle the most negative value (-2^(biL-1)) correctly.
      * A naive -z would have undefined behavior.
@@ -382,7 +382,7 @@ int mbedtls_mpi_lset(mbedtls_mpi *X, mbedtls_mpi_sint z)
     memset(X->p, 0, X->n * ciL);
 
     X->p[0] = mpi_sint_abs(z);
-    X->s    = TO_SIGN(z);
+    X->s    = (short) TO_SIGN(z);
 
 cleanup:
 
@@ -450,7 +450,7 @@ size_t mbedtls_mpi_lsb(const mbedtls_mpi *X)
 #if defined(mbedtls_mpi_uint_ctz)
     for (i = 0; i < X->n; i++) {
         if (X->p[i] != 0) {
-            return i * biL + mbedtls_mpi_uint_ctz(X->p[i]);
+            return i * biL + (unsigned int) mbedtls_mpi_uint_ctz(X->p[i]);
         }
     }
 #else
@@ -555,8 +555,8 @@ int mbedtls_mpi_read_string(mbedtls_mpi *X, int radix, const char *s)
 
         for (i = 0; i < slen; i++) {
             MBEDTLS_MPI_CHK(mpi_get_digit(&d, radix, s[i]));
-            MBEDTLS_MPI_CHK(mbedtls_mpi_mul_int(&T, X, radix));
-            MBEDTLS_MPI_CHK(mbedtls_mpi_add_int(X, &T, d));
+            MBEDTLS_MPI_CHK(mbedtls_mpi_mul_int(&T, X, (mbedtls_mpi_uint) radix));
+            MBEDTLS_MPI_CHK(mbedtls_mpi_add_int(X, &T, (mbedtls_mpi_sint) d));
         }
     }
 
@@ -987,7 +987,7 @@ int mbedtls_mpi_cmp_int(const mbedtls_mpi *X, mbedtls_mpi_sint z)
     mbedtls_mpi_uint p[1];
 
     *p  = mpi_sint_abs(z);
-    Y.s = TO_SIGN(z);
+    Y.s = (short) TO_SIGN(z);
     Y.n = 1;
     Y.p = p;
 
@@ -1123,15 +1123,15 @@ static int add_sub_mpi(mbedtls_mpi *X,
             /* If |A| = |B|, the result is 0 and we must set the sign bit
              * to +1 regardless of which of A or B was negative. Otherwise,
              * since |A| > |B|, the sign is the sign of A. */
-            X->s = cmp == 0 ? 1 : s;
+            X->s = cmp == 0 ? 1 : (short) s;
         } else {
             MBEDTLS_MPI_CHK(mbedtls_mpi_sub_abs(X, B, A));
             /* Since |A| < |B|, the sign is the opposite of A. */
-            X->s = -s;
+            X->s = (short) -s;
         }
     } else {
         MBEDTLS_MPI_CHK(mbedtls_mpi_add_abs(X, A, B));
-        X->s = s;
+        X->s = (short) s;
     }
 
 cleanup:
@@ -1164,7 +1164,7 @@ int mbedtls_mpi_add_int(mbedtls_mpi *X, const mbedtls_mpi *A, mbedtls_mpi_sint b
     mbedtls_mpi_uint p[1];
 
     p[0] = mpi_sint_abs(b);
-    B.s = TO_SIGN(b);
+    B.s = (short) TO_SIGN(b);
     B.n = 1;
     B.p = p;
 
@@ -1180,7 +1180,7 @@ int mbedtls_mpi_sub_int(mbedtls_mpi *X, const mbedtls_mpi *A, mbedtls_mpi_sint b
     mbedtls_mpi_uint p[1];
 
     p[0] = mpi_sint_abs(b);
-    B.s = TO_SIGN(b);
+    B.s = (short) TO_SIGN(b);
     B.n = 1;
     B.p = p;
 
@@ -1521,7 +1521,7 @@ int mbedtls_mpi_div_int(mbedtls_mpi *Q, mbedtls_mpi *R,
     mbedtls_mpi_uint p[1];
 
     p[0] = mpi_sint_abs(b);
-    B.s = TO_SIGN(b);
+    B.s = (short) TO_SIGN(b);
     B.n = 1;
     B.p = p;
 
@@ -1589,13 +1589,13 @@ int mbedtls_mpi_mod_int(mbedtls_mpi_uint *r, const mbedtls_mpi *A, mbedtls_mpi_s
     for (i = A->n, y = 0; i > 0; i--) {
         x  = A->p[i - 1];
         y  = (y << biH) | (x >> biH);
-        z  = y / b;
-        y -= z * b;
+        z  = y / (mbedtls_mpi_uint) b;
+        y -= z * (mbedtls_mpi_uint) b;
 
         x <<= biH;
         y  = (y << biH) | (x >> biH);
-        z  = y / b;
-        y -= z * b;
+        z  = y / (mbedtls_mpi_uint) b;
+        y -= z * (mbedtls_mpi_uint) b;
     }
 
     /*
@@ -1603,7 +1603,7 @@ int mbedtls_mpi_mod_int(mbedtls_mpi_uint *r, const mbedtls_mpi *A, mbedtls_mpi_s
      * Flipping it to the positive side.
      */
     if (A->s < 0 && y != 0) {
-        y = b - y;
+        y = (mbedtls_mpi_uint) b - y;
     }
 
     *r = y;
@@ -1895,7 +1895,7 @@ int mbedtls_mpi_random(mbedtls_mpi *X,
         return ret;
     }
 
-    return mbedtls_mpi_core_random(X->p, min, N->p, X->n, f_rng, p_rng);
+    return mbedtls_mpi_core_random(X->p, (mbedtls_mpi_uint) min, N->p, X->n, f_rng, p_rng);
 }
 
 /*
@@ -2035,9 +2035,9 @@ static int mpi_check_small_factors(const mbedtls_mpi *X)
     }
 
     for (i = 0; i < sizeof(small_prime_gaps); p += small_prime_gaps[i], i++) {
-        MBEDTLS_MPI_CHK(mbedtls_mpi_mod_int(&r, X, p));
+        MBEDTLS_MPI_CHK(mbedtls_mpi_mod_int(&r, X, (mbedtls_mpi_sint) p));
         if (r == 0) {
-            if (mbedtls_mpi_cmp_int(X, p) == 0) {
+            if (mbedtls_mpi_cmp_int(X, (mbedtls_mpi_sint) p) == 0) {
                 return 1;
             } else {
                 return MBEDTLS_ERR_MPI_NOT_ACCEPTABLE;
@@ -2169,7 +2169,7 @@ int mbedtls_mpi_is_prime_ext(const mbedtls_mpi *X, int rounds,
         return ret;
     }
 
-    return mpi_miller_rabin(&XX, rounds, f_rng, p_rng);
+    return mpi_miller_rabin(&XX, (size_t) rounds, f_rng, p_rng);
 }
 
 /*
@@ -2268,9 +2268,9 @@ int mbedtls_mpi_gen_prime(mbedtls_mpi *X, size_t nbits, int flags,
                  */
                 if ((ret = mpi_check_small_factors(X)) == 0 &&
                     (ret = mpi_check_small_factors(&Y)) == 0 &&
-                    (ret = mpi_miller_rabin(X, rounds, f_rng, p_rng))
+                    (ret = mpi_miller_rabin(X, (size_t) rounds, f_rng, p_rng))
                     == 0 &&
-                    (ret = mpi_miller_rabin(&Y, rounds, f_rng, p_rng))
+                    (ret = mpi_miller_rabin(&Y, (size_t) rounds, f_rng, p_rng))
                     == 0) {
                     goto cleanup;
                 }

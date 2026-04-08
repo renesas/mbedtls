@@ -561,7 +561,7 @@ static inline int mbedtls_cipher_info_has_variable_key_bitlen(
         return 0;
     }
 
-    return info->MBEDTLS_PRIVATE(flags) & MBEDTLS_CIPHER_VARIABLE_KEY_LEN;
+    return (int) (info->MBEDTLS_PRIVATE(flags) & MBEDTLS_CIPHER_VARIABLE_KEY_LEN);
 }
 
 /**
@@ -580,7 +580,7 @@ static inline int mbedtls_cipher_info_has_variable_iv_size(
         return 0;
     }
 
-    return info->MBEDTLS_PRIVATE(flags) & MBEDTLS_CIPHER_VARIABLE_IV_LEN;
+    return (int) (info->MBEDTLS_PRIVATE(flags) & MBEDTLS_CIPHER_VARIABLE_IV_LEN);
 }
 
 /**

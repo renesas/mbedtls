@@ -441,7 +441,7 @@ static inline void psa_set_key_bits(psa_key_attributes_t *attributes,
 static inline size_t psa_get_key_bits(
     const psa_key_attributes_t *attributes)
 {
-    return attributes->MBEDTLS_PRIVATE(bits);
+    return (size_t) (attributes->MBEDTLS_PRIVATE(bits));
 }
 
 /**

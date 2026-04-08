@@ -2035,7 +2035,7 @@ void mbedtls_ssl_conf_endpoint(mbedtls_ssl_config *conf, int endpoint);
  */
 static inline int mbedtls_ssl_conf_get_endpoint(const mbedtls_ssl_config *conf)
 {
-    return conf->MBEDTLS_PRIVATE(endpoint);
+    return (int) (conf->MBEDTLS_PRIVATE(endpoint));
 }
 
 /**

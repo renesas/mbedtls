@@ -48,6 +48,7 @@
 
 #include "mbedtls/platform.h"
 
+#if defined(MBEDTLS_RSA_C) && !defined(MBEDTLS_RSA_ALT)
 /*
  * Wrapper around mbedtls_asn1_get_mpi() that rejects zero.
  *
@@ -411,6 +412,7 @@ end_of_export:
 
     return (int) len;
 }
+#endif /* MBEDTLS_RSA_C && !MBEDTLS_RSA_ALT */
 
 #if defined(MBEDTLS_PKCS1_V15) && defined(MBEDTLS_RSA_C) && !defined(MBEDTLS_RSA_ALT)
 

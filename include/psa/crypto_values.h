@@ -498,6 +498,10 @@
  */
 #define PSA_KEY_TYPE_AES                            ((psa_key_type_t) 0x2400)
 
+/** Whether a key type is AES; plaintext or wrapped. */
+#define PSA_KEY_TYPE_IS_AES(type) ((((type) == PSA_KEY_TYPE_AES) != 0) || \
+		(((type) == (PSA_KEY_TYPE_VENDOR_FLAG | PSA_KEY_TYPE_AES)) != 0))
+
 /** Key for a cipher, AEAD or MAC algorithm based on the
  * ARIA block cipher. */
 #define PSA_KEY_TYPE_ARIA                           ((psa_key_type_t) 0x2406)
@@ -540,9 +544,16 @@
  * The size of an RSA key is the bit size of the modulus.
  */
 #define PSA_KEY_TYPE_RSA_KEY_PAIR                   ((psa_key_type_t) 0x7001)
+
+/** Whether a key type is an RSA key pair; standard or vendor. */
+#define PSA_KEY_TYPE_IS_RSA_KEY_PAIR(type)  							\
+	((type == PSA_KEY_TYPE_RSA_KEY_PAIR) || \
+	 (type == (PSA_KEY_TYPE_RSA_KEY_PAIR | PSA_KEY_TYPE_VENDOR_FLAG)))
+
 /** Whether a key type is an RSA key (pair or public-only). */
 #define PSA_KEY_TYPE_IS_RSA(type)                                       \
-    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_RSA_PUBLIC_KEY)
+    ((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_RSA_PUBLIC_KEY) || \
+	 (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == (PSA_KEY_TYPE_RSA_PUBLIC_KEY | PSA_KEY_TYPE_VENDOR_FLAG)))
 
 #define PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE            ((psa_key_type_t) 0x4100)
 #define PSA_KEY_TYPE_ECC_KEY_PAIR_BASE              ((psa_key_type_t) 0x7100)
@@ -572,16 +583,22 @@
 
 /** Whether a key type is an elliptic curve key (pair or public-only). */
 #define PSA_KEY_TYPE_IS_ECC(type)                                       \
-    ((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) &                        \
-      ~PSA_KEY_TYPE_ECC_CURVE_MASK) == PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE)
+    (((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) &                          \
+      ~PSA_KEY_TYPE_ECC_CURVE_MASK) == PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE) || \
+	  ((PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) &                         \
+      ~PSA_KEY_TYPE_ECC_CURVE_MASK) == (PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE | PSA_KEY_TYPE_VENDOR_FLAG)))
 /** Whether a key type is an elliptic curve key pair. */
 #define PSA_KEY_TYPE_IS_ECC_KEY_PAIR(type)                               \
-    (((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
-     PSA_KEY_TYPE_ECC_KEY_PAIR_BASE)
+    ((((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
+     PSA_KEY_TYPE_ECC_KEY_PAIR_BASE) ||                                  \
+	 (((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
+     (PSA_KEY_TYPE_ECC_KEY_PAIR_BASE | PSA_KEY_TYPE_VENDOR_FLAG)))
 /** Whether a key type is an elliptic curve public key. */
 #define PSA_KEY_TYPE_IS_ECC_PUBLIC_KEY(type)                            \
-    (((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
-     PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE)
+    ((((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
+     PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE) ||                                \
+	 (((type) & ~PSA_KEY_TYPE_ECC_CURVE_MASK) ==                         \
+     (PSA_KEY_TYPE_ECC_PUBLIC_KEY_BASE | PSA_KEY_TYPE_VENDOR_FLAG)))
 
 /** Extract the curve from an elliptic curve key type. */
 #define PSA_KEY_TYPE_ECC_GET_FAMILY(type)                        \
@@ -732,6 +749,59 @@
     ((psa_dh_family_t) (PSA_KEY_TYPE_IS_DH(type) ?              \
                         ((type) & PSA_KEY_TYPE_DH_GROUP_MASK) :  \
                         0))
+
+/** ML-KEM key pair.
+ *
+ */
+#define PSA_KEY_TYPE_ML_KEM_KEY_PAIR ((psa_key_type_t)0x7004)
+
+#define PSA_KEY_TYPE_ML_KEM_PUBLIC_KEY ((psa_key_type_t)0x4004)
+
+#define PSA_KEY_TYPE_IS_ML_KEM(type) \
+    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_ML_KEM_PUBLIC_KEY)
+
+/** The ML-KEM algorithm.
+ *
+ */
+#define PSA_ALG_ML_KEM                            ((psa_algorithm_t) 0x0c000200)
+
+#define PSA_ALG_IS_ML_KEM(alg) \
+    (((alg) & ~0x00000100) == 0x0c000200) 
+
+/** Whether the specified algorithm is an encapsulation algorithm that can be used
+ * with psa_encapsulate() and psa_decapsulate().
+ *
+ * \param alg An algorithm identifier (value of type #psa_algorithm_t).
+ *
+ * \return 1 if alg is an encapsulation algorithm that can be used
+ *         to encapsulate and decapsulate. 0 if \p alg is not
+ *         an encapsulation algorithm. This macro can return either 0 or 1
+ *         if \p alg is not a supported algorithm identifier.
+ */
+#define PSA_ALG_IS_KEY_ENCAPSULATION(alg)                               \
+    PSA_ALG_IS_ML_KEM(alg)   
+
+/** ML-DSA key pair.
+ *
+ */
+#define PSA_KEY_TYPE_ML_DSA_KEY_PAIR ((psa_key_type_t)0x7006)
+
+#define PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY ((psa_key_type_t)0x4006)
+
+#define PSA_KEY_TYPE_IS_ML_DSA(type) \
+    (PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR(type) == PSA_KEY_TYPE_ML_DSA_PUBLIC_KEY)
+    
+/** The ML-DSA algorithm.
+ *
+ */
+#define PSA_ALG_ML_DSA                            ((psa_algorithm_t) 0x06004400)
+#define PSA_ALG_HASH_ML_DSA(hash_alg)             ((psa_algorithm_t) (0x06004600 | ((hash_alg) & PSA_ALG_HASH_MASK)))
+
+#define PSA_ALG_IS_ML_DSA(alg) \
+    (((alg) & ~0x00000100) == 0x06004400)
+
+#define PSA_ALG_IS_HASH_ML_DSA(alg) \
+    (((alg) & ~PSA_ALG_HASH_MASK) == 0x06004600)
 
 /** Diffie-Hellman groups defined in RFC 7919 Appendix A.
  *
@@ -938,6 +1008,8 @@
 #define PSA_ALG_SHA3_384                        ((psa_algorithm_t) 0x02000012)
 /** SHA3-512 */
 #define PSA_ALG_SHA3_512                        ((psa_algorithm_t) 0x02000013)
+/** SHAKE-256 */
+#define PSA_ALG_SHAKE256                        ((psa_algorithm_t) 0x02000014)
 /** The first 512 bits (64 bytes) of the SHAKE256 output.
  *
  * This is the prehashing for Ed448ph (see #PSA_ALG_ED448PH). For other
@@ -1686,7 +1758,7 @@
 #define PSA_ALG_IS_SIGN_HASH(alg)                                       \
     (PSA_ALG_IS_RSA_PSS(alg) || PSA_ALG_IS_RSA_PKCS1V15_SIGN(alg) ||    \
      PSA_ALG_IS_ECDSA(alg) || PSA_ALG_IS_HASH_EDDSA(alg) ||             \
-     PSA_ALG_IS_VENDOR_HASH_AND_SIGN(alg))
+     PSA_ALG_IS_HASH_ML_DSA(alg) || PSA_ALG_IS_VENDOR_HASH_AND_SIGN(alg))
 
 /** Whether the specified algorithm is a signature algorithm that can be used
  * with psa_sign_message() and psa_verify_message().
@@ -1700,7 +1772,7 @@
  *         supported algorithm identifier.
  */
 #define PSA_ALG_IS_SIGN_MESSAGE(alg)                                    \
-    (PSA_ALG_IS_SIGN_HASH(alg) || (alg) == PSA_ALG_PURE_EDDSA)
+    (PSA_ALG_IS_SIGN_HASH(alg) || (alg) == PSA_ALG_PURE_EDDSA || (alg) == PSA_ALG_ML_DSA)
 
 /** Whether the specified algorithm is a hash-and-sign algorithm.
  *
@@ -2321,6 +2393,11 @@
  */
 #define PSA_KEY_LIFETIME_PERSISTENT             ((psa_key_lifetime_t) 0x00000001)
 
+#define PSA_KEY_LIFETIME_IS_PERSISTENT(lifetime) \
+    (((lifetime) & PSA_KEY_LIFETIME_PERSISTENT) != 0)
+
+#define PSA_KEY_LIFETIME_VENDOR_FLAG ((psa_key_lifetime_t)0x80000000)
+
 /** The persistence level of volatile keys.
  *
  * See ::psa_key_persistence_t for more information.
@@ -2651,6 +2728,28 @@ static inline int mbedtls_svc_key_id_is_null(mbedtls_svc_key_id_t key)
  * psa_key_derivation_verify_key() at the end of the operation.
  */
 #define PSA_KEY_USAGE_VERIFY_DERIVATION         ((psa_key_usage_t) 0x00008000)
+
+/** Whether the key may be used to encapsulate a key.
+ *
+ * This flag allows the key to be used in a key encapsulation operation, if
+ * otherwise permitted by the key's type and policy.
+ *
+ * If this flag is present on all keys used in calls to
+ * psa_generate_key() for a key generation operation, then it
+ * permits calling psa_encapsulate()
+ */
+#define PSA_KEY_USAGE_ENCAPSULATE         ((psa_key_usage_t) 0x00010000)
+
+/** Whether the key may be used to decapsulate a key.
+ *
+ * This flag allows the key to be used in a key decapsulation operation, if
+ * otherwise permitted by the key's type and policy.
+ *
+ * If this flag is present on all keys used in calls to
+ * psa_generate_key() for a key generation operation, then it
+ * permits calling psa_decapsulate()
+ */
+#define PSA_KEY_USAGE_DECAPSULATE         ((psa_key_usage_t) 0x00020000)
 
 /**@}*/
 

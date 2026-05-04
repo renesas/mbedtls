@@ -4339,6 +4339,90 @@ psa_status_t psa_generate_key_ext(const psa_key_attributes_t *attributes,
                                   mbedtls_svc_key_id_t *key);
 #endif /* !__cplusplus */
 
+
+/** \defgroup key_encapsulation Key encapsulation and decapsulation
+ * @{
+ */
+
+/**
+ * \brief Generate an encapsulated key pair
+ *
+ * \param[in] key                   Identifier of the key to use for encapsulation.
+ *                                  It must allow the usage #PSA_KEY_USAGE_ENCAPSULATE.  
+ * \param[in] alg                   The encapsulation algorithm to use.
+ *                                  (\c PSA_ALG_XXX value such that
+ *                                  #PSA_ALG_IS_KEY_ENCAPSULATION(\p alg) is true
+ * \param[in] attributes            The attributes of the key to be generated.
+ * \param[out] output_key           Identifier of the generated key is to be written.
+ * \param[out] ciphertext           Buffer where the ciphertext is to be written.
+ * \param ciphertext_size           Size of the \p ciphertext buffer in bytes.
+ * \param[in] ciphertext_length     On success, the number of bytes that make up \p ciphertext.
+ *
+ * \retval #PSA_SUCCESS \emptydescription
+ * \retval #PSA_ERROR_ALREADY_EXISTS \emptydescription
+ * \retval #PSA_ERROR_NOT_SUPPORTED \emptydescription
+ * \retval #PSA_ERROR_INVALID_ARGUMENT \emptydescription
+ * \retval #PSA_ERROR_INSUFFICIENT_MEMORY \emptydescription
+ * \retval #PSA_ERROR_INSUFFICIENT_ENTROPY \emptydescription
+ * \retval #PSA_ERROR_COMMUNICATION_FAILURE \emptydescription
+ * \retval #PSA_ERROR_HARDWARE_FAILURE \emptydescription
+ * \retval #PSA_ERROR_CORRUPTION_DETECTED \emptydescription
+ * \retval #PSA_ERROR_INSUFFICIENT_STORAGE \emptydescription
+ * \retval #PSA_ERROR_DATA_INVALID \emptydescription
+ * \retval #PSA_ERROR_DATA_CORRUPT \emptydescription
+ * \retval #PSA_ERROR_STORAGE_FAILURE \emptydescription
+ * \retval #PSA_ERROR_BAD_STATE
+ *         The library has not been previously initialized by psa_crypto_init().
+ *         It is implementation-dependent whether a failure to initialize
+ *         results in this error code.
+ */
+psa_status_t psa_encapsulate(psa_key_id_t key,
+                             psa_algorithm_t alg,
+                             const psa_key_attributes_t * attributes,
+                             psa_key_id_t * output_key,
+                             uint8_t * ciphertext,
+                             size_t ciphertext_size,
+                             size_t * ciphertext_length);
+
+/**
+ * \brief Decapslulate an encapsulated a shared secret key
+ *
+ *
+ * \param[in] key                   Identifier of the key to use for decapsulation.
+ *                                  It must allow the usage #PSA_KEY_USAGE_ENCAPSULATE.  
+ * \param[in] alg                   The encapsulation algorithm to use.
+ *                                  (\c PSA_ALG_XXX value such that
+ *                                  #PSA_ALG_IS_KEY_ENCAPSULATION(\p alg) is true
+ * \param[in] ciphertext            The ciphertext to decapsulate.
+ * \param ciphertext_len            Size of the \p ciphertext buffer in bytes.
+ * \param[in] attributes            The attributes of the key to be generated.
+ * \param[out] output_key           Identifier of the generated key is to be written.
+ *
+ * \retval #PSA_SUCCESS \emptydescription
+ * \retval #PSA_ERROR_ALREADY_EXISTS \emptydescription
+ * \retval #PSA_ERROR_NOT_SUPPORTED \emptydescription
+ * \retval #PSA_ERROR_INVALID_ARGUMENT \emptydescription
+ * \retval #PSA_ERROR_INSUFFICIENT_MEMORY \emptydescription
+ * \retval #PSA_ERROR_INSUFFICIENT_ENTROPY \emptydescription
+ * \retval #PSA_ERROR_COMMUNICATION_FAILURE \emptydescription
+ * \retval #PSA_ERROR_HARDWARE_FAILURE \emptydescription
+ * \retval #PSA_ERROR_CORRUPTION_DETECTED \emptydescription
+ * \retval #PSA_ERROR_INSUFFICIENT_STORAGE \emptydescription
+ * \retval #PSA_ERROR_DATA_INVALID \emptydescription
+ * \retval #PSA_ERROR_DATA_CORRUPT \emptydescription
+ * \retval #PSA_ERROR_STORAGE_FAILURE \emptydescription
+ * \retval #PSA_ERROR_BAD_STATE
+ *         The library has not been previously initialized by psa_crypto_init().
+ *         It is implementation-dependent whether a failure to initialize
+ *         results in this error code.
+ */
+psa_status_t psa_decapsulate(psa_key_id_t key,
+                             psa_algorithm_t alg,
+                             const uint8_t * ciphertext,
+                             size_t ciphertext_length,
+                             const psa_key_attributes_t * attributes,
+                             psa_key_id_t * output_key);
+ 
 /**@}*/
 
 /** \defgroup interruptible_hash Interruptible sign/verify hash

@@ -11,7 +11,7 @@
 
 #include "common.h"
 
-#if defined(MBEDTLS_CIPHER_C)
+#if defined(MBEDTLS_CIPHER_C) && !defined(MBEDTLS_CIPHER_ALT)
 
 #include "mbedtls/cipher.h"
 #include "cipher_invasive.h"

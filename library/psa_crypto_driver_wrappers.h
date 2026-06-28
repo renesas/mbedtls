@@ -2458,6 +2458,18 @@ static inline psa_status_t psa_driver_wrapper_aead_verify(
                 uint8_t check_tag[PSA_AEAD_TAG_MAX_SIZE];
                 size_t check_tag_length;
 
+#if defined(MBEDTLS_GCM_ALT)
+                /* HW GCM: the SCE DecryptFinal verifies the tag internally and cannot output a
+                 * computed tag, so route the EXPECTED tag to it instead of finish()+compare. */
+                if( operation->ctx.mbedtls_ctx.alg == PSA_ALG_GCM )
+                {
+                    return( mbedtls_to_psa_error(
+                                sce_gcm_verify( &operation->ctx.mbedtls_ctx.ctx.gcm,
+                                                plaintext, plaintext_size, plaintext_length,
+                                                tag, tag_length ) ) );
+                }
+#endif /* MBEDTLS_GCM_ALT */
+
                 status = mbedtls_psa_aead_finish( &operation->ctx.mbedtls_ctx,
                                                   plaintext,
                                                   plaintext_size,

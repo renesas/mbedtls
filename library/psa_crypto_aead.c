@@ -610,6 +610,9 @@ psa_status_t mbedtls_psa_aead_finish(
             mbedtls_gcm_finish(&operation->ctx.gcm,
                                ciphertext, ciphertext_size, ciphertext_length,
                                tag, operation->tag_length));
+        /* HW GCM (gcm_alt) emits the final partial ciphertext block in finish(); preserve
+         * its length instead of forcing it to 0 below. (Software GCM reports 0 here.) */
+        finish_output_size = *ciphertext_length;
     } else
 #endif /* MBEDTLS_PSA_BUILTIN_ALG_GCM */
 #if defined(MBEDTLS_PSA_BUILTIN_ALG_CCM)

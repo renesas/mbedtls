@@ -970,7 +970,7 @@ MBEDTLS_STATIC_TESTABLE int mbedtls_pk_parse_key_pkcs8_encrypted_der(
 /*
  * Parse a private key
  */
-int mbedtls_pk_parse_key(mbedtls_pk_context *pk,
+int mbedtls_pk_parse_key_rng(mbedtls_pk_context *pk,
                          const unsigned char *key, size_t keylen,
                          const unsigned char *pwd, size_t pwdlen,
                          int (*f_rng)(void *, unsigned char *, size_t), void *p_rng)
@@ -1175,6 +1175,18 @@ int mbedtls_pk_parse_key(mbedtls_pk_context *pk,
 }
 
 /*
+ * Parse a private key, without an explicit RNG.
+ * Compatibility entry point matching the mbedTLS 4.x API used by
+ * Zephyr's socket TLS layer, which no longer passes f_rng/p_rng.
+ */
+int mbedtls_pk_parse_key(mbedtls_pk_context *pk,
+                         const unsigned char *key, size_t keylen,
+                         const unsigned char *pwd, size_t pwdlen)
+{
+    return mbedtls_pk_parse_key_rng(pk, key, keylen, pwd, pwdlen, NULL, NULL);
+}
+
+/*
  * Parse a public key
  */
 int mbedtls_pk_parse_public_key(mbedtls_pk_context *ctx,
@@ -1357,9 +1369,9 @@ int mbedtls_pk_parse_keyfile(mbedtls_pk_context *ctx,
     }
 
     if (pwd == NULL) {
-        ret = mbedtls_pk_parse_key(ctx, buf, n, NULL, 0, f_rng, p_rng);
+        ret = mbedtls_pk_parse_key_rng(ctx, buf, n, NULL, 0, f_rng, p_rng);
     } else {
-        ret = mbedtls_pk_parse_key(ctx, buf, n,
+        ret = mbedtls_pk_parse_key_rng(ctx, buf, n,
                                    (const unsigned char *) pwd, strlen(pwd), f_rng, p_rng);
     }
 

@@ -5861,6 +5861,20 @@ int mbedtls_ssl_config_defaults(mbedtls_ssl_config *conf,
     mbedtls_ssl_conf_endpoint(conf, endpoint);
     mbedtls_ssl_conf_transport(conf, transport);
 
+#if defined(MBEDTLS_USE_PSA_CRYPTO)
+    /*
+     * Zephyr's socket TLS layer (subsys/net/lib/sockets/sockets_tls.c) never
+     * calls mbedtls_ssl_conf_rng(): it targets mbedTLS 4.x, where PSA crypto
+     * supplies randomness internally and the classic ssl_conf.f_rng hook was
+     * removed entirely. This fork still enforces f_rng != NULL (ssl_tls.c's
+     * ssl_conf_check()), so default it to the PSA RNG whenever the caller
+     * hasn't set one explicitly.
+     */
+    if (conf->f_rng == NULL) {
+        mbedtls_ssl_conf_rng(conf, mbedtls_psa_get_random, MBEDTLS_PSA_RANDOM_STATE);
+    }
+#endif
+
     /*
      * Things that are common to all presets
      */

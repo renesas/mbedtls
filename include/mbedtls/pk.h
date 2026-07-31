@@ -1106,10 +1106,28 @@ static inline mbedtls_ecp_keypair *mbedtls_pk_ec(const mbedtls_pk_context pk)
  *
  * \return          0 if successful, or a specific PK or PEM error code
  */
-int mbedtls_pk_parse_key(mbedtls_pk_context *ctx,
+int mbedtls_pk_parse_key_rng(mbedtls_pk_context *ctx,
                          const unsigned char *key, size_t keylen,
                          const unsigned char *pwd, size_t pwdlen,
                          int (*f_rng)(void *, unsigned char *, size_t), void *p_rng);
+
+/** \ingroup pk_module */
+/**
+ * \brief           Parse a private key in PEM or DER format, without an
+ *                  explicit RNG (matches the mbedTLS 4.x API).
+ *
+ * \param ctx       The PK context to fill. It must have been initialized
+ *                  but not set up.
+ * \param key       Input buffer to parse.
+ * \param keylen    Size of \b key in bytes.
+ * \param pwd       Optional password for decryption.
+ * \param pwdlen    Size of the password in bytes.
+ *
+ * \return          0 if successful, or a specific PK or PEM error code
+ */
+int mbedtls_pk_parse_key(mbedtls_pk_context *ctx,
+                         const unsigned char *key, size_t keylen,
+                         const unsigned char *pwd, size_t pwdlen);
 
 /** \ingroup pk_module */
 /**
